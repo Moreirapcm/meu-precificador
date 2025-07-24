@@ -242,9 +242,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // <!-- PASSO IMPORTANTE: COLE A SUA CONFIGURAÇÃO DO FIREBASE AQUI -->
-        // Substitua todo o bloco "const firebaseConfig = { ... };" abaixo
-        // pelo bloco de código que você copiou da sua consola do Firebase.
+        // <!-- PASSO IMPORTANTE: ESTE BLOCO FOI ATUALIZADO COM AS SUAS CHAVES -->
         const firebaseConfig = {
           apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
           authDomain: "meu-precificador-show.firebaseapp.com",
@@ -280,6 +278,7 @@
             db,
             userId: null,
             isReady: false,
+            apiKey: firebaseConfig.apiKey, // <-- Chave de API agora está disponível globalmente
             getCollectionRef,
             getConfigDocRef,
             insumosCache: () => insumosCache,
@@ -369,7 +368,12 @@
     <script>
         // --- LÓGICA DA API GEMINI ---
         async function callGeminiAPI(prompt) {
-            const apiKey = ""; // Deixe em branco, será tratado pelo ambiente
+            // <-- CORREÇÃO: Usa a chave de API do objeto global window.appState
+            const apiKey = window.appState.apiKey; 
+            if (!apiKey || apiKey === "YOUR_API_KEY") {
+                throw new Error("A chave de API (apiKey) do Firebase não foi configurada corretamente no código.");
+            }
+
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             
             const payload = {
