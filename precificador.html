@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precificador Show de Delicias</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 50;
+        }
+        .tab-button.active {
+            border-bottom: 2px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            font-weight: normal;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4f46e5;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Estilo para botões desativados */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        <header class="mb-4 text-center">
+            <h1 class="text-4xl font-bold text-indigo-600">Precificador Show de Delícias</h1>
+            <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
+        </header>
+
+        <!-- Indicador de Status da Base de Dados -->
+        <div id="db-status" class="flex items-center justify-center mb-6 text-sm text-gray-600">
+            <span id="db-status-dot" class="h-3 w-3 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>
+            <span id="db-status-text">A ligar à base de dados...</span>
+        </div>
+
+        <!-- Painel de Navegação -->
+        <div class="flex justify-center border-b border-gray-200 mb-8">
+            <button onclick="changeTab('simulador')" class="tab-button active py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+                <i class="fas fa-calculator mr-2"></i> Simulador de Preços
+            </button>
+            <button onclick="changeTab('produtos')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+                <i class="fas fa-utensils mr-2"></i> Produtos e Receitas
+            </button>
+            <button onclick="changeTab('insumos')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+                <i class="fas fa-carrot mr-2"></i> Insumos
+            </button>
+            <button onclick="changeTab('configuracoes')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+                <i class="fas fa-cogs mr-2"></i> Configurações
+            </button>
+        </div>
+
+        <!-- Conteúdo das Abas -->
+        <main>
+            <!-- ABA: Simulador de Preços -->
+            <div id="simulador-tab" class="space-y-8">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Selecione o Produto e a Margem de Lucro</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="produto-select" class="block text-sm font-medium text-gray-700 mb-1">Produto</label>
+                            <select id="produto-select" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+                        </div>
+                        <div>
+                            <label for="margem-lucro-input" class="block text-sm font-medium text-gray-700 mb-1">Margem de Lucro Desejada (%)</label>
+                            <input type="number" id="margem-lucro-input" value="35" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <button onclick="calcularPrecos()" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg">
+                            <i class="fas fa-magic mr-2"></i> Calcular Preços
+                        </button>
+                    </div>
+                </div>
+
+                <div id="resultado-precificacao" class="hidden bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Resultado da Precificação</h2>
+                    <div id="resumo-produto" class="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200"></div>
+                    <div id="tabela-precos" class="overflow-x-auto"></div>
+                    <div id="analise-ia-container" class="mt-6 hidden">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-700">✨ Análise de Preço com IA</h3>
+                        <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600">
+                            <!-- Conteúdo da análise da IA aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA: Produtos e Receitas -->
+            <div id="produtos-tab" class="hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-gray-700">Gestão de Produtos e Receitas</h2>
+                        <button id="btn-novo-produto" onclick="abrirModalProduto()" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors" disabled>
+                            <i class="fas fa-plus mr-2"></i> Novo Produto
+                        </button>
+                    </div>
+                    <div id="lista-produtos" class="overflow-x-auto"></div>
+                </div>
+            </div>
+
+            <!-- ABA: Insumos -->
+            <div id="insumos-tab" class="hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-gray-700">Gestão de Insumos</h2>
+                        <button id="btn-novo-insumo" onclick="abrirModalInsumo()" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors" disabled>
+                            <i class="fas fa-plus mr-2"></i> Novo Insumo
+                        </button>
+                    </div>
+                    <div id="lista-insumos" class="overflow-x-auto"></div>
+                </div>
+            </div>
+
+            <!-- ABA: Configurações -->
+            <div id="configuracoes-tab" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Custos Operacionais -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+                        Custos Operacionais
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle text-gray-400"></i>
+                            <span class="tooltiptext">Insira aqui seus custos fixos e variáveis mensais e seu faturamento médio para calcular o percentual de custo operacional.</span>
+                        </span>
+                    </h2>
+                    <div class="mb-4">
+                        <label for="faturamento-mensal" class="block text-sm font-medium text-gray-700 mb-1">Faturamento Médio Mensal (R$)</label>
+                        <input type="number" id="faturamento-mensal" placeholder="Ex: 40000" class="w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div id="lista-custos-operacionais"></div>
+                    <div class="mt-4 flex justify-between items-center">
+                        <button onclick="adicionarCustoOperacional()" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-plus mr-2"></i> Adicionar Custo
+                        </button>
+                        <div class="text-right">
+                            <p class="font-semibold">Total: <span id="total-custo-operacional" class="text-red-600">R$ 0,00</span></p>
+                            <p class="font-semibold">Custo Operacional: <span id="percentual-custo-operacional" class="text-indigo-600">0.00%</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canais de Venda -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+                        Canais de Venda
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle text-gray-400"></i>
+                            <span class="tooltiptext">Cadastre os canais de venda (ex: Balcão, iFood) e suas respectivas taxas.</span>
+                        </span>
+                    </h2>
+                    <div id="lista-canais-venda"></div>
+                    <button onclick="adicionarCanalVenda()" class="mt-4 bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-plus mr-2"></i> Adicionar Canal
+                    </button>
+                </div>
+                 <div class="lg:col-span-2 text-center mt-4">
+                    <button id="btn-salvar-config" onclick="salvarConfiguracoes()" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg" disabled>
+                        <i class="fas fa-save mr-2"></i> Salvar Todas as Configurações
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Genérico -->
+    <div id="modal-backdrop" class="modal-backdrop hidden">
+        <div id="modal-content" class="modal-content">
+            <!-- Conteúdo do modal será injetado aqui -->
+        </div>
+    </div>
+    
+    <!-- Firebase -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuração do Firebase
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let insumosCache = [];
+        let produtosCache = [];
+        let configCache = {};
+        
+        // --- Funções de acesso a dados ---
+        function getCollectionRef(collectionName) {
+            if (!window.appState.userId) return null;
+            return collection(db, `artifacts/${appId}/users/${window.appState.userId}/${collectionName}`);
+        }
+    
+        function getConfigDocRef() {
+            if (!window.appState.userId) return null;
+            return doc(db, `artifacts/${appId}/users/${window.appState.userId}/configuracoes/main`);
+        }
+
+        // --- Expor estado e funções para o escopo global ---
+        window.appState = {
+            db,
+            userId: null,
+            isReady: false,
+            getCollectionRef,
+            getConfigDocRef,
+            insumosCache: () => insumosCache,
+            produtosCache: () => produtosCache,
+            configCache: () => configCache,
+            // Funções do Firestore
+            doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc
+        };
+
+        function initializeAppState() {
+            if (!window.appState.isReady || !window.appState.userId) return;
+            
+            // Listeners do Firestore
+            const insumosRef = getCollectionRef('insumos');
+            if (insumosRef) onSnapshot(insumosRef, snapshot => {
+                insumosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderInsumos();
+                updateProdutoSelect(); 
+            });
+
+            const produtosRef = getCollectionRef('produtos');
+            if (produtosRef) onSnapshot(produtosRef, snapshot => {
+                produtosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderProdutos();
+                updateProdutoSelect();
+            });
+
+            const configRef = getConfigDocRef();
+            if(configRef) onSnapshot(configRef, (doc) => {
+                if (doc.exists()) {
+                    configCache = doc.data();
+                } else {
+                    configCache = {
+                        faturamentoMedioMensal: 40000,
+                        custosOperacionais: [
+                            { nome: "Aluguel", valor: 5000 },
+                            { nome: "Energia", valor: 1000 },
+                            { nome: "Folha de Pagamento", valor: 10000 },
+                        ],
+                        canaisVenda: [
+                            { nome: "Balcão", taxaComissao: 0, taxaTransacao: 0.025 },
+                            { nome: "iFood Básico", taxaComissao: 0.12, taxaTransacao: 0.035 },
+                            { nome: "iFood Entrega", taxaComissao: 0.23, taxaTransacao: 0.035 },
+                        ]
+                    };
+                }
+                renderConfiguracoes();
+            });
+        }
+        
+        // --- AUTENTICAÇÃO E INICIALIZAÇÃO ---
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                if (window.appState.isReady) return; // Evitar reinicialização
+
+                window.appState.userId = user.uid;
+                window.appState.isReady = true;
+
+                // --- Atualiza a UI para o estado "Pronto" ---
+                const statusDot = document.getElementById('db-status-dot');
+                const statusText = document.getElementById('db-status-text');
+                statusDot.classList.remove('bg-yellow-400', 'animate-pulse');
+                statusDot.classList.add('bg-green-500');
+                statusText.textContent = 'Ligado e pronto a usar';
+
+                // Ativa os botões principais
+                document.getElementById('btn-novo-insumo').disabled = false;
+                document.getElementById('btn-novo-produto').disabled = false;
+                document.getElementById('btn-salvar-config').disabled = false;
+                
+                initializeAppState();
+
+            } else {
+                signInAnonymously(auth).catch(error => {
+                    console.error("Erro na autenticação anônima:", error);
+                     const statusDot = document.getElementById('db-status-dot');
+                    const statusText = document.getElementById('db-status-text');
+                    statusDot.classList.remove('bg-yellow-400', 'animate-pulse');
+                    statusDot.classList.add('bg-red-500');
+                    statusText.textContent = 'Erro na ligação. Tente recarregar a página.';
+                });
+            }
+        });
+
+    </script>
+
+    <script>
+        // --- LÓGICA DA API GEMINI ---
+        async function callGeminiAPI(prompt) {
+            const apiKey = ""; // Deixe em branco, será tratado pelo ambiente
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("Erro na API Gemini:", response.status, errorBody);
+                    throw new Error(`Erro na API: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Resposta inesperada da API Gemini:", result);
+                    return "Não foi possível obter uma resposta da IA.";
+                }
+            } catch (error) {
+                console.error("Falha ao chamar a API Gemini:", error);
+                return "Ocorreu um erro de comunicação com a IA.";
+            }
+        }
+
+        // --- LÓGICA DA INTERFACE (UI) ---
+
+        function changeTab(tabName) {
+            document.getElementById('simulador-tab').classList.add('hidden');
+            document.getElementById('produtos-tab').classList.add('hidden');
+            document.getElementById('insumos-tab').classList.add('hidden');
+            document.getElementById('configuracoes-tab').classList.add('hidden');
+
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+            document.querySelector(`button[onclick="changeTab('${tabName}')"]`).classList.add('active');
+        }
+        
+        function updateProdutoSelect() {
+            const produtos = window.appState.produtosCache();
+            const select = document.getElementById('produto-select');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Selecione um produto --</option>';
+            produtos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(produto => {
+                const option = document.createElement('option');
+                option.value = produto.id;
+                option.textContent = produto.nome;
+                select.appendChild(option);
+            });
+            select.value = currentVal;
+        }
+
+        // --- RENDERIZAÇÃO ---
+        
+        function renderInsumos() {
+            const insumos = window.appState.insumosCache();
+            const container = document.getElementById('lista-insumos');
+            if (!insumos.length) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum insumo cadastrado. Clique em "Novo Insumo" para começar.</p>`;
+                return;
+            }
+            
+            const table = document.createElement('table');
+            table.className = 'min-w-full bg-white';
+            table.innerHTML = `
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Real (Pós-Desperdício)</th>
+                        <th class="py-3 px-6 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200"></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+            insumos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(insumo => {
+                const rendimento = 1 - (parseFloat(insumo.percentualDesperdicio) || 0);
+                const custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
+                const unidadeCompra = insumo.unidadeCompra || 'un';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-4 px-6 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">${insumo.nome}</div>
+                        <div class="text-sm text-gray-500">Comprado a R$ ${parseFloat(insumo.precoCompra).toFixed(2)} / ${insumo.qtdCompra} ${unidadeCompra}</div>
+                    </td>
+                    <td class="py-4 px-6 whitespace-nowrap">
+                        <div class="font-medium text-green-600">R$ ${custoReal.toFixed(2)} / ${insumo.qtdCompra} ${unidadeCompra}</div>
+                        <div class="text-sm text-gray-500">${(parseFloat(insumo.percentualDesperdicio) * 100).toFixed(0)}% de desperdício</div>
+                    </td>
+                    <td class="py-4 px-6 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="abrirModalInsumo('${insumo.id}')" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
+                        <button onclick="deletarItem('insumos', '${insumo.id}', 'insumo')" class="text-red-600 hover:text-red-900">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            container.innerHTML = '';
+            container.appendChild(table);
+        }
+
+        function renderProdutos() {
+            const produtos = window.appState.produtosCache();
+            const container = document.getElementById('lista-produtos');
+             if (!produtos.length) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum produto cadastrado. Clique em "Novo Produto" para começar.</p>`;
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'min-w-full bg-white';
+            table.innerHTML = `
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo de Insumos</th>
+                        <th class="py-3 px-6 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200"></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+            produtos.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(produto => {
+                const custo = calcularCustoProduto(produto.id);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-4 px-6 whitespace-nowrap font-medium text-gray-900">${produto.nome}</td>
+                    <td class="py-4 px-6 whitespace-nowrap text-gray-700">R$ ${custo.toFixed(2)}</td>
+                    <td class="py-4 px-6 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="abrirModalProduto('${produto.id}')" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
+                        <button onclick="deletarItem('produtos', '${produto.id}', 'produto')" class="text-red-600 hover:text-red-900">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            container.innerHTML = '';
+            container.appendChild(table);
+        }
+
+        function renderConfiguracoes() {
+            const config = window.appState.configCache();
+            if (!config) return;
+
+            document.getElementById('faturamento-mensal').value = config.faturamentoMedioMensal || '';
+
+            const custosContainer = document.getElementById('lista-custos-operacionais');
+            custosContainer.innerHTML = '';
+            (config.custosOperacionais || []).forEach((custo, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 mb-2';
+                div.innerHTML = `
+                    <input type="text" value="${custo.nome}" onchange="updateCustoTemp(${index}, 'nome', this.value)" class="w-2/3 p-2 border border-gray-300 rounded-md" placeholder="Nome do Custo">
+                    <input type="number" value="${custo.valor}" onchange="updateCustoTemp(${index}, 'valor', this.value)" class="w-1/3 p-2 border border-gray-300 rounded-md" placeholder="Valor">
+                    <button onclick="removerCustoOperacional(${index})" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+                `;
+                custosContainer.appendChild(div);
+            });
+
+            const canaisContainer = document.getElementById('lista-canais-venda');
+            canaisContainer.innerHTML = '';
+            (config.canaisVenda || []).forEach((canal, index) => {
+                const div = document.createElement('div');
+                div.className = 'grid grid-cols-4 items-center gap-2 mb-2';
+                div.innerHTML = `
+                    <input type="text" value="${canal.nome}" onchange="updateCanalTemp(${index}, 'nome', this.value)" class="col-span-2 p-2 border border-gray-300 rounded-md" placeholder="Nome do Canal">
+                    <input type="number" value="${(canal.taxaComissao * 100).toFixed(2)}" onchange="updateCanalTemp(${index}, 'taxaComissao', this.value / 100)" class="p-2 border border-gray-300 rounded-md" placeholder="Comissão %">
+                    <input type="number" value="${(canal.taxaTransacao * 100).toFixed(2)}" onchange="updateCanalTemp(${index}, 'taxaTransacao', this.value / 100)" class="p-2 border border-gray-300 rounded-md" placeholder="Transação %">
+                    <button onclick="removerCanalVenda(${index})" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+                `;
+                canaisContainer.appendChild(div);
+            });
+
+            calcularTotaisConfig();
+        }
+
+        // --- LÓGICA DE CÁLCULO ---
+        
+        function calcularCustoInsumo(insumoId, quantidade) {
+            const insumos = window.appState.insumosCache();
+            const insumo = insumos.find(i => i.id === insumoId);
+            if (!insumo) return 0;
+
+            const precoCompra = parseFloat(insumo.precoCompra);
+            const qtdCompra = parseFloat(insumo.qtdCompra);
+            const desperdicio = parseFloat(insumo.percentualDesperdicio);
+            
+            if (qtdCompra === 0) return 0;
+
+            const rendimento = 1 - desperdicio;
+            const custoRealPorUnidadeCompra = rendimento > 0 ? precoCompra / rendimento : precoCompra;
+            const custoPorUnidadeBase = custoRealPorUnidadeCompra / qtdCompra;
+
+            return custoPorUnidadeBase * quantidade;
+        }
+
+        function calcularCustoProduto(produtoId) {
+            const produtos = window.appState.produtosCache();
+            const produto = produtos.find(p => p.id === produtoId);
+            if (!produto || !produto.receita) return 0;
+
+            return produto.receita.reduce((total, item) => {
+                return total + calcularCustoInsumo(item.insumoId, parseFloat(item.quantidade));
+            }, 0);
+        }
+
+        function calcularTotaisConfig() {
+            const config = window.appState.configCache();
+            const totalCustos = (config.custosOperacionais || []).reduce((sum, custo) => sum + (parseFloat(custo.valor) || 0), 0);
+            const faturamento = parseFloat(config.faturamentoMedioMensal) || 0;
+            const percentual = faturamento > 0 ? (totalCustos / faturamento) : 0;
+
+            document.getElementById('total-custo-operacional').textContent = `R$ ${totalCustos.toFixed(2)}`;
+            document.getElementById('percentual-custo-operacional').textContent = `${(percentual * 100).toFixed(2)}%`;
+        }
+        
+        window.calcularPrecos = function() {
+            const produtoId = document.getElementById('produto-select').value;
+            const margemLucro = parseFloat(document.getElementById('margem-lucro-input').value) / 100;
+            
+            if (!produtoId || isNaN(margemLucro)) {
+                alert("Por favor, selecione um produto e insira uma margem de lucro válida.");
+                return;
+            }
+            
+            const config = window.appState.configCache();
+            const produtos = window.appState.produtosCache();
+            const produto = produtos.find(p => p.id === produtoId);
+
+            const custoProduto = calcularCustoProduto(produtoId);
+            const totalCustosOp = (config.custosOperacionais || []).reduce((sum, c) => sum + parseFloat(c.valor), 0);
+            const faturamento = parseFloat(config.faturamentoMedioMensal);
+            const custoOpPercentual = faturamento > 0 ? totalCustosOp / faturamento : 0;
+
+            const denominadorBase = 1 - custoOpPercentual - margemLucro;
+            if (denominadorBase <= 0) {
+                alert(`Erro: A soma do Custo Operacional (${(custoOpPercentual * 100).toFixed(2)}%) e da Margem de Lucro (${(margemLucro * 100).toFixed(2)}%) não pode ser maior ou igual a 100%.`);
+                return;
+            }
+            
+            const precoVendaBase = custoProduto / denominadorBase;
+            
+            const resumoContainer = document.getElementById('resumo-produto');
+            resumoContainer.innerHTML = `
+                <h3 class="text-xl font-bold mb-2 text-indigo-800">${produto.nome}</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div><p class="text-sm text-gray-500">Custo dos Insumos</p><p class="font-bold text-lg text-gray-800">R$ ${custoProduto.toFixed(2)}</p></div>
+                    <div><p class="text-sm text-gray-500">Custo Operacional</p><p class="font-bold text-lg text-gray-800">${(custoOpPercentual * 100).toFixed(2)}%</p></div>
+                    <div><p class="text-sm text-gray-500">Margem de Lucro</p><p class="font-bold text-lg text-gray-800">${(margemLucro * 100).toFixed(2)}%</p></div>
+                    <div><p class="text-sm text-gray-500">Preço Base (Líquido)</p><p class="font-bold text-lg text-green-600">R$ ${precoVendaBase.toFixed(2)}</p></div>
+                </div>
+            `;
+
+            const tabelaContainer = document.getElementById('tabela-precos');
+            const table = document.createElement('table');
+            table.className = 'min-w-full bg-white';
+            table.innerHTML = `
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Canal de Venda</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxas Totais</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço de Venda Final</th>
+                        <th class="py-3 px-6 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Análise IA</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200"></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            (config.canaisVenda || []).forEach(canal => {
+                const taxasTotais = parseFloat(canal.taxaComissao) + parseFloat(canal.taxaTransacao);
+                const denominadorCanal = 1 - taxasTotais;
+                const precoFinal = denominadorCanal > 0 ? precoVendaBase / denominadorCanal : Infinity;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-4 px-6 whitespace-nowrap font-medium text-gray-900">${canal.nome}</td>
+                    <td class="py-4 px-6 whitespace-nowrap text-gray-500">${(taxasTotais * 100).toFixed(2)}%</td>
+                    <td class="py-4 px-6 whitespace-nowrap font-bold text-xl text-indigo-600">R$ ${precoFinal.toFixed(2)}</td>
+                    <td class="py-4 px-6 whitespace-nowrap text-center">
+                        <button onclick="analisarPrecoComIA('${produto.id}', '${canal.nome}', ${precoFinal}, this)" class="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-purple-600 transition-colors">
+                            ✨ Analisar Preço
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            tabelaContainer.innerHTML = '';
+            tabelaContainer.appendChild(table);
+            document.getElementById('resultado-precificacao').classList.remove('hidden');
+            document.getElementById('analise-ia-container').classList.add('hidden');
+        }
+
+        // --- FUNÇÕES COM IA ---
+        window.gerarDescricaoProduto = async function(button) {
+            const form = document.getElementById('form-produto');
+            const nomeProduto = form.nome.value;
+            if (!nomeProduto) {
+                alert("Por favor, insira um nome para o produto primeiro.");
+                return;
+            }
+
+            const insumos = window.appState.insumosCache();
+            const nomesIngredientes = window.tempReceita
+                .map(item => insumos.find(i => i.id === item.insumoId)?.nome)
+                .filter(Boolean)
+                .join(', ');
+
+            if (!nomesIngredientes) {
+                alert("Adicione ingredientes à receita para gerar uma descrição.");
+                return;
+            }
+
+            const prompt = `Crie uma descrição de marketing curta, apetitosa e vendedora para um prato chamado "${nomeProduto}". Os ingredientes principais são: ${nomesIngredientes}. A descrição deve ser ideal para um cardápio de delivery como o iFood.`;
+            
+            button.disabled = true;
+            button.innerHTML = `<span class="spinner"></span> Gerando...`;
+
+            const descricao = await callGeminiAPI(prompt);
+            
+            form.descricao.value = descricao.replace(/"/g, ''); // Remove aspas da resposta
+
+            button.disabled = false;
+            button.innerHTML = `✨ Gerar Descrição com IA`;
+        }
+        
+        window.analisarPrecoComIA = async function(produtoId, nomeCanal, precoFinal, button) {
+            const produtos = window.appState.produtosCache();
+            const insumos = window.appState.insumosCache();
+            const produto = produtos.find(p => p.id === produtoId);
+            const custoProduto = calcularCustoProduto(produtoId);
+
+            const nomesIngredientes = (produto.receita || [])
+                .map(item => insumos.find(i => i.id === item.insumoId)?.nome)
+                .filter(Boolean)
+                .join(', ');
+
+            const prompt = `Sou dono de um restaurante em Manaus, Amazonas, Brasil. Estou precificando um produto chamado "${produto.nome}". O custo dos ingredientes é R$ ${custoProduto.toFixed(2)} e o preço final de venda no canal "${nomeCanal}" será R$ ${precoFinal.toFixed(2)}. Os ingredientes são: ${nomesIngredientes}. Faça uma breve análise: este preço é competitivo para o mercado de delivery em Manaus? Sugira um preço ideal ou faixa de preço e justifique sua resposta considerando os ingredientes (se são regionais ou comuns), o tipo de prato e o público local. Seja conciso e direto.`;
+
+            button.disabled = true;
+            button.innerHTML = `<span class="spinner"></span>`;
+            
+            const analiseContainer = document.getElementById('analise-ia-container');
+            const analiseContent = document.getElementById('analise-ia-content');
+            
+            analiseContent.innerHTML = `<div class="flex items-center justify-center p-4"><span class="spinner"></span>Analisando...</div>`;
+            analiseContainer.classList.remove('hidden');
+
+            const analise = await callGeminiAPI(prompt);
+            analiseContent.innerText = analise;
+
+            button.disabled = false;
+            button.innerHTML = `✨ Analisar Preço`;
+        }
+
+        // --- LÓGICA DOS MODAIS E FORMULÁRIOS ---
+        
+        function fecharModal() {
+            document.getElementById('modal-backdrop').classList.add('hidden');
+        }
+
+        window.abrirModalInsumo = function(id = null) {
+            const insumos = window.appState.insumosCache();
+            const insumo = id ? insumos.find(i => i.id === id) : {};
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-6">${id ? 'Editar' : 'Novo'} Insumo</h2>
+                <form id="form-insumo" onsubmit="salvarInsumo(event, '${id || ''}')" class="space-y-4">
+                    <div><label class="block text-sm font-medium text-gray-700">Nome do Insumo</label><input type="text" name="nome" value="${insumo.nome || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-sm font-medium text-gray-700">Preço de Compra (R$)</label><input type="number" step="0.01" name="precoCompra" value="${insumo.precoCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Qtd. Compra</label><input type="number" step="0.001" name="qtdCompra" value="${insumo.qtdCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Unidade de Compra</label><input type="text" name="unidadeCompra" value="${insumo.unidadeCompra || 'kg'}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="kg, L, un"></div>
+                    </div>
+                    <div><label class="block text-sm font-medium text-gray-700">Percentual de Desperdício (%) <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Ex: Se de 1kg de carne, 300g são aparas, o desperdício é 30%. Insira 30.</span></span></label><input type="number" name="percentualDesperdicio" value="${(insumo.percentualDesperdicio || 0) * 100}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                    <div class="flex justify-end gap-4 pt-4"><button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button></div>
+                </form>
+            `;
+            document.getElementById('modal-backdrop').classList.remove('hidden');
+        }
+
+        window.abrirModalProduto = function(id = null) {
+            const produtos = window.appState.produtosCache();
+            const produto = id ? produtos.find(p => p.id === id) : { receita: [], descricao: '' };
+            const insumos = window.appState.insumosCache();
+
+            let receitaHtml = (produto.receita || []).map((item, index) => {
+                return `
+                    <div class="receita-item flex items-center gap-2 mb-2" data-index="${index}">
+                        <select class="w-1/2 p-2 border border-gray-300 rounded-md" onchange="updateReceitaItem(${index}, 'insumoId', this.value)">
+                            <option value="">Selecione</option>
+                            ${insumos.sort((a,b) => a.nome.localeCompare(b.nome)).map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`).join('')}
+                        </select>
+                        <input type="number" step="0.001" value="${item.quantidade}" onchange="updateReceitaItem(${index}, 'quantidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="Qtd.">
+                        <input type="text" value="${item.unidade}" onchange="updateReceitaItem(${index}, 'unidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="g, ml, un">
+                        <button type="button" onclick="removerReceitaItem(${index})" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            }).join('');
+
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-6">${id ? 'Editar' : 'Novo'} Produto</h2>
+                <form id="form-produto" onsubmit="salvarProduto(event, '${id || ''}')" class="space-y-4">
+                    <div><label class="block text-sm font-medium text-gray-700">Nome do Produto</label><input type="text" name="nome" value="${produto.nome || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                    
+                    <div>
+                        <div class="flex justify-between items-center">
+                            <label class="block text-sm font-medium text-gray-700">Descrição para Cardápio</label>
+                            <button type="button" onclick="gerarDescricaoProduto(this)" class="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-purple-600 transition-colors">✨ Gerar Descrição com IA</button>
+                        </div>
+                        <textarea name="descricao" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: Suculento filé de pirarucu na brasa, acompanhado de baião de dois cremoso e farofa de banana.">${produto.descricao || ''}</textarea>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">Receita (Ficha Técnica)</h3>
+                        <div id="receita-container">${receitaHtml}</div>
+                        <button type="button" onclick="adicionarReceitaItem()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Adicionar ingrediente</button>
+                    </div>
+                    <div class="flex justify-end gap-4 pt-4">
+                        <button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button>
+                        <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button>
+                    </div>
+                </form>
+            `;
+            window.tempReceita = [...(produto.receita || [])];
+            document.getElementById('modal-backdrop').classList.remove('hidden');
+        }
+
+        // --- MANIPULAÇÃO DE DADOS (CREATE, UPDATE, DELETE) ---
+        
+        window.salvarInsumo = async function(event, id) {
+            event.preventDefault();
+            if (!window.appState.isReady) {
+                alert("A aplicação ainda está a ligar-se à base de dados. Por favor, aguarde um momento.");
+                return;
+            }
+            const form = document.getElementById('form-insumo');
+            const data = {
+                nome: form.nome.value,
+                precoCompra: parseFloat(form.precoCompra.value),
+                qtdCompra: parseFloat(form.qtdCompra.value),
+                unidadeCompra: form.unidadeCompra.value,
+                percentualDesperdicio: parseFloat(form.percentualDesperdicio.value) / 100
+            };
+
+            try {
+                const { getCollectionRef, addDoc, updateDoc, doc } = window.appState;
+                const collectionRef = getCollectionRef('insumos');
+                if (id) {
+                    await updateDoc(doc(collectionRef, id), data);
+                } else {
+                    await addDoc(collectionRef, data);
+                }
+                fecharModal();
+            } catch (e) {
+                console.error("Erro ao salvar insumo: ", e);
+                alert("Ocorreu um erro ao salvar o insumo. Verifique sua conexão e os dados inseridos.");
+            }
+        }
+        
+        window.tempReceita = [];
+        window.adicionarReceitaItem = function() {
+            const form = document.getElementById('form-produto');
+            const currentName = form.nome.value;
+            const currentDesc = form.descricao.value;
+            window.tempReceita.push({ insumoId: '', quantidade: 0, unidade: 'g' });
+            abrirModalProduto(form.onsubmit.toString().match(/'(.*?)'/)[1]);
+            document.querySelector('#form-produto input[name="nome"]').value = currentName;
+            document.querySelector('#form-produto textarea[name="descricao"]').value = currentDesc;
+        }
+        window.removerReceitaItem = function(index) {
+            const form = document.getElementById('form-produto');
+            const currentName = form.nome.value;
+            const currentDesc = form.descricao.value;
+            window.tempReceita.splice(index, 1);
+            abrirModalProduto(form.onsubmit.toString().match(/'(.*?)'/)[1]);
+            document.querySelector('#form-produto input[name="nome"]').value = currentName;
+            document.querySelector('#form-produto textarea[name="descricao"]').value = currentDesc;
+        }
+        window.updateReceitaItem = function(index, field, value) {
+            window.tempReceita[index][field] = value;
+        }
+
+        window.salvarProduto = async function(event, id) {
+            event.preventDefault();
+            if (!window.appState.isReady) {
+                alert("A aplicação ainda está a ligar-se à base de dados. Por favor, aguarde um momento.");
+                return;
+            }
+            const form = document.getElementById('form-produto');
+            const data = {
+                nome: form.nome.value,
+                descricao: form.descricao.value,
+                receita: window.tempReceita.map(item => ({
+                    insumoId: item.insumoId,
+                    quantidade: parseFloat(item.quantidade) || 0,
+                    unidade: item.unidade
+                })).filter(item => item.insumoId && item.quantidade > 0)
+            };
+
+            try {
+                const { getCollectionRef, addDoc, updateDoc, doc } = window.appState;
+                const collectionRef = getCollectionRef('produtos');
+                if (id) {
+                    await updateDoc(doc(collectionRef, id), data);
+                } else {
+                    await addDoc(collectionRef, data);
+                }
+                fecharModal();
+            } catch (e) {
+                console.error("Erro ao salvar produto: ", e);
+                alert("Ocorreu um erro ao salvar o produto.");
+            }
+        }
+        
+        window.deletarItem = async function(collectionName, id, itemName) {
+            if (!window.appState.isReady) {
+                alert("A aplicação ainda está a ligar-se à base de dados. Por favor, aguarde um momento.");
+                return;
+            }
+            if (confirm(`Tem certeza que deseja excluir este ${itemName}?`)) {
+                try {
+                    const { getCollectionRef, deleteDoc, doc } = window.appState;
+                    const collectionRef = getCollectionRef(collectionName);
+                    await deleteDoc(doc(collectionRef, id));
+                } catch (e) {
+                    console.error(`Erro ao excluir ${itemName}: `, e);
+                    alert(`Ocorreu um erro ao excluir o ${itemName}.`);
+                }
+            }
+        }
+        
+        window.updateCustoTemp = function(index, field, value) {
+            window.appState.configCache().custosOperacionais[index][field] = field === 'valor' ? parseFloat(value) : value;
+            calcularTotaisConfig();
+        }
+        window.adicionarCustoOperacional = function() {
+            if (!window.appState.configCache().custosOperacionais) window.appState.configCache().custosOperacionais = [];
+            window.appState.configCache().custosOperacionais.push({ nome: '', valor: 0 });
+            renderConfiguracoes();
+        }
+        window.removerCustoOperacional = function(index) {
+            window.appState.configCache().custosOperacionais.splice(index, 1);
+            renderConfiguracoes();
+        }
+        
+        window.updateCanalTemp = function(index, field, value) {
+            window.appState.configCache().canaisVenda[index][field] = field === 'nome' ? value : parseFloat(value);
+        }
+        window.adicionarCanalVenda = function() {
+            if (!window.appState.configCache().canaisVenda) window.appState.configCache().canaisVenda = [];
+            window.appState.configCache().canaisVenda.push({ nome: '', taxaComissao: 0, taxaTransacao: 0 });
+            renderConfiguracoes();
+        }
+        window.removerCanalVenda = function(index) {
+            window.appState.configCache().canaisVenda.splice(index, 1);
+            renderConfiguracoes();
+        }
+        
+        window.salvarConfiguracoes = async function() {
+            if (!window.appState.isReady) {
+                alert("A aplicação ainda está a ligar-se à base de dados. Por favor, aguarde um momento.");
+                return;
+            }
+            try {
+                const { getConfigDocRef, setDoc } = window.appState;
+                const docRef = getConfigDocRef();
+                const config = window.appState.configCache();
+                config.faturamentoMedioMensal = parseFloat(document.getElementById('faturamento-mensal').value) || 0;
+                await setDoc(docRef, config);
+                alert("Configurações salvas com sucesso!");
+            } catch (e) {
+                console.error("Erro ao salvar configurações: ", e);
+                alert("Ocorreu um erro ao salvar as configurações.");
+            }
+        }
+    </script>
+</body>
+</html>
