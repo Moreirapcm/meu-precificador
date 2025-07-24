@@ -242,7 +242,9 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // <!-- PASSO IMPORTANTE: ESTE BLOCO FOI ATUALIZADO COM AS SUAS CHAVES -->
+        // <!-- PASSO IMPORTANTE: COLE A SUA CONFIGURAÇÃO DO FIREBASE AQUI -->
+        // Substitua todo o bloco "const firebaseConfig = { ... };" abaixo
+        // pelo bloco de código que você copiou da sua consola do Firebase.
         const firebaseConfig = {
           apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
           authDomain: "meu-precificador-show.firebaseapp.com",
@@ -382,9 +384,10 @@
                 });
 
                 if (!response.ok) {
-                    const errorBody = await response.text();
+                    const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
                     console.error("Erro na API Gemini:", response.status, errorBody);
-                    throw new Error(`Erro na API: ${response.status}`);
+                    const errorMessage = errorBody.error?.message || `A API retornou um erro ${response.status}.`;
+                    throw new Error(errorMessage);
                 }
 
                 const result = await response.json();
@@ -395,11 +398,14 @@
                     return result.candidates[0].content.parts[0].text;
                 } else {
                     console.error("Resposta inesperada da API Gemini:", result);
-                    return "Não foi possível obter uma resposta da IA.";
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].finishReason === 'SAFETY') {
+                        throw new Error("A resposta foi bloqueada por motivos de segurança. Tente reformular o pedido.");
+                    }
+                    throw new Error("A IA retornou uma resposta vazia ou em formato inesperado.");
                 }
             } catch (error) {
                 console.error("Falha ao chamar a API Gemini:", error);
-                return "Ocorreu um erro de comunicação com a IA.";
+                throw error; // Re-throw the error so the calling function can handle it
             }
         }
 
@@ -678,6 +684,9 @@
         window.gerarDescricaoProduto = async function(button) {
             const form = document.getElementById('form-produto');
             const nomeProduto = form.nome.value;
+            const errorContainer = document.getElementById('descricao-ia-error');
+            errorContainer.textContent = '';
+
             if (!nomeProduto) {
                 alert("Por favor, insira um nome para o produto primeiro.");
                 return;
@@ -699,12 +708,15 @@
             button.disabled = true;
             button.innerHTML = `<span class="spinner"></span> Gerando...`;
 
-            const descricao = await callGeminiAPI(prompt);
-            
-            form.descricao.value = descricao.replace(/"/g, ''); // Remove aspas da resposta
-
-            button.disabled = false;
-            button.innerHTML = `✨ Gerar Descrição com IA`;
+            try {
+                const descricao = await callGeminiAPI(prompt);
+                form.descricao.value = descricao.replace(/"/g, '');
+            } catch (error) {
+                errorContainer.textContent = `Erro: ${error.message}`;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = `✨ Gerar Descrição com IA`;
+            }
         }
         
         window.analisarPrecoComIA = async function(produtoId, nomeCanal, precoFinal, button) {
@@ -729,11 +741,15 @@
             analiseContent.innerHTML = `<div class="flex items-center justify-center p-4"><span class="spinner"></span>Analisando...</div>`;
             analiseContainer.classList.remove('hidden');
 
-            const analise = await callGeminiAPI(prompt);
-            analiseContent.innerText = analise;
-
-            button.disabled = false;
-            button.innerHTML = `✨ Analisar Preço`;
+            try {
+                const analise = await callGeminiAPI(prompt);
+                analiseContent.innerText = analise;
+            } catch (error) {
+                analiseContent.innerHTML = `<p class="text-red-600 font-semibold">Ocorreu um erro:</p><p class="text-sm text-gray-700">${error.message}</p>`;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = `✨ Analisar Preço`;
+            }
         }
 
         // --- LÓGICA DOS MODAIS E FORMULÁRIOS ---
@@ -826,6 +842,7 @@
                             <label class="block text-sm font-medium text-gray-700">Descrição para Cardápio</label>
                             <button type="button" onclick="gerarDescricaoProduto(this)" class="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-purple-600 transition-colors">✨ Gerar Descrição com IA</button>
                         </div>
+                        <div id="descricao-ia-error" class="text-xs text-red-600 mt-1"></div>
                         <textarea name="descricao" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: Suculento filé de pirarucu na brasa...">${produto.descricao || ''}</textarea>
                     </div>
 
