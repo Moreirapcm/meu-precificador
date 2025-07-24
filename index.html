@@ -569,22 +569,36 @@
 
         // --- LÓGICA DE CÁLCULO ---
         
-        function calcularCustoInsumo(insumoId, quantidade) {
+        function calcularCustoInsumo(insumoId, quantidade, unidade) {
             const insumos = window.appState.insumosCache();
             const insumo = insumos.find(i => i.id === insumoId);
             if (!insumo) return 0;
 
             const precoCompra = parseFloat(insumo.precoCompra);
             const qtdCompra = parseFloat(insumo.qtdCompra);
+            const unidadeCompra = insumo.unidadeCompra;
             const desperdicio = parseFloat(insumo.percentualDesperdicio);
             
             if (qtdCompra === 0) return 0;
 
             const rendimento = 1 - desperdicio;
-            const custoRealPorUnidadeCompra = rendimento > 0 ? precoCompra / rendimento : precoCompra;
-            const custoPorUnidadeBase = custoRealPorUnidadeCompra / qtdCompra;
+            const custoRealTotal = rendimento > 0 ? precoCompra / rendimento : precoCompra;
+            
+            let custoPorUnidadeBase = custoRealTotal / qtdCompra;
 
-            return custoPorUnidadeBase * quantidade;
+            // Conversão de unidades para cálculo
+            let quantidadeConvertida = quantidade;
+            if (unidadeCompra === 'kg' && unidade === 'g') {
+                quantidadeConvertida = quantidade / 1000;
+            } else if (unidadeCompra === 'L' && unidade === 'ml') {
+                quantidadeConvertida = quantidade / 1000;
+            } else if (unidadeCompra === 'g' && unidade === 'kg') {
+                quantidadeConvertida = quantidade * 1000;
+            } else if (unidadeCompra === 'ml' && unidade === 'L') {
+                 quantidadeConvertida = quantidade * 1000;
+            }
+
+            return custoPorUnidadeBase * quantidadeConvertida;
         }
 
         function calcularCustoProduto(produtoId) {
@@ -593,7 +607,7 @@
             if (!produto || !produto.receita) return 0;
 
             return produto.receita.reduce((total, item) => {
-                return total + calcularCustoInsumo(item.insumoId, parseFloat(item.quantidade));
+                return total + calcularCustoInsumo(item.insumoId, parseFloat(item.quantidade), item.unidade);
             }, 0);
         }
 
@@ -783,6 +797,57 @@
             }
         }
 
+        window.sugerirIngredientesComIA = async function(button) {
+            const form = button.closest('form');
+            const nomeProduto = form.nome.value;
+            const errorContainer = form.querySelector('#sugestao-ia-error');
+            errorContainer.textContent = '';
+
+            if (!nomeProduto) {
+                alert("Por favor, insira o nome do produto para obter sugestões.");
+                return;
+            }
+
+            const insumosDisponiveis = window.appState.insumosCache();
+            if (insumosDisponiveis.length === 0) {
+                alert("Cadastre alguns insumos primeiro para que a IA possa fazer sugestões.");
+                return;
+            }
+
+            const listaDeNomesDeInsumos = insumosDisponiveis.map(i => i.nome).join(', ');
+
+            const prompt = `Você é um assistente de chef. O nome de um prato é '${nomeProduto}'. A seguir está uma lista de todos os insumos disponíveis no meu restaurante: ${listaDeNomesDeInsumos}. Com base no nome do prato, selecione os ingredientes mais comuns para essa receita A PARTIR DA LISTA FORNECIDA. Retorne apenas os nomes dos ingredientes selecionados, separados por vírgula. Não adicione nenhuma outra palavra ou explicação. Exemplo de resposta: Carne, Cebola, Alho, Creme de Leite`;
+
+            button.disabled = true;
+            button.innerHTML = `<span class="spinner"></span> Sugerindo...`;
+
+            try {
+                const resposta = await callGeminiAPI(prompt);
+                const nomesSugeridos = resposta.split(',').map(nome => nome.trim().toLowerCase());
+                
+                window.tempReceita = []; // Limpa a receita atual
+                
+                nomesSugeridos.forEach(nomeSugerido => {
+                    const insumoEncontrado = insumosDisponiveis.find(i => i.nome.toLowerCase() === nomeSugerido);
+                    if (insumoEncontrado) {
+                        window.tempReceita.push({
+                            insumoId: insumoEncontrado.id,
+                            quantidade: 0,
+                            unidade: 'g'
+                        });
+                    }
+                });
+                
+                renderReceitaItems(); // Atualiza a UI com os ingredientes sugeridos
+
+            } catch (error) {
+                errorContainer.textContent = `Erro: ${error.message}`;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = `✨ Sugerir Ingredientes`;
+            }
+        }
+
         // --- LÓGICA DOS MODAIS E FORMULÁRIOS ---
         
         function fecharModal() {
@@ -889,7 +954,14 @@
             modalContent.innerHTML = `
                 <h2 class="text-2xl font-bold mb-6">${id ? 'Editar' : 'Novo'} Produto</h2>
                 <form id="form-produto" onsubmit="salvarProduto(event, '${id || ''}')" class="space-y-4">
-                    <div><label class="block text-sm font-medium text-gray-700">Nome do Produto</label><input type="text" name="nome" value="${produto.nome || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                    <div>
+                        <div class="flex justify-between items-center">
+                            <label class="block text-sm font-medium text-gray-700">Nome do Produto</label>
+                            <button type="button" onclick="sugerirIngredientesComIA(this)" class="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600 transition-colors">✨ Sugerir Ingredientes</button>
+                        </div>
+                        <input type="text" name="nome" value="${produto.nome || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        <div id="sugestao-ia-error" class="text-xs text-red-600 mt-1"></div>
+                    </div>
                     
                     <div>
                         <div class="flex justify-between items-center">
