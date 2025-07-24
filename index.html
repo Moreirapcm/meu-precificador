@@ -242,7 +242,9 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // <!-- PASSO IMPORTANTE: ESTE BLOCO FOI ATUALIZADO COM AS SUAS CHAVES -->
+        // <!-- PASSO IMPORTANTE: COLE A SUA CONFIGURAÇÃO DO FIREBASE AQUI -->
+        // Substitua todo o bloco "const firebaseConfig = { ... };" abaixo
+        // pelo bloco de código que você copiou da sua consola do Firebase.
         const firebaseConfig = {
           apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
           authDomain: "meu-precificador-show.firebaseapp.com",
@@ -779,6 +781,9 @@
                 const insumosOptions = insumos.sort((a,b) => a.nome.localeCompare(b.nome))
                                               .map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`)
                                               .join('');
+                
+                const unidades = ['g', 'kg', 'ml', 'L', 'un'];
+                const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === item.unidade ? 'selected' : ''}>${u}</option>`).join('');
 
                 itemDiv.innerHTML = `
                     <select class="w-1/2 p-2 border border-gray-300 rounded-md" onchange="updateReceitaItem(${index}, 'insumoId', this.value)">
@@ -786,7 +791,9 @@
                         ${insumosOptions}
                     </select>
                     <input type="number" step="0.001" value="${item.quantidade || ''}" onchange="updateReceitaItem(${index}, 'quantidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="Qtd.">
-                    <input type="text" value="${item.unidade || 'g'}" onchange="updateReceitaItem(${index}, 'unidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="g, ml, un">
+                    <select class="w-1/4 p-2 border border-gray-300 rounded-md" onchange="updateReceitaItem(${index}, 'unidade', this.value)">
+                        ${unidadesOptions}
+                    </select>
                     <button type="button" onclick="removerReceitaItem(${index})" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
                 `;
                 container.appendChild(itemDiv);
@@ -812,6 +819,10 @@
             const insumos = window.appState.insumosCache();
             const insumo = id ? insumos.find(i => i.id === id) : {};
             const modalContent = document.getElementById('modal-content');
+
+            const unidades = ['kg', 'g', 'L', 'ml', 'un'];
+            const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === (insumo.unidadeCompra || 'kg') ? 'selected' : ''}>${u}</option>`).join('');
+
             modalContent.innerHTML = `
                 <h2 class="text-2xl font-bold mb-6">${id ? 'Editar' : 'Novo'} Insumo</h2>
                 <form id="form-insumo" onsubmit="salvarInsumo(event, '${id || ''}')" class="space-y-4">
@@ -819,7 +830,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div><label class="block text-sm font-medium text-gray-700">Preço de Compra (R$)</label><input type="number" step="0.01" name="precoCompra" value="${insumo.precoCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
                         <div><label class="block text-sm font-medium text-gray-700">Qtd. Compra</label><input type="number" step="0.001" name="qtdCompra" value="${insumo.qtdCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Unidade de Compra</label><input type="text" name="unidadeCompra" value="${insumo.unidadeCompra || 'kg'}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="kg, L, un"></div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Unidade de Compra</label>
+                            <select name="unidadeCompra" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                                ${unidadesOptions}
+                            </select>
+                        </div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700">Percentual de Desperdício (%) <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Ex: Se de 1kg de carne, 300g são aparas, o desperdício é 30%. Insira 30.</span></span></label><input type="number" name="percentualDesperdicio" value="${(insumo.percentualDesperdicio || 0) * 100}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
                     <div class="flex justify-end gap-4 pt-4"><button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button></div>
