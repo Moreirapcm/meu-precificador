@@ -145,8 +145,25 @@
                     <div id="tabela-precos" class="overflow-x-auto"></div>
                     <div id="analise-ia-container" class="mt-6 hidden">
                         <h3 class="text-xl font-semibold mb-2 text-gray-700">✨ Análise de Preço com IA</h3>
-                        <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600">
-                            <!-- Conteúdo da análise da IA aqui -->
+                        <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600"></div>
+                    </div>
+                    
+                    <!-- Simulador de Promoções -->
+                    <div id="simulador-promocao" class="mt-8 pt-6 border-t border-gray-200">
+                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Simulador de Promoções iFood</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                            <div>
+                                <label for="desconto-cliente" class="block text-sm font-medium text-gray-700 mb-1">Desconto para o Cliente (R$)</label>
+                                <input type="number" id="desconto-cliente" value="5.00" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label for="subsidio-ifood" class="block text-sm font-medium text-gray-700 mb-1">Subsídio do iFood (R$)</label>
+                                <input type="number" id="subsidio-ifood" value="2.50" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <button onclick="simularPromocao()" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors h-10">Simular Promoção</button>
+                        </div>
+                        <div id="resultado-promocao" class="mt-6 hidden">
+                            <!-- Resultado da simulação aqui -->
                         </div>
                     </div>
                 </div>
@@ -621,6 +638,9 @@
             document.getElementById('percentual-custo-operacional').textContent = `${(percentual * 100).toFixed(2)}%`;
         }
         
+        // Armazenar dados do último cálculo para o simulador de promoção
+        let ultimoCalculo = {};
+
         window.calcularPrecos = function() {
             const produtoId = document.getElementById('produto-select').value;
             const margemLucro = parseFloat(document.getElementById('margem-lucro-input').value) / 100;
@@ -673,11 +693,23 @@
                 <tbody class="divide-y divide-gray-200"></tbody>
             `;
             const tbody = table.querySelector('tbody');
+            
+            ultimoCalculo = {
+                produtoId: produto.id,
+                produtoNome: produto.nome,
+                canais: {}
+            };
 
             (config.canaisVenda || []).forEach(canal => {
                 const taxasTotais = parseFloat(canal.taxaComissao) + parseFloat(canal.taxaTransacao);
                 const denominadorCanal = 1 - taxasTotais;
                 const precoFinal = denominadorCanal > 0 ? precoVendaBase / denominadorCanal : Infinity;
+                
+                ultimoCalculo.canais[canal.nome] = {
+                    precoFinal: precoFinal,
+                    taxasPercentual: taxasTotais,
+                    liquidoOriginal: precoFinal * (1 - taxasTotais)
+                };
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -697,6 +729,7 @@
             tabelaContainer.appendChild(table);
             document.getElementById('resultado-precificacao').classList.remove('hidden');
             document.getElementById('analise-ia-container').classList.add('hidden');
+            document.getElementById('resultado-promocao').classList.add('hidden');
         }
 
         // --- FUNÇÕES COM IA ---
@@ -845,6 +878,24 @@
             } finally {
                 button.disabled = false;
                 button.innerHTML = `✨ Sugerir Ingredientes`;
+            }
+        }
+
+        window.obterConsultoriaPromocaoIA = async function(button, dadosPromocao) {
+            const { nomeProduto, precoOriginal, desconto, subsidio, precoPromocional, novoLiquido, impactoLucro } = dadosPromocao;
+            const prompt = `Sou dono de um restaurante em Manaus e estou pensando em participar de uma promoção no iFood para o prato '${nomeProduto}'. O preço normal de venda é R$${precoOriginal.toFixed(2)}. A promoção oferece R$${desconto.toFixed(2)} de desconto ao cliente. O iFood vai subsidiar R$${subsidio.toFixed(2)}. Com isso, o preço promocional será R$${precoPromocional.toFixed(2)} e meu recebimento líquido por venda será R$${novoLiquido.toFixed(2)}, o que representa uma redução de R$${Math.abs(impactoLucro).toFixed(2)} no meu lucro por unidade. Com base nestes números, e considerando o mercado de delivery em Manaus, você acha que vale a pena participar desta campanha? Quais são os prós e contras? Que estratégia devo adotar (ex: focar em volume, tentar fidelizar clientes)? Seja um consultor de negócios e dê uma recomendação clara.`;
+
+            const resultadoContainer = document.getElementById('resultado-promocao');
+            resultadoContainer.innerHTML += `<div id="consultoria-ia-promocao" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200"><div class="flex items-center"><span class="spinner"></span>Analisando estratégia...</div></div>`;
+            button.disabled = true;
+
+            try {
+                const consultoria = await callGeminiAPI(prompt);
+                document.getElementById('consultoria-ia-promocao').innerHTML = `<h4 class="font-semibold text-gray-800 mb-2">Consultoria da IA:</h4><p class="text-sm">${consultoria}</p>`;
+            } catch (error) {
+                document.getElementById('consultoria-ia-promocao').innerHTML = `<p class="text-red-600 font-semibold">Ocorreu um erro ao obter a consultoria:</p><p class="text-sm text-gray-700">${error.message}</p>`;
+            } finally {
+                button.disabled = false;
             }
         }
 
@@ -1113,6 +1164,66 @@
                 alert("Ocorreu um erro ao salvar as configurações.");
             }
         }
+
+        window.simularPromocao = function() {
+            const desconto = parseFloat(document.getElementById('desconto-cliente').value);
+            const subsidio = parseFloat(document.getElementById('subsidio-ifood').value);
+            const resultadoContainer = document.getElementById('resultado-promocao');
+
+            if (Object.keys(ultimoCalculo).length === 0) {
+                alert("Primeiro, calcule o preço de um produto.");
+                return;
+            }
+
+            let htmlResult = `<h4 class="font-semibold text-lg mb-3">Resultado da Simulação de Promoção para "${ultimoCalculo.produtoNome}"</h4>`;
+            htmlResult += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+
+            for (const canalNome in ultimoCalculo.canais) {
+                if (canalNome.toLowerCase().includes('ifood')) {
+                    const canal = ultimoCalculo.canais[canalNome];
+                    
+                    const precoOriginal = canal.precoFinal;
+                    const precoPromocional = precoOriginal - desconto;
+                    const taxasValor = precoPromocional * canal.taxasPercentual;
+                    const recebidoAntesSubsidio = precoPromocional - taxasValor;
+                    const novoLiquido = recebidoAntesSubsidio + subsidio;
+                    const impactoLucro = novoLiquido - canal.liquidoOriginal;
+                    const impactoClasse = impactoLucro < 0 ? 'text-red-500' : 'text-green-500';
+
+                    const dadosPromocao = {
+                        nomeProduto: ultimoCalculo.produtoNome,
+                        precoOriginal: precoOriginal,
+                        desconto: desconto,
+                        subsidio: subsidio,
+                        precoPromocional: precoPromocional,
+                        novoLiquido: novoLiquido,
+                        impactoLucro: impactoLucro
+                    };
+
+                    htmlResult += `
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <h5 class="font-bold text-md text-indigo-700 mb-2">${canalNome}</h5>
+                            <div class="space-y-1 text-sm">
+                                <p>Preço Original: <span class="font-semibold float-right">R$ ${precoOriginal.toFixed(2)}</span></p>
+                                <p>Preço Promocional: <span class="font-semibold float-right">R$ ${precoPromocional.toFixed(2)}</span></p>
+                                <p>Líquido Original: <span class="font-semibold float-right">R$ ${canal.liquidoOriginal.toFixed(2)}</span></p>
+                                <p class="text-blue-600">Novo Líquido: <span class="font-bold float-right">R$ ${novoLiquido.toFixed(2)}</span></p>
+                                <p class="${impactoClasse}">Impacto no Lucro: <span class="font-bold float-right">${impactoLucro.toFixed(2)}</span></p>
+                            </div>
+                            <button onclick='obterConsultoriaPromocaoIA(this, ${JSON.stringify(dadosPromocao)})' class="mt-4 w-full bg-gray-700 text-white text-xs font-bold py-2 px-2 rounded-md hover:bg-gray-800 transition-colors">
+                                ✨ Obter Consultoria da IA
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+            htmlResult += `</div><div id="consultoria-ia-promocao" class="mt-4"></div>`;
+
+
+            resultadoContainer.innerHTML = htmlResult;
+            resultadoContainer.classList.remove('hidden');
+        }
+
     </script>
 </body>
 </html>
