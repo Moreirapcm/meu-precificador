@@ -162,9 +162,24 @@
                             </div>
                             <button onclick="simularPromocao()" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors h-10">Simular Promoção</button>
                         </div>
-                        <div id="resultado-promocao" class="mt-6 hidden">
-                            <!-- Resultado da simulação aqui -->
+                        <div id="resultado-promocao" class="mt-6 hidden"></div>
+                    </div>
+
+                    <!-- Simulador de Frete Embutido -->
+                    <div id="simulador-frete" class="mt-8 pt-6 border-t border-gray-200">
+                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">4. Simulador de Frete Embutido</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                            <div>
+                                <label for="custo-real-entrega" class="block text-sm font-medium text-gray-700 mb-1">Custo Real da Entrega (R$)</label>
+                                <input type="number" id="custo-real-entrega" value="10.00" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label for="valor-pago-cliente" class="block text-sm font-medium text-gray-700 mb-1">Valor Pago pelo Cliente (R$)</label>
+                                <input type="number" id="valor-pago-cliente" value="0.00" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <button onclick="simularFreteEmbutido()" class="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition-colors h-10">Calcular Preço com Frete</button>
                         </div>
+                        <div id="resultado-frete" class="mt-6 hidden"></div>
                     </div>
                 </div>
             </div>
@@ -730,6 +745,7 @@
             document.getElementById('resultado-precificacao').classList.remove('hidden');
             document.getElementById('analise-ia-container').classList.add('hidden');
             document.getElementById('resultado-promocao').classList.add('hidden');
+            document.getElementById('resultado-frete').classList.add('hidden');
         }
 
         // --- FUNÇÕES COM IA ---
@@ -894,6 +910,24 @@
                 document.getElementById('consultoria-ia-promocao').innerHTML = `<h4 class="font-semibold text-gray-800 mb-2">Consultoria da IA:</h4><p class="text-sm">${consultoria}</p>`;
             } catch (error) {
                 document.getElementById('consultoria-ia-promocao').innerHTML = `<p class="text-red-600 font-semibold">Ocorreu um erro ao obter a consultoria:</p><p class="text-sm text-gray-700">${error.message}</p>`;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        window.obterConsultoriaFreteIA = async function(button, dadosFrete) {
+            const { nomeProduto, precoOriginal, novoPreco, custoFreteAbsorvido } = dadosFrete;
+            const prompt = `Sou dono de um restaurante em Manaus e estou pensando em oferecer frete com desconto, embutindo o custo no preço do produto '${nomeProduto}'. O preço original de venda é R$${precoOriginal.toFixed(2)}. Para absorver um custo de frete de R$${custoFreteAbsorvido.toFixed(2)}, o novo preço do produto precisaria ser R$${novoPreco.toFixed(2)}. Com base nestes números, e considerando o mercado de delivery em Manaus, você acha que esta é uma boa estratégia? Quais são os prós e contras de aumentar o preço do produto para oferecer um frete mais barato? Que impacto psicológico isso tem no cliente? Seja um consultor de negócios e dê uma recomendação clara.`;
+
+            const resultadoContainer = document.getElementById('resultado-frete');
+            resultadoContainer.innerHTML += `<div id="consultoria-ia-frete" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200"><div class="flex items-center"><span class="spinner"></span>Analisando estratégia...</div></div>`;
+            button.disabled = true;
+
+            try {
+                const consultoria = await callGeminiAPI(prompt);
+                document.getElementById('consultoria-ia-frete').innerHTML = `<h4 class="font-semibold text-gray-800 mb-2">Consultoria da IA:</h4><p class="text-sm">${consultoria}</p>`;
+            } catch (error) {
+                document.getElementById('consultoria-ia-frete').innerHTML = `<p class="text-red-600 font-semibold">Ocorreu um erro ao obter a consultoria:</p><p class="text-sm text-gray-700">${error.message}</p>`;
             } finally {
                 button.disabled = false;
             }
@@ -1219,6 +1253,58 @@
             }
             htmlResult += `</div><div id="consultoria-ia-promocao" class="mt-4"></div>`;
 
+
+            resultadoContainer.innerHTML = htmlResult;
+            resultadoContainer.classList.remove('hidden');
+        }
+
+        window.simularFreteEmbutido = function() {
+            const custoReal = parseFloat(document.getElementById('custo-real-entrega').value);
+            const valorPagoCliente = parseFloat(document.getElementById('valor-pago-cliente').value);
+            const resultadoContainer = document.getElementById('resultado-frete');
+
+            if (Object.keys(ultimoCalculo).length === 0) {
+                alert("Primeiro, calcule o preço de um produto.");
+                return;
+            }
+
+            const custoFreteAbsorvido = custoReal - valorPagoCliente;
+            if (custoFreteAbsorvido < 0) {
+                alert("O valor pago pelo cliente não pode ser maior que o custo real da entrega.");
+                return;
+            }
+
+            let htmlResult = `<h4 class="font-semibold text-lg mb-3">Resultado do Frete Embutido para "${ultimoCalculo.produtoNome}"</h4>`;
+            htmlResult += `<p class="text-sm mb-4">Custo do frete absorvido pelo restaurante: <span class="font-bold">R$ ${custoFreteAbsorvido.toFixed(2)}</span></p>`;
+            htmlResult += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+
+            for (const canalNome in ultimoCalculo.canais) {
+                const canal = ultimoCalculo.canais[canalNome];
+                
+                const novoPrecoBase = canal.liquidoOriginal + custoFreteAbsorvido;
+                const novoPrecoFinal = novoPrecoBase / (1 - canal.taxasPercentual);
+
+                const dadosFrete = {
+                    nomeProduto: ultimoCalculo.produtoNome,
+                    precoOriginal: canal.precoFinal,
+                    novoPreco: novoPrecoFinal,
+                    custoFreteAbsorvido: custoFreteAbsorvido
+                };
+                
+                htmlResult += `
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <h5 class="font-bold text-md text-indigo-700 mb-2">${canalNome}</h5>
+                        <div class="space-y-1 text-sm">
+                            <p>Preço Original: <span class="font-semibold float-right">R$ ${canal.precoFinal.toFixed(2)}</span></p>
+                            <p class="text-blue-600">Novo Preço (Frete Embutido): <span class="font-bold float-right">R$ ${novoPrecoFinal.toFixed(2)}</span></p>
+                        </div>
+                        <button onclick='obterConsultoriaFreteIA(this, ${JSON.stringify(dadosFrete)})' class="mt-4 w-full bg-gray-700 text-white text-xs font-bold py-2 px-2 rounded-md hover:bg-gray-800 transition-colors">
+                            ✨ Obter Consultoria da IA
+                        </button>
+                    </div>
+                `;
+            }
+            htmlResult += `</div><div id="consultoria-ia-frete" class="mt-4"></div>`;
 
             resultadoContainer.innerHTML = htmlResult;
             resultadoContainer.classList.remove('hidden');
