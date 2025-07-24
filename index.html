@@ -242,8 +242,15 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuração do Firebase
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
+        // Configuração do Firebase (INSERIDA PELO UTILIZADOR)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
+            authDomain: "meu-precificador-show.firebaseapp.com",
+            projectId: "meu-precificador-show",
+            storageBucket: "meu-precificador-show.firebasestorage.app",
+            messagingSenderId: "767394530716",
+            appId: "1:767394530716:web:412fe2b46d0081b6a07459"
+        };
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
 
         const app = initializeApp(firebaseConfig);
@@ -345,11 +352,17 @@
             } else {
                 signInAnonymously(auth).catch(error => {
                     console.error("Erro na autenticação anônima:", error);
-                     const statusDot = document.getElementById('db-status-dot');
+                    const statusDot = document.getElementById('db-status-dot');
                     const statusText = document.getElementById('db-status-text');
                     statusDot.classList.remove('bg-yellow-400', 'animate-pulse');
                     statusDot.classList.add('bg-red-500');
-                    statusText.textContent = 'Erro na ligação. Tente recarregar a página.';
+                    
+                    if (error.code === 'auth/configuration-not-found') {
+                        statusText.innerHTML = '<b>Ação Necessária:</b> Ative o método de início de sessão "Anónimo" na sua consola do Firebase.';
+                        showConfigurationErrorModal(); // **MUDANÇA AQUI: Mostra o modal de erro**
+                    } else {
+                        statusText.textContent = 'Erro na ligação. Verifique as suas chaves Firebase e a ligação à internet.';
+                    }
                 });
             }
         });
@@ -733,6 +746,34 @@
         function fecharModal() {
             document.getElementById('modal-backdrop').classList.add('hidden');
         }
+        
+        // **NOVA FUNÇÃO: Mostra o modal de erro de configuração**
+        function showConfigurationErrorModal() {
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                    <h2 class="text-2xl font-bold mb-4">Ação Necessária</h2>
+                    <p class="text-gray-600 mb-6">
+                        Para a aplicação funcionar, o método de início de sessão "Anónimo" precisa de ser ativado no seu projeto Firebase.
+                    </p>
+                    <div class="text-left bg-gray-50 p-4 rounded-lg border">
+                        <h3 class="font-semibold mb-2">Como resolver:</h3>
+                        <ol class="list-decimal list-inside space-y-2 text-sm">
+                            <li>Abra a <a href="https://console.firebase.google.com/" target="_blank" class="text-indigo-600 underline">Consola do Firebase</a>.</li>
+                            <li>Selecione o seu projeto: <b>meu-precificador-show</b>.</li>
+                            <li>No menu esquerdo, vá a <b>Build > Authentication</b>.</li>
+                            <li>Clique no separador <b>Sign-in method</b>.</li>
+                            <li>Na lista, clique em <b>Anónimo</b> e ative-o.</li>
+                        </ol>
+                    </div>
+                    <button onclick="location.reload()" class="mt-6 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700">
+                        Já ativei, Recarregar a Página
+                    </button>
+                </div>
+            `;
+            document.getElementById('modal-backdrop').classList.remove('hidden');
+        }
 
         window.abrirModalInsumo = function(id = null) {
             const insumos = window.appState.insumosCache();
@@ -953,3 +994,4 @@
     </script>
 </body>
 </html>
+
