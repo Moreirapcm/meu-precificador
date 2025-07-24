@@ -242,16 +242,14 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // <!-- PASSO IMPORTANTE: COLE A SUA CONFIGURAÇÃO DO FIREBASE AQUI -->
-        // Substitua todo o bloco "const firebaseConfig = { ... };" abaixo
-        // pelo bloco de código que você copiou da sua consola do Firebase.
+        // <!-- PASSO IMPORTANTE: ESTE BLOCO FOI ATUALIZADO COM AS SUAS CHAVES -->
         const firebaseConfig = {
-          apiKey: "YOUR_API_KEY",
-          authDomain: "YOUR_AUTH_DOMAIN",
-          projectId: "YOUR_PROJECT_ID",
-          storageBucket: "YOUR_STORAGE_BUCKET",
-          messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-          appId: "YOUR_APP_ID"
+          apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
+          authDomain: "meu-precificador-show.firebaseapp.com",
+          projectId: "meu-precificador-show",
+          storageBucket: "meu-precificador-show.appspot.com",
+          messagingSenderId: "767394530716",
+          appId: "1:767394530716:web:412fe2b46d0081b6a07459"
         };
         
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
@@ -975,4 +973,3 @@
     </script>
 </body>
 </html>
-
