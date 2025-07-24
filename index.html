@@ -242,15 +242,8 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuração do Firebase (INSERIDA PELO UTILIZADOR)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
-            authDomain: "meu-precificador-show.firebaseapp.com",
-            projectId: "meu-precificador-show",
-            storageBucket: "meu-precificador-show.firebasestorage.app",
-            messagingSenderId: "767394530716",
-            appId: "1:767394530716:web:412fe2b46d0081b6a07459"
-        };
+        // Configuração do Firebase (O UTILIZADOR DEVE SUBSTITUIR ESTA LINHA)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
 
         const app = initializeApp(firebaseConfig);
@@ -356,13 +349,7 @@
                     const statusText = document.getElementById('db-status-text');
                     statusDot.classList.remove('bg-yellow-400', 'animate-pulse');
                     statusDot.classList.add('bg-red-500');
-                    
-                    if (error.code === 'auth/configuration-not-found') {
-                        statusText.innerHTML = '<b>Ação Necessária:</b> Ative o método de início de sessão "Anónimo" na sua consola do Firebase.';
-                        showConfigurationErrorModal(); // **MUDANÇA AQUI: Mostra o modal de erro**
-                    } else {
-                        statusText.textContent = 'Erro na ligação. Verifique as suas chaves Firebase e a ligação à internet.';
-                    }
+                    statusText.textContent = 'Erro na ligação. Verifique a configuração do Firebase.';
                 });
             }
         });
@@ -747,33 +734,51 @@
             document.getElementById('modal-backdrop').classList.add('hidden');
         }
         
-        // **NOVA FUNÇÃO: Mostra o modal de erro de configuração**
-        function showConfigurationErrorModal() {
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="text-center">
-                    <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
-                    <h2 class="text-2xl font-bold mb-4">Ação Necessária</h2>
-                    <p class="text-gray-600 mb-6">
-                        Para a aplicação funcionar, o método de início de sessão "Anónimo" precisa de ser ativado no seu projeto Firebase.
-                    </p>
-                    <div class="text-left bg-gray-50 p-4 rounded-lg border">
-                        <h3 class="font-semibold mb-2">Como resolver:</h3>
-                        <ol class="list-decimal list-inside space-y-2 text-sm">
-                            <li>Abra a <a href="https://console.firebase.google.com/" target="_blank" class="text-indigo-600 underline">Consola do Firebase</a>.</li>
-                            <li>Selecione o seu projeto: <b>meu-precificador-show</b>.</li>
-                            <li>No menu esquerdo, vá a <b>Build > Authentication</b>.</li>
-                            <li>Clique no separador <b>Sign-in method</b>.</li>
-                            <li>Na lista, clique em <b>Anónimo</b> e ative-o.</li>
-                        </ol>
-                    </div>
-                    <button onclick="location.reload()" class="mt-6 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700">
-                        Já ativei, Recarregar a Página
-                    </button>
-                </div>
-            `;
-            document.getElementById('modal-backdrop').classList.remove('hidden');
+        // --- LÓGICA CORRIGIDA PARA RECEITAS ---
+        window.tempReceita = [];
+
+        function renderReceitaItems() {
+            const container = document.getElementById('receita-container');
+            if (!container) return;
+            
+            const insumos = window.appState.insumosCache();
+            container.innerHTML = ''; // Limpa os itens existentes
+
+            window.tempReceita.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'receita-item flex items-center gap-2 mb-2';
+                
+                const insumosOptions = insumos.sort((a,b) => a.nome.localeCompare(b.nome))
+                                              .map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`)
+                                              .join('');
+
+                itemDiv.innerHTML = `
+                    <select class="w-1/2 p-2 border border-gray-300 rounded-md" onchange="updateReceitaItem(${index}, 'insumoId', this.value)">
+                        <option value="">Selecione um insumo</option>
+                        ${insumosOptions}
+                    </select>
+                    <input type="number" step="0.001" value="${item.quantidade || ''}" onchange="updateReceitaItem(${index}, 'quantidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="Qtd.">
+                    <input type="text" value="${item.unidade || 'g'}" onchange="updateReceitaItem(${index}, 'unidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="g, ml, un">
+                    <button type="button" onclick="removerReceitaItem(${index})" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+                `;
+                container.appendChild(itemDiv);
+            });
         }
+
+        window.adicionarReceitaItem = function() {
+            window.tempReceita.push({ insumoId: '', quantidade: 0, unidade: 'g' });
+            renderReceitaItems(); // Apenas renderiza a lista novamente
+        }
+
+        window.removerReceitaItem = function(index) {
+            window.tempReceita.splice(index, 1);
+            renderReceitaItems(); // Apenas renderiza a lista novamente
+        }
+
+        window.updateReceitaItem = function(index, field, value) {
+            window.tempReceita[index][field] = value;
+        }
+
 
         window.abrirModalInsumo = function(id = null) {
             const insumos = window.appState.insumosCache();
@@ -798,21 +803,9 @@
         window.abrirModalProduto = function(id = null) {
             const produtos = window.appState.produtosCache();
             const produto = id ? produtos.find(p => p.id === id) : { receita: [], descricao: '' };
-            const insumos = window.appState.insumosCache();
-
-            let receitaHtml = (produto.receita || []).map((item, index) => {
-                return `
-                    <div class="receita-item flex items-center gap-2 mb-2" data-index="${index}">
-                        <select class="w-1/2 p-2 border border-gray-300 rounded-md" onchange="updateReceitaItem(${index}, 'insumoId', this.value)">
-                            <option value="">Selecione</option>
-                            ${insumos.sort((a,b) => a.nome.localeCompare(b.nome)).map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`).join('')}
-                        </select>
-                        <input type="number" step="0.001" value="${item.quantidade}" onchange="updateReceitaItem(${index}, 'quantidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="Qtd.">
-                        <input type="text" value="${item.unidade}" onchange="updateReceitaItem(${index}, 'unidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="g, ml, un">
-                        <button type="button" onclick="removerReceitaItem(${index})" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
-                    </div>
-                `;
-            }).join('');
+            
+            // Faz uma cópia profunda para evitar modificar o estado original diretamente
+            window.tempReceita = JSON.parse(JSON.stringify(produto.receita || []));
 
             const modalContent = document.getElementById('modal-content');
             modalContent.innerHTML = `
@@ -825,12 +818,12 @@
                             <label class="block text-sm font-medium text-gray-700">Descrição para Cardápio</label>
                             <button type="button" onclick="gerarDescricaoProduto(this)" class="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-purple-600 transition-colors">✨ Gerar Descrição com IA</button>
                         </div>
-                        <textarea name="descricao" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: Suculento filé de pirarucu na brasa, acompanhado de baião de dois cremoso e farofa de banana.">${produto.descricao || ''}</textarea>
+                        <textarea name="descricao" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: Suculento filé de pirarucu na brasa...">${produto.descricao || ''}</textarea>
                     </div>
 
                     <div>
                         <h3 class="text-lg font-semibold mb-2">Receita (Ficha Técnica)</h3>
-                        <div id="receita-container">${receitaHtml}</div>
+                        <div id="receita-container"></div>
                         <button type="button" onclick="adicionarReceitaItem()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Adicionar ingrediente</button>
                     </div>
                     <div class="flex justify-end gap-4 pt-4">
@@ -839,7 +832,8 @@
                     </div>
                 </form>
             `;
-            window.tempReceita = [...(produto.receita || [])];
+            
+            renderReceitaItems(); // Renderiza a lista de receitas inicial
             document.getElementById('modal-backdrop').classList.remove('hidden');
         }
 
@@ -873,29 +867,6 @@
                 console.error("Erro ao salvar insumo: ", e);
                 alert("Ocorreu um erro ao salvar o insumo. Verifique sua conexão e os dados inseridos.");
             }
-        }
-        
-        window.tempReceita = [];
-        window.adicionarReceitaItem = function() {
-            const form = document.getElementById('form-produto');
-            const currentName = form.nome.value;
-            const currentDesc = form.descricao.value;
-            window.tempReceita.push({ insumoId: '', quantidade: 0, unidade: 'g' });
-            abrirModalProduto(form.onsubmit.toString().match(/'(.*?)'/)[1]);
-            document.querySelector('#form-produto input[name="nome"]').value = currentName;
-            document.querySelector('#form-produto textarea[name="descricao"]').value = currentDesc;
-        }
-        window.removerReceitaItem = function(index) {
-            const form = document.getElementById('form-produto');
-            const currentName = form.nome.value;
-            const currentDesc = form.descricao.value;
-            window.tempReceita.splice(index, 1);
-            abrirModalProduto(form.onsubmit.toString().match(/'(.*?)'/)[1]);
-            document.querySelector('#form-produto input[name="nome"]').value = currentName;
-            document.querySelector('#form-produto textarea[name="descricao"]').value = currentDesc;
-        }
-        window.updateReceitaItem = function(index, field, value) {
-            window.tempReceita[index][field] = value;
         }
 
         window.salvarProduto = async function(event, id) {
@@ -994,4 +965,3 @@
     </script>
 </body>
 </html>
-
