@@ -89,10 +89,33 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div id="app" class="container mx-auto p-4 md:p-8">
-        <header class="mb-4 text-center">
+    <div id="login-container" class="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+        <div class="max-w-md w-full text-center bg-white p-8 rounded-xl shadow-lg">
             <h1 class="text-4xl font-bold text-indigo-600">Precificador Show de Delícias</h1>
-            <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
+            <p class="text-lg text-gray-600 mt-2 mb-8">Faça login para aceder à sua ferramenta.</p>
+            <button onclick="loginComGoogle()" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center shadow-md">
+                <i class="fab fa-google mr-3"></i>
+                Entrar com o Google
+            </button>
+        </div>
+    </div>
+
+    <div id="app" class="container mx-auto p-4 md:p-8 hidden">
+        <header class="mb-4">
+            <div id="user-info" class="hidden flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-4">
+                <div class="flex items-center">
+                    <img id="user-photo" src="" alt="Foto do Utilizador" class="w-10 h-10 rounded-full mr-3">
+                    <span id="user-name" class="font-semibold text-gray-700"></span>
+                </div>
+                <button onclick="logout()" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors text-sm">
+                    Sair
+                </button>
+            </div>
+    
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-indigo-600">Precificador Show de Delícias</h1>
+                <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
+            </div>
         </header>
 
         <div id="db-status" class="flex items-center justify-center mb-6 text-sm text-gray-600">
@@ -158,7 +181,6 @@
                         <h3 class="text-xl font-semibold mb-2 text-gray-700">✨ Análise de Preço com IA</h3>
                         <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600"></div>
                     </div>
-                    
                     <div id="simulador-promocao" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Simulador de Promoções iFood</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -174,7 +196,6 @@
                         </div>
                         <div id="resultado-promocao" class="mt-6 hidden"></div>
                     </div>
-
                     <div id="simulador-frete" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">4. Simulador de Frete Embutido</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -201,7 +222,7 @@
                             <i class="fas fa-plus mr-2"></i> Novo Produto
                         </button>
                     </div>
-                    
+
                     <div class="mb-4">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -210,7 +231,7 @@
                             <input type="text" id="filtro-produtos" onkeyup="filtrarProdutos()" placeholder="Buscar por nome do produto..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
                         </div>
                     </div>
-                    
+
                     <div id="lista-produtos" class="overflow-x-auto"></div>
                 </div>
             </div>
@@ -232,7 +253,7 @@
                             <input type="text" id="filtro-insumos" onkeyup="filtrarInsumos()" placeholder="Buscar por nome do insumo..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
                         </div>
                     </div>
-
+                    
                     <div id="lista-insumos" class="overflow-x-auto"></div>
                 </div>
             </div>
@@ -314,8 +335,8 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
@@ -327,10 +348,22 @@
         };
         
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+
+        window.appState = {
+            db,
+            userId: null,
+            isReady: false,
+            apiKey: firebaseConfig.apiKey, 
+            getCollectionRef,
+            getConfigDocRef,
+            insumosCache: () => insumosCache,
+            produtosCache: () => produtosCache,
+            configCache: () => configCache,
+            doc, setDoc, getDoc, getDocs, collection, onSnapshot, addDoc, updateDoc, deleteDoc
+        };
 
         let insumosCache = [];
         let produtosCache = [];
@@ -345,27 +378,14 @@
             if (!window.appState.userId) return null;
             return doc(db, `artifacts/${appId}/users/${window.appState.userId}/configuracoes/main`);
         }
-
-        window.appState = {
-            db,
-            userId: null,
-            isReady: false,
-            apiKey: firebaseConfig.apiKey, 
-            getCollectionRef,
-            getConfigDocRef,
-            insumosCache: () => insumosCache,
-            produtosCache: () => produtosCache,
-            configCache: () => configCache,
-            doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc
-        };
-
+        
         function initializeAppState() {
             if (!window.appState.isReady || !window.appState.userId) return;
             
             const insumosRef = getCollectionRef('insumos');
             if (insumosRef) onSnapshot(insumosRef, snapshot => {
                 insumosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                filtrarInsumos(); 
+                filtrarInsumos();
             });
 
             const produtosRef = getCollectionRef('produtos');
@@ -373,7 +393,7 @@
                 produtosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 filtrarProdutos();
                 filtrarSimuladorSelect();
-                // renderRegistroVendas(); // Esta função não estava no seu código original
+                if(typeof renderRegistroVendas === 'function') renderRegistroVendas();
             });
 
             const configRef = getConfigDocRef();
@@ -383,16 +403,8 @@
                 } else {
                     configCache = {
                         faturamentoMedioMensal: 40000,
-                        custosOperacionais: [
-                            { nome: "Aluguel", valor: 5000 },
-                            { nome: "Energia", valor: 1000 },
-                            { nome: "Folha de Pagamento", valor: 10000 },
-                        ],
-                        canaisVenda: [
-                            { nome: "Balcão", taxaComissao: 0, taxaTransacao: 0.025 },
-                            { nome: "iFood Básico", taxaComissao: 0.12, taxaTransacao: 0.035 },
-                            { nome: "iFood Entrega", taxaComissao: 0.23, taxaTransacao: 0.035 },
-                        ]
+                        custosOperacionais: [],
+                        canaisVenda: []
                     };
                 }
                 renderConfiguracoes();
@@ -400,12 +412,34 @@
             });
         }
         
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                if (window.appState.isReady) return; 
+        const loginComGoogle = function() {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(error => console.error("Erro no login com Google:", error));
+        }
 
+        const logout = function() {
+            signOut(auth).catch(error => console.error("Erro no logout:", error));
+        }
+
+        window.loginComGoogle = loginComGoogle;
+        window.logout = logout;
+        
+        onAuthStateChanged(auth, user => {
+            const loginContainer = document.getElementById('login-container');
+            const appContainer = document.getElementById('app');
+            const userInfoContainer = document.getElementById('user-info');
+
+            if (user) {
+                if (window.appState.isReady && window.appState.userId === user.uid) return;
                 window.appState.userId = user.uid;
                 window.appState.isReady = true;
+
+                loginContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                userInfoContainer.classList.remove('hidden');
+
+                document.getElementById('user-name').textContent = user.displayName || 'Utilizador';
+                document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/150';
 
                 const statusDot = document.getElementById('db-status-dot');
                 const statusText = document.getElementById('db-status-text');
@@ -418,23 +452,18 @@
                 document.getElementById('btn-salvar-config').disabled = false;
                 
                 initializeAppState();
-
             } else {
-                signInAnonymously(auth).catch(error => {
-                    console.error("Erro na autenticação anônima:", error);
-                    const statusDot = document.getElementById('db-status-dot');
-                    const statusText = document.getElementById('db-status-text');
-                    statusDot.classList.remove('bg-yellow-400', 'animate-pulse');
-                    statusDot.classList.add('bg-red-500');
-                    statusText.textContent = 'Erro na ligação. Verifique a configuração do Firebase.';
-                });
+                window.appState.isReady = false;
+                window.appState.userId = null;
+                loginContainer.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+                userInfoContainer.classList.add('hidden');
             }
         });
-
     </script>
 
     <script>
-        // FUNÇÕES DE FILTRO (NOVAS)
+        // FUNÇÕES DE FILTRO
         function filtrarInsumos() {
             const filtro = document.getElementById('filtro-insumos').value.toLowerCase();
             const todosInsumos = window.appState.insumosCache();
@@ -453,11 +482,11 @@
             const filtro = document.getElementById('filtro-simulador').value.toLowerCase();
             updateProdutoSelect(filtro);
         }
-        
+
         // --- LÓGICA DA API GEMINI ---
         async function callGeminiAPI(prompt) {
             const apiKey = window.appState.apiKey; 
-            if (!apiKey || apiKey === "YOUR_API_KEY") {
+            if (!apiKey || apiKey.includes("SUA_API")) {
                 throw new Error("A chave de API (apiKey) do Firebase não foi configurada corretamente no código.");
             }
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -509,7 +538,6 @@
             document.querySelector(`button[onclick="changeTab('${tabName}')"]`).classList.add('active');
         }
         
-        // ATUALIZADA para aceitar um filtro
         function updateProdutoSelect(filtro = '') {
             const todosProdutos = window.appState.produtosCache();
             const produtosFiltrados = todosProdutos.filter(produto => 
@@ -543,7 +571,6 @@
 
         // --- RENDERIZAÇÃO ---
         
-        // ATUALIZADA para aceitar uma lista
         function renderInsumos(lista = window.appState.insumosCache()) {
             const container = document.getElementById('lista-insumos');
             if (!lista.length) {
@@ -588,7 +615,6 @@
             container.appendChild(table);
         }
 
-        // ATUALIZADA para aceitar uma lista
         function renderProdutos(lista = window.appState.produtosCache()) {
             const container = document.getElementById('lista-produtos');
             if (!lista.length) {
