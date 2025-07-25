@@ -14,7 +14,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
-       .modal-backdrop {
+        .modal-backdrop {
             position: fixed;
             top: 0;
             left: 0;
@@ -26,7 +26,7 @@
             justify-content: center;
             align-items: center;
         }
-       .modal-content {
+        .modal-content {
             background-color: white;
             padding: 2rem;
             border-radius: 0.5rem;
@@ -36,16 +36,16 @@
             overflow-y: auto;
             z-index: 50;
         }
-       .tab-button.active {
+        .tab-button.active {
             border-bottom: 2px solid #4f46e5;
             color: #4f46e5;
             font-weight: 600;
         }
-       .tooltip {
+        .tooltip {
             position: relative;
             display: inline-block;
         }
-       .tooltip.tooltiptext {
+        .tooltip .tooltiptext {
             visibility: hidden;
             width: 250px;
             background-color: #555;
@@ -63,11 +63,11 @@
             font-size: 0.8rem;
             font-weight: normal;
         }
-       .tooltip:hover.tooltiptext {
+        .tooltip:hover .tooltiptext {
             visibility: visible;
             opacity: 1;
         }
-       .spinner {
+        .spinner {
             border: 2px solid #f3f3f3;
             border-top: 2px solid #4f46e5;
             border-radius: 50%;
@@ -96,11 +96,13 @@
             <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
         </header>
 
+        <!-- Indicador de Status da Base de Dados -->
         <div id="db-status" class="flex items-center justify-center mb-6 text-sm text-gray-600">
             <span id="db-status-dot" class="h-3 w-3 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>
             <span id="db-status-text">A ligar à base de dados...</span>
         </div>
 
+        <!-- Painel de Navegação -->
         <div class="flex flex-wrap justify-center border-b border-gray-200 mb-8">
             <button onclick="changeTab('simulador')" class="tab-button active py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-calculator mr-2"></i> Simulador de Preços
@@ -119,7 +121,9 @@
             </button>
         </div>
 
+        <!-- Conteúdo das Abas -->
         <main>
+            <!-- ABA: Simulador de Preços -->
             <div id="simulador-tab" class="space-y-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Selecione o Produto e a Margem de Lucro</h2>
@@ -149,6 +153,7 @@
                         <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600"></div>
                     </div>
                     
+                    <!-- Simulador de Promoções -->
                     <div id="simulador-promocao" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Simulador de Promoções iFood</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -165,6 +170,7 @@
                         <div id="resultado-promocao" class="mt-6 hidden"></div>
                     </div>
 
+                    <!-- Simulador de Frete Embutido -->
                     <div id="simulador-frete" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">4. Simulador de Frete Embutido</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -183,6 +189,7 @@
                 </div>
             </div>
 
+            <!-- ABA: Produtos e Receitas -->
             <div id="produtos-tab" class="hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -195,6 +202,7 @@
                 </div>
             </div>
 
+            <!-- ABA: Insumos -->
             <div id="insumos-tab" class="hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -207,6 +215,7 @@
                 </div>
             </div>
             
+            <!-- ABA: Análise Estratégica -->
             <div id="analise-tab" class="hidden space-y-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Registo de Vendas</h2>
@@ -228,11 +237,14 @@
                 <div id="resultado-analise-cardapio" class="hidden bg-white p-6 rounded-lg shadow-md">
                      <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Engenharia de Cardápio</h2>
                      <div id="container-analise" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                         </div>
+                         <!-- As categorias serão inseridas aqui -->
+                     </div>
                 </div>
             </div>
 
+            <!-- ABA: Configurações -->
             <div id="configuracoes-tab" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Custos Operacionais -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">
                         Custos Operacionais
@@ -257,6 +269,7 @@
                     </div>
                 </div>
 
+                <!-- Canais de Venda -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">
                         Canais de Venda
@@ -279,18 +292,22 @@
         </main>
     </div>
 
+    <!-- Modal Genérico -->
     <div id="modal-backdrop" class="modal-backdrop hidden">
         <div id="modal-content" class="modal-content">
-            </div>
+            <!-- Conteúdo do modal será injetado aqui -->
+        </div>
     </div>
     
+    <!-- Firebase -->
     <script type="module">
         // Importações do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // // Substitua todo o bloco "const firebaseConfig = {... };" abaixo
+        // <!-- PASSO IMPORTANTE: COLE A SUA CONFIGURAÇÃO DO FIREBASE AQUI -->
+        // Substitua todo o bloco "const firebaseConfig = { ... };" abaixo
         // pelo bloco de código que você copiou da sua consola do Firebase.
         const firebaseConfig = {
           apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
@@ -301,14 +318,14 @@
           appId: "1:767394530716:web:412fe2b46d0081b6a07459"
         };
         
-        const appId = typeof __app_id!== 'undefined'? __app_id : 'precificador-show-de-delicias';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        let insumosCache =;
-        let produtosCache =;
+        let insumosCache = [];
+        let produtosCache = [];
         let configCache = {};
         
         // --- Funções de acesso a dados ---
@@ -338,19 +355,19 @@
         };
 
         function initializeAppState() {
-            if (!window.appState.isReady ||!window.appState.userId) return;
+            if (!window.appState.isReady || !window.appState.userId) return;
             
             // Listeners do Firestore
             const insumosRef = getCollectionRef('insumos');
             if (insumosRef) onSnapshot(insumosRef, snapshot => {
-                insumosCache = snapshot.docs.map(doc => ({ id: doc.id,...doc.data() }));
+                insumosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderInsumos();
                 updateProdutoSelect(); 
             });
 
             const produtosRef = getCollectionRef('produtos');
             if (produtosRef) onSnapshot(produtosRef, snapshot => {
-                produtosCache = snapshot.docs.map(doc => ({ id: doc.id,...doc.data() }));
+                produtosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderProdutos();
                 updateProdutoSelect();
                 renderRegistroVendas(); // Atualiza a lista de vendas quando os produtos mudam
@@ -368,7 +385,11 @@
                             { nome: "Energia", valor: 1000 },
                             { nome: "Folha de Pagamento", valor: 10000 },
                         ],
-                        canaisVenda:
+                        canaisVenda: [
+                            { nome: "Balcão", taxaComissao: 0, taxaTransacao: 0.025 },
+                            { nome: "iFood Básico", taxaComissao: 0.12, taxaTransacao: 0.035 },
+                            { nome: "iFood Entrega", taxaComissao: 0.23, taxaTransacao: 0.035 },
+                        ]
                     };
                 }
                 renderConfiguracoes();
@@ -398,13 +419,6 @@
                 
                 initializeAppState();
 
-                // Inicializa o calendário
-                new Litepicker({ 
-                    element: document.getElementById('periodo-vendas'),
-                    singleMode: false,
-                    format: 'DD/MM/YYYY'
-                });
-
             } else {
                 signInAnonymously(auth).catch(error => {
                     console.error("Erro na autenticação anônima:", error);
@@ -423,9 +437,7 @@
         // --- LÓGICA DA API GEMINI ---
         async function callGeminiAPI(prompt) {
             const apiKey = window.appState.apiKey; 
-            if (!apiKey |
-
-| apiKey === "YOUR_API_KEY") {
+            if (!apiKey || apiKey === "YOUR_API_KEY") {
                 throw new Error("A chave de API (apiKey) do Firebase não foi configurada corretamente no código.");
             }
 
@@ -445,21 +457,19 @@
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
                     console.error("Erro na API Gemini:", response.status, errorBody);
-                    const errorMessage = errorBody.error?.message |
-
-| `A API retornou um erro ${response.status}.`;
+                    const errorMessage = errorBody.error?.message || `A API retornou um erro ${response.status}.`;
                     throw new Error(errorMessage);
                 }
 
                 const result = await response.json();
                 
                 if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates.content && result.candidates.content.parts &&
-                    result.candidates.content.parts.length > 0) {
-                    return result.candidates.content.parts.text;
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
                 } else {
                     console.error("Resposta inesperada da API Gemini:", result);
-                    if (result.candidates && result.candidates.length > 0 && result.candidates.finishReason === 'SAFETY') {
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].finishReason === 'SAFETY') {
                         throw new Error("A resposta foi bloqueada por motivos de segurança. Tente reformular o pedido.");
                     }
                     throw new Error("A IA retornou uma resposta vazia ou em formato inesperado.");
@@ -484,7 +494,7 @@
             });
 
             document.getElementById(`${tabName}-tab`).classList.remove('hidden');
-            document.querySelector(`button`).classList.add('active');
+            document.querySelector(`button[onclick="changeTab('${tabName}')"]`).classList.add('active');
         }
         
         function updateProdutoSelect() {
@@ -502,7 +512,7 @@
         }
 
         function updateCanalAnaliseSelect() {
-            const canais = window.appState.configCache().canaisVenda ||;
+            const canais = window.appState.configCache().canaisVenda || [];
             const select = document.getElementById('canal-analise');
             select.innerHTML = '<option value="">-- Selecione um canal --</option>';
             canais.forEach(canal => {
@@ -537,13 +547,9 @@
             `;
             const tbody = table.querySelector('tbody');
             insumos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(insumo => {
-                const rendimento = 1 - (parseFloat(insumo.percentualDesperdicio) |
-
-| 0);
-                const custoReal = rendimento > 0? parseFloat(insumo.precoCompra) / rendimento : 0;
-                const unidadeCompra = insumo.unidadeCompra |
-
-| 'un';
+                const rendimento = 1 - (parseFloat(insumo.percentualDesperdicio) || 0);
+                const custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
+                const unidadeCompra = insumo.unidadeCompra || 'un';
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -608,13 +614,11 @@
             const config = window.appState.configCache();
             if (!config) return;
 
-            document.getElementById('faturamento-mensal').value = config.faturamentoMedioMensal |
-
-| '';
+            document.getElementById('faturamento-mensal').value = config.faturamentoMedioMensal || '';
 
             const custosContainer = document.getElementById('lista-custos-operacionais');
             custosContainer.innerHTML = '';
-            (config.custosOperacionais ||).forEach((custo, index) => {
+            (config.custosOperacionais || []).forEach((custo, index) => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center gap-2 mb-2';
                 div.innerHTML = `
@@ -627,7 +631,7 @@
 
             const canaisContainer = document.getElementById('lista-canais-venda');
             canaisContainer.innerHTML = '';
-            (config.canaisVenda ||).forEach((canal, index) => {
+            (config.canaisVenda || []).forEach((canal, index) => {
                 const div = document.createElement('div');
                 div.className = 'grid grid-cols-4 items-center gap-2 mb-2';
                 div.innerHTML = `
@@ -657,7 +661,7 @@
             if (qtdCompra === 0) return 0;
 
             const rendimento = 1 - desperdicio;
-            const custoRealTotal = rendimento > 0? precoCompra / rendimento : precoCompra;
+            const custoRealTotal = rendimento > 0 ? precoCompra / rendimento : precoCompra;
             
             let custoPorUnidadeBase = custoRealTotal / qtdCompra;
 
@@ -679,7 +683,7 @@
         function calcularCustoProduto(produtoId) {
             const produtos = window.appState.produtosCache();
             const produto = produtos.find(p => p.id === produtoId);
-            if (!produto ||!produto.receita) return 0;
+            if (!produto || !produto.receita) return 0;
 
             return produto.receita.reduce((total, item) => {
                 return total + calcularCustoInsumo(item.insumoId, parseFloat(item.quantidade), item.unidade);
@@ -688,13 +692,9 @@
 
         function calcularTotaisConfig() {
             const config = window.appState.configCache();
-            const totalCustos = (config.custosOperacionais ||).reduce((sum, custo) => sum + (parseFloat(custo.valor) |
-
-| 0), 0);
-            const faturamento = parseFloat(config.faturamentoMedioMensal) |
-
-| 0;
-            const percentual = faturamento > 0? (totalCustos / faturamento) : 0;
+            const totalCustos = (config.custosOperacionais || []).reduce((sum, custo) => sum + (parseFloat(custo.valor) || 0), 0);
+            const faturamento = parseFloat(config.faturamentoMedioMensal) || 0;
+            const percentual = faturamento > 0 ? (totalCustos / faturamento) : 0;
 
             document.getElementById('total-custo-operacional').textContent = `R$ ${totalCustos.toFixed(2)}`;
             document.getElementById('percentual-custo-operacional').textContent = `${(percentual * 100).toFixed(2)}%`;
@@ -707,9 +707,7 @@
             const produtoId = document.getElementById('produto-select').value;
             const margemLucro = parseFloat(document.getElementById('margem-lucro-input').value) / 100;
             
-            if (!produtoId |
-
-| isNaN(margemLucro)) {
+            if (!produtoId || isNaN(margemLucro)) {
                 alert("Por favor, selecione um produto e insira uma margem de lucro válida.");
                 return;
             }
@@ -719,9 +717,9 @@
             const produto = produtos.find(p => p.id === produtoId);
 
             const custoProduto = calcularCustoProduto(produtoId);
-            const totalCustosOp = (config.custosOperacionais ||).reduce((sum, c) => sum + parseFloat(c.valor), 0);
+            const totalCustosOp = (config.custosOperacionais || []).reduce((sum, c) => sum + parseFloat(c.valor), 0);
             const faturamento = parseFloat(config.faturamentoMedioMensal);
-            const custoOpPercentual = faturamento > 0? totalCustosOp / faturamento : 0;
+            const custoOpPercentual = faturamento > 0 ? totalCustosOp / faturamento : 0;
 
             const denominadorBase = 1 - custoOpPercentual - margemLucro;
             if (denominadorBase <= 0) {
@@ -764,10 +762,10 @@
                 canais: {}
             };
 
-            (config.canaisVenda ||).forEach(canal => {
+            (config.canaisVenda || []).forEach(canal => {
                 const taxasTotais = parseFloat(canal.taxaComissao) + parseFloat(canal.taxaTransacao);
                 const denominadorCanal = 1 - taxasTotais;
-                const precoFinal = denominadorCanal > 0? precoVendaBase / denominadorCanal : Infinity;
+                const precoFinal = denominadorCanal > 0 ? precoVendaBase / denominadorCanal : Infinity;
                 
                 ultimoCalculo.canais[canal.nome] = {
                     precoFinal: precoFinal,
@@ -811,9 +809,9 @@
 
             const insumos = window.appState.insumosCache();
             const nomesIngredientes = window.tempReceita
-               .map(item => insumos.find(i => i.id === item.insumoId)?.nome)
-               .filter(Boolean)
-               .join(', ');
+                .map(item => insumos.find(i => i.id === item.insumoId)?.nome)
+                .filter(Boolean)
+                .join(', ');
 
             if (!nomesIngredientes) {
                 alert("Adicione ingredientes à receita para gerar uma descrição.");
@@ -842,10 +840,10 @@
             const produto = produtos.find(p => p.id === produtoId);
             const custoProduto = calcularCustoProduto(produtoId);
 
-            const nomesIngredientes = (produto.receita ||)
-               .map(item => insumos.find(i => i.id === item.insumoId)?.nome)
-               .filter(Boolean)
-               .join(', ');
+            const nomesIngredientes = (produto.receita || [])
+                .map(item => insumos.find(i => i.id === item.insumoId)?.nome)
+                .filter(Boolean)
+                .join(', ');
 
             const prompt = `Sou dono de um restaurante em Manaus, Amazonas, Brasil. Estou precificando um produto chamado "${produto.nome}". O custo dos ingredientes é R$ ${custoProduto.toFixed(2)} e o preço final de venda no canal "${nomeCanal}" será R$ ${precoFinal.toFixed(2)}. Os ingredientes são: ${nomesIngredientes}. Faça uma breve análise: este preço é competitivo para o mercado de delivery em Manaus? Sugira um preço ideal ou faixa de preço e justifique sua resposta considerando os ingredientes (se são regionais ou comuns), o tipo de prato e o público local. Seja conciso e direto.`;
 
@@ -923,7 +921,7 @@
                 const resposta = await callGeminiAPI(prompt);
                 const nomesSugeridos = resposta.split(',').map(nome => nome.trim().toLowerCase());
                 
-                window.tempReceita =; // Limpa a receita atual
+                window.tempReceita = []; // Limpa a receita atual
                 
                 nomesSugeridos.forEach(nomeSugerido => {
                     const insumoEncontrado = insumosDisponiveis.find(i => i.nome.toLowerCase() === nomeSugerido);
@@ -989,7 +987,7 @@
         }
         
         // --- LÓGICA CORRIGIDA PARA RECEITAS ---
-        window.tempReceita =;
+        window.tempReceita = [];
 
         function renderReceitaItems() {
             const container = document.getElementById('receita-container');
@@ -1003,20 +1001,18 @@
                 itemDiv.className = 'receita-item flex items-center gap-2 mb-2';
                 
                 const insumosOptions = insumos.sort((a,b) => a.nome.localeCompare(b.nome))
-                                             .map(i => `<option value="${i.id}" ${i.id === item.insumoId? 'selected' : ''}>${i.nome}</option>`)
-                                             .join('');
+                                              .map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`)
+                                              .join('');
                 
                 const unidades = ['g', 'kg', 'ml', 'L', 'un'];
-                const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === item.unidade? 'selected' : ''}>${u}</option>`).join('');
+                const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === item.unidade ? 'selected' : ''}>${u}</option>`).join('');
 
                 itemDiv.innerHTML = `
                     <select class="w-1/2 p-2 border border-gray-300 rounded-md" onchange="updateReceitaItem(${index}, 'insumoId', this.value)">
                         <option value="">Selecione um insumo</option>
                         ${insumosOptions}
                     </select>
-                    <input type="number" step="0.001" value="${item.quantidade |
-
-| ''}" onchange="updateReceitaItem(${index}, 'quantidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="Qtd.">
+                    <input type="number" step="0.001" value="${item.quantidade || ''}" onchange="updateReceitaItem(${index}, 'quantidade', this.value)" class="w-1/4 p-2 border border-gray-300 rounded-md" placeholder="Qtd.">
                     <select class="w-1/4 p-2 border border-gray-300 rounded-md" onchange="updateReceitaItem(${index}, 'unidade', this.value)">
                         ${unidadesOptions}
                     </select>
@@ -1043,19 +1039,15 @@
 
         window.abrirModalInsumo = function(id = null) {
             const insumos = window.appState.insumosCache();
-            const insumo = id? insumos.find(i => i.id === id) : {};
+            const insumo = id ? insumos.find(i => i.id === id) : {};
             const modalContent = document.getElementById('modal-content');
 
             const unidades = ['kg', 'g', 'L', 'ml', 'un'];
-            const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === (insumo.unidadeCompra |
-
-| 'kg')? 'selected' : ''}>${u}</option>`).join('');
+            const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === (insumo.unidadeCompra || 'kg') ? 'selected' : ''}>${u}</option>`).join('');
 
             modalContent.innerHTML = `
-                <h2 class="text-2xl font-bold mb-6">${id? 'Editar' : 'Novo'} Insumo</h2>
-                <form id="form-insumo" onsubmit="salvarInsumo(event, '${id |
-
-| ''}')" class="space-y-4">
+                <h2 class="text-2xl font-bold mb-6">${id ? 'Editar' : 'Novo'} Insumo</h2>
+                <form id="form-insumo" onsubmit="salvarInsumo(event, '${id || ''}')" class="space-y-4">
                     <div>
                         <div class="flex justify-between items-center mb-1">
                             <label class="block text-sm font-medium text-gray-700">Nome do Insumo</label>
@@ -1063,18 +1055,12 @@
                                 <i class="fas fa-search-dollar mr-1"></i> Verificar Preços com IA
                             </button>
                         </div>
-                        <input type="text" name="nome" value="${insumo.nome |
-
-| ''}" required class="block w-full p-2 border border-gray-300 rounded-md">
+                        <input type="text" name="nome" value="${insumo.nome || ''}" required class="block w-full p-2 border border-gray-300 rounded-md">
                         <div id="preco-ia-resultado" class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md hidden"></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><label class="block text-sm font-medium text-gray-700">Preço de Compra (R$)</label><input type="number" step="0.01" name="precoCompra" value="${insumo.precoCompra |
-
-| ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Qtd. Compra</label><input type="number" step="0.001" name="qtdCompra" value="${insumo.qtdCompra |
-
-| ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Preço de Compra (R$)</label><input type="number" step="0.01" name="precoCompra" value="${insumo.precoCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Qtd. Compra</label><input type="number" step="0.001" name="qtdCompra" value="${insumo.qtdCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Unidade de Compra</label>
                             <select name="unidadeCompra" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
@@ -1087,9 +1073,7 @@
                            <label class="block text-sm font-medium text-gray-700">Percentual de Desperdício (%) <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Ex: Se de 1kg de carne, 300g são aparas, o desperdício é 30%. Insira 30.</span></span></label>
                            <button type="button" onclick="sugerirPerdaComIA(this)" class="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600 transition-colors">✨ Sugerir Perda</button>
                         </div>
-                        <input type="number" name="percentualDesperdicio" value="${(insumo.percentualDesperdicio |
-
-| 0) * 100}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        <input type="number" name="percentualDesperdicio" value="${(insumo.percentualDesperdicio || 0) * 100}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
                         <div id="perda-ia-resultado" class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md hidden"></div>
                     </div>
                     <div class="flex justify-end gap-4 pt-4"><button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button></div>
@@ -1100,25 +1084,21 @@
 
         window.abrirModalProduto = function(id = null) {
             const produtos = window.appState.produtosCache();
-            const produto = id? produtos.find(p => p.id === id) : { receita:, descricao: '' };
+            const produto = id ? produtos.find(p => p.id === id) : { receita: [], descricao: '' };
             
             // Faz uma cópia profunda para evitar modificar o estado original diretamente
-            window.tempReceita = JSON.parse(JSON.stringify(produto.receita ||));
+            window.tempReceita = JSON.parse(JSON.stringify(produto.receita || []));
 
             const modalContent = document.getElementById('modal-content');
             modalContent.innerHTML = `
-                <h2 class="text-2xl font-bold mb-6">${id? 'Editar' : 'Novo'} Produto</h2>
-                <form id="form-produto" onsubmit="salvarProduto(event, '${id |
-
-| ''}')" class="space-y-4">
+                <h2 class="text-2xl font-bold mb-6">${id ? 'Editar' : 'Novo'} Produto</h2>
+                <form id="form-produto" onsubmit="salvarProduto(event, '${id || ''}')" class="space-y-4">
                     <div>
                         <div class="flex justify-between items-center">
                             <label class="block text-sm font-medium text-gray-700">Nome do Produto</label>
                             <button type="button" onclick="sugerirIngredientesComIA(this)" class="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600 transition-colors">✨ Sugerir Ingredientes</button>
                         </div>
-                        <input type="text" name="nome" value="${produto.nome |
-
-| ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        <input type="text" name="nome" value="${produto.nome || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
                         <div id="sugestao-ia-error" class="text-xs text-red-600 mt-1"></div>
                     </div>
                     
@@ -1128,9 +1108,7 @@
                             <button type="button" onclick="gerarDescricaoProduto(this)" class="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-purple-600 transition-colors">✨ Gerar Descrição com IA</button>
                         </div>
                         <div id="descricao-ia-error" class="text-xs text-red-600 mt-1"></div>
-                        <textarea name="descricao" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: Suculento filé de pirarucu na brasa...">${produto.descricao |
-
-| ''}</textarea>
+                        <textarea name="descricao" rows="3" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: Suculento filé de pirarucu na brasa...">${produto.descricao || ''}</textarea>
                     </div>
 
                     <div>
@@ -1139,7 +1117,8 @@
                         <button type="button" onclick="adicionarReceitaItem()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Adicionar ingrediente</button>
                     </div>
                     <div class="flex justify-end gap-4 pt-4">
-                        <button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button></div>
+                        <button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button>
+                    </div>
                 </form>
             `;
             
@@ -1191,9 +1170,7 @@
                 descricao: form.descricao.value,
                 receita: window.tempReceita.map(item => ({
                     insumoId: item.insumoId,
-                    quantidade: parseFloat(item.quantidade) |
-
-| 0,
+                    quantidade: parseFloat(item.quantidade) || 0,
                     unidade: item.unidade
                 })).filter(item => item.insumoId && item.quantidade > 0)
             };
@@ -1231,11 +1208,11 @@
         }
         
         window.updateCustoTemp = function(index, field, value) {
-            window.appState.configCache().custosOperacionais[index][field] = field === 'valor'? parseFloat(value) : value;
+            window.appState.configCache().custosOperacionais[index][field] = field === 'valor' ? parseFloat(value) : value;
             calcularTotaisConfig();
         }
         window.adicionarCustoOperacional = function() {
-            if (!window.appState.configCache().custosOperacionais) window.appState.configCache().custosOperacionais =;
+            if (!window.appState.configCache().custosOperacionais) window.appState.configCache().custosOperacionais = [];
             window.appState.configCache().custosOperacionais.push({ nome: '', valor: 0 });
             renderConfiguracoes();
         }
@@ -1245,10 +1222,10 @@
         }
         
         window.updateCanalTemp = function(index, field, value) {
-            window.appState.configCache().canaisVenda[index][field] = field === 'nome'? value : parseFloat(value);
+            window.appState.configCache().canaisVenda[index][field] = field === 'nome' ? value : parseFloat(value);
         }
         window.adicionarCanalVenda = function() {
-            if (!window.appState.configCache().canaisVenda) window.appState.configCache().canaisVenda =;
+            if (!window.appState.configCache().canaisVenda) window.appState.configCache().canaisVenda = [];
             window.appState.configCache().canaisVenda.push({ nome: '', taxaComissao: 0, taxaTransacao: 0 });
             renderConfiguracoes();
         }
@@ -1266,9 +1243,7 @@
                 const { getConfigDocRef, setDoc } = window.appState;
                 const docRef = getConfigDocRef();
                 const config = window.appState.configCache();
-                config.faturamentoMedioMensal = parseFloat(document.getElementById('faturamento-mensal').value) |
-
-| 0;
+                config.faturamentoMedioMensal = parseFloat(document.getElementById('faturamento-mensal').value) || 0;
                 await setDoc(docRef, config);
                 alert("Configurações salvas com sucesso!");
             } catch (e) {
@@ -1300,7 +1275,7 @@
                     const recebidoAntesSubsidio = precoPromocional - taxasValor;
                     const novoLiquido = recebidoAntesSubsidio + subsidio;
                     const impactoLucro = novoLiquido - canal.liquidoOriginal;
-                    const impactoClasse = impactoLucro < 0? 'text-red-500' : 'text-green-500';
+                    const impactoClasse = impactoLucro < 0 ? 'text-red-500' : 'text-green-500';
 
                     const dadosPromocao = {
                         nomeProduto: ultimoCalculo.produtoNome,
