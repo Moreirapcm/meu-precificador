@@ -1068,7 +1068,14 @@
                             </select>
                         </div>
                     </div>
-                    <div><label class="block text-sm font-medium text-gray-700">Percentual de Desperdício (%) <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Ex: Se de 1kg de carne, 300g são aparas, o desperdício é 30%. Insira 30.</span></span></label><input type="number" name="percentualDesperdicio" value="${(insumo.percentualDesperdicio || 0) * 100}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                           <label class="block text-sm font-medium text-gray-700">Percentual de Desperdício (%) <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Ex: Se de 1kg de carne, 300g são aparas, o desperdício é 30%. Insira 30.</span></span></label>
+                           <button type="button" onclick="sugerirPerdaComIA(this)" class="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600 transition-colors">✨ Sugerir Perda</button>
+                        </div>
+                        <input type="number" name="percentualDesperdicio" value="${(insumo.percentualDesperdicio || 0) * 100}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                        <div id="perda-ia-resultado" class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md hidden"></div>
+                    </div>
                     <div class="flex justify-end gap-4 pt-4"><button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button></div>
                 </form>
             `;
