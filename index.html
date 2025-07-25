@@ -301,9 +301,10 @@
         // Importações do Firebase ATUALIZADAS
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // AJUSTE FEITO AQUI PARA INCLUIR getDocs
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // SUA CONFIGURAÇÃO DO FIREBASE (MANTENHA A MESMA)
+        // SUA CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
             authDomain: "meu-precificador-show.firebaseapp.com",
@@ -319,7 +320,6 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // ===== NOVAS FUNÇÕES DE LOGIN E LOGOUT =====
         function loginComGoogle() {
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider)
@@ -343,7 +343,6 @@
         let produtosCache = [];
         let configCache = {};
         
-        // --- Funções de acesso a dados ---
         function getCollectionRef(collectionName) {
             if (!window.appState.userId) return null;
             return collection(db, `artifacts/${appId}/users/${window.appState.userId}/${collectionName}`);
@@ -354,7 +353,6 @@
             return doc(db, `artifacts/${appId}/users/${window.appState.userId}/configuracoes/main`);
         }
 
-        // --- Expor estado e funções para o escopo global ---
         window.appState = {
             db,
             userId: null,
@@ -365,13 +363,12 @@
             insumosCache: () => insumosCache,
             produtosCache: () => produtosCache,
             configCache: () => configCache,
-            doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc
+            // AJUSTE FEITO AQUI, ADICIONANDO getDocs
+            doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs
         };
 
-        // ===== EXPOR NOVAS FUNÇÕES =====
         window.loginComGoogle = loginComGoogle;
         window.logout = logout;
-
 
         function initializeAppState() {
             if (!window.appState.isReady || !window.appState.userId) return;
@@ -415,14 +412,12 @@
             });
         }
         
-        // ===== LÓGICA DE AUTENTICAÇÃO PRINCIPAL (ATUALIZADA) =====
         onAuthStateChanged(auth, user => {
             const loginContainer = document.getElementById('login-container');
             const appContainer = document.getElementById('app');
             const userInfoContainer = document.getElementById('user-info');
 
             if (user) {
-                // --- UTILIZADOR ESTÁ LOGADO ---
                 if (window.appState.isReady && window.appState.userId === user.uid) return;
 
                 window.appState.userId = user.uid;
@@ -448,7 +443,6 @@
                 initializeAppState();
 
             } else {
-                // --- UTILIZADOR NÃO ESTÁ LOGADO ---
                 window.appState.isReady = false;
                 window.appState.userId = null;
 
