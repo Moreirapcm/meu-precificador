@@ -161,7 +161,6 @@
                         </button>
                     </div>
                 </div>
-
                 <div id="resultado-precificacao" class="hidden bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Resultado da Precificação</h2>
                     <div id="resumo-produto" class="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200"></div>
@@ -170,7 +169,6 @@
                         <h3 class="text-xl font-semibold mb-2 text-gray-700">✨ Análise de Preço com IA</h3>
                         <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600"></div>
                     </div>
-                    
                     <div id="simulador-promocao" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Simulador de Promoções iFood</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -186,7 +184,6 @@
                         </div>
                         <div id="resultado-promocao" class="mt-6 hidden"></div>
                     </div>
-
                     <div id="simulador-frete" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">4. Simulador de Frete Embutido</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -204,7 +201,6 @@
                     </div>
                 </div>
             </div>
-
             <div id="produtos-tab" class="hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -216,7 +212,6 @@
                     <div id="lista-produtos" class="overflow-x-auto"></div>
                 </div>
             </div>
-
             <div id="insumos-tab" class="hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -228,7 +223,6 @@
                     <div id="lista-insumos" class="overflow-x-auto"></div>
                 </div>
             </div>
-            
             <div id="analise-tab" class="hidden space-y-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Registo de Vendas</h2>
@@ -253,7 +247,6 @@
                     </div>
                 </div>
             </div>
-
             <div id="configuracoes-tab" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">
@@ -305,10 +298,13 @@
     </div>
     
     <script type="module">
+        // Importações do Firebase ATUALIZADAS
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // AJUSTE FEITO AQUI PARA INCLUIR getDocs
         import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // SUA CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
             authDomain: "meu-precificador-show.firebaseapp.com",
@@ -319,22 +315,29 @@
         };
         
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        window.appState = {
-            db,
-            userId: null,
-            isReady: false,
-            apiKey: firebaseConfig.apiKey, 
-            getCollectionRef,
-            getConfigDocRef,
-            insumosCache: () => insumosCache,
-            produtosCache: () => produtosCache,
-            configCache: () => configCache,
-            doc, setDoc, getDoc, getDocs, collection, onSnapshot, addDoc, updateDoc, deleteDoc
-        };
+        function loginComGoogle() {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    console.log("Login bem-sucedido!", result.user);
+                }).catch((error) => {
+                    console.error("Erro ao fazer login com Google:", error);
+                    alert("Ocorreu um erro ao tentar fazer login. Tente novamente.");
+                });
+        }
+
+        function logout() {
+            signOut(auth).then(() => {
+                console.log("Logout bem-sucedido.");
+            }).catch((error) => {
+                console.error("Erro ao fazer logout:", error);
+            });
+        }
 
         let insumosCache = [];
         let produtosCache = [];
@@ -349,22 +352,40 @@
             if (!window.appState.userId) return null;
             return doc(db, `artifacts/${appId}/users/${window.appState.userId}/configuracoes/main`);
         }
-        
+
+        window.appState = {
+            db,
+            userId: null,
+            isReady: false,
+            apiKey: firebaseConfig.apiKey, 
+            getCollectionRef,
+            getConfigDocRef,
+            insumosCache: () => insumosCache,
+            produtosCache: () => produtosCache,
+            configCache: () => configCache,
+            // AJUSTE FEITO AQUI, ADICIONANDO getDocs
+            doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs
+        };
+
+        window.loginComGoogle = loginComGoogle;
+        window.logout = logout;
+
         function initializeAppState() {
             if (!window.appState.isReady || !window.appState.userId) return;
             
             const insumosRef = getCollectionRef('insumos');
             if (insumosRef) onSnapshot(insumosRef, snapshot => {
                 insumosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                filtrarInsumos();
+                renderInsumos();
+                updateProdutoSelect(); 
             });
 
             const produtosRef = getCollectionRef('produtos');
             if (produtosRef) onSnapshot(produtosRef, snapshot => {
                 produtosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                filtrarProdutos();
-                filtrarSimuladorSelect();
-                // renderRegistroVendas(); // Função não fornecida no código original
+                renderProdutos();
+                updateProdutoSelect();
+                renderRegistroVendas();
             });
 
             const configRef = getConfigDocRef();
@@ -391,18 +412,6 @@
             });
         }
         
-        const loginComGoogle = function() {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(error => console.error("Erro no login com Google:", error));
-        }
-
-        const logout = function() {
-            signOut(auth).catch(error => console.error("Erro no logout:", error));
-        }
-
-        window.loginComGoogle = loginComGoogle;
-        window.logout = logout;
-        
         onAuthStateChanged(auth, user => {
             const loginContainer = document.getElementById('login-container');
             const appContainer = document.getElementById('app');
@@ -410,6 +419,7 @@
 
             if (user) {
                 if (window.appState.isReady && window.appState.userId === user.uid) return;
+
                 window.appState.userId = user.uid;
                 window.appState.isReady = true;
 
@@ -431,9 +441,11 @@
                 document.getElementById('btn-salvar-config').disabled = false;
                 
                 initializeAppState();
+
             } else {
                 window.appState.isReady = false;
                 window.appState.userId = null;
+
                 loginContainer.classList.remove('hidden');
                 appContainer.classList.add('hidden');
                 userInfoContainer.classList.add('hidden');
@@ -442,26 +454,6 @@
     </script>
 
     <script>
-        // FUNÇÕES DE FILTRO
-        function filtrarInsumos() {
-            const filtro = document.getElementById('filtro-insumos').value.toLowerCase();
-            const todosInsumos = window.appState.insumosCache();
-            const insumosFiltrados = todosInsumos.filter(insumo => insumo.nome.toLowerCase().includes(filtro));
-            renderInsumos(insumosFiltrados);
-        }
-
-        function filtrarProdutos() {
-            const filtro = document.getElementById('filtro-produtos').value.toLowerCase();
-            const todosProdutos = window.appState.produtosCache();
-            const produtosFiltrados = todosProdutos.filter(produto => produto.nome.toLowerCase().includes(filtro));
-            renderProdutos(produtosFiltrados);
-        }
-
-        function filtrarSimuladorSelect() {
-            const filtro = document.getElementById('filtro-simulador').value.toLowerCase();
-            updateProdutoSelect(filtro);
-        }
-
         // --- LÓGICA DA API GEMINI ---
         async function callGeminiAPI(prompt) {
             const apiKey = window.appState.apiKey; 
@@ -513,23 +505,18 @@
             document.getElementById(`${tabName}-tab`).classList.remove('hidden');
             document.querySelector(`button[onclick="changeTab('${tabName}')"]`).classList.add('active');
         }
-        function updateProdutoSelect(filtro = '') {
-            const todosProdutos = window.appState.produtosCache();
-            const produtosFiltrados = todosProdutos.filter(produto => 
-                produto.nome.toLowerCase().includes(filtro.toLowerCase())
-            );
+        function updateProdutoSelect() {
+            const produtos = window.appState.produtosCache();
             const select = document.getElementById('produto-select');
             const currentVal = select.value;
             select.innerHTML = '<option value="">-- Selecione um produto --</option>';
-            produtosFiltrados.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(produto => {
+            produtos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(produto => {
                 const option = document.createElement('option');
                 option.value = produto.id;
                 option.textContent = produto.nome;
                 select.appendChild(option);
             });
-            if (produtosFiltrados.some(p => p.id === currentVal)) {
-                select.value = currentVal;
-            }
+            select.value = currentVal;
         }
         function updateCanalAnaliseSelect() {
             const canais = window.appState.configCache().canaisVenda || [];
@@ -542,10 +529,11 @@
                 select.appendChild(option);
             });
         }
-        function renderInsumos(lista = window.appState.insumosCache()) {
+        function renderInsumos() {
+            const insumos = window.appState.insumosCache();
             const container = document.getElementById('lista-insumos');
-            if (!lista.length) {
-                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum insumo encontrado.</p>`;
+            if (!insumos.length) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum insumo cadastrado. Clique em "Novo Insumo" para começar.</p>`;
                 return;
             }
             const table = document.createElement('table');
@@ -561,7 +549,7 @@
                 <tbody class="divide-y divide-gray-200"></tbody>
             `;
             const tbody = table.querySelector('tbody');
-            lista.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(insumo => {
+            insumos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(insumo => {
                 const rendimento = 1 - (parseFloat(insumo.percentualDesperdicio) || 0);
                 const custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
                 const unidadeCompra = insumo.unidadeCompra || 'un';
@@ -585,10 +573,11 @@
             container.innerHTML = '';
             container.appendChild(table);
         }
-        function renderProdutos(lista = window.appState.produtosCache()) {
+        function renderProdutos() {
+            const produtos = window.appState.produtosCache();
             const container = document.getElementById('lista-produtos');
-            if (!lista.length) {
-                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum produto encontrado.</p>`;
+                if (!produtos.length) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum produto cadastrado. Clique em "Novo Produto" para começar.</p>`;
                 return;
             }
             const table = document.createElement('table');
@@ -604,12 +593,12 @@
                 <tbody class="divide-y divide-gray-200"></tbody>
             `;
             const tbody = table.querySelector('tbody');
-            lista.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(produto => {
+            produtos.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(produto => {
                 const custo = calcularCustoProduto(produto.id);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="py-4 px-6 whitespace-nowrap font-medium text-gray-900">${produto.nome}</div>
-                    <td class="py-4 px-6 whitespace-nowrap text-gray-700">R$ ${custo.toFixed(2)}</div>
+                    <td class="py-4 px-6 whitespace-nowrap font-medium text-gray-900">${produto.nome}</td>
+                    <td class="py-4 px-6 whitespace-nowrap text-gray-700">R$ ${custo.toFixed(2)}</td>
                     <td class="py-4 px-6 whitespace-nowrap text-right text-sm font-medium">
                         <button onclick="abrirModalProduto('${produto.id}')" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
                         <button onclick="deletarItem('produtos', '${produto.id}', 'produto')" class="text-red-600 hover:text-red-900">Excluir</button>
