@@ -89,33 +89,10 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div id="login-container" class="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-        <div class="max-w-md w-full text-center bg-white p-8 rounded-xl shadow-lg">
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        <header class="mb-4 text-center">
             <h1 class="text-4xl font-bold text-indigo-600">Precificador Show de Delícias</h1>
-            <p class="text-lg text-gray-600 mt-2 mb-8">Faça login para aceder à sua ferramenta.</p>
-            <button onclick="loginComGoogle()" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center shadow-md">
-                <i class="fab fa-google mr-3"></i>
-                Entrar com o Google
-            </button>
-        </div>
-    </div>
-
-    <div id="app" class="container mx-auto p-4 md:p-8 hidden">
-        <header class="mb-4">
-            <div id="user-info" class="hidden flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-4">
-                <div class="flex items-center">
-                    <img id="user-photo" src="" alt="Foto do Utilizador" class="w-10 h-10 rounded-full mr-3">
-                    <span id="user-name" class="font-semibold text-gray-700"></span>
-                </div>
-                <button onclick="logout()" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors text-sm">
-                    Sair
-                </button>
-            </div>
-    
-            <div class="text-center">
-                <h1 class="text-4xl font-bold text-indigo-600">Precificador Show de Delícias</h1>
-                <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
-            </div>
+            <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
         </header>
 
         <div id="db-status" class="flex items-center justify-center mb-6 text-sm text-gray-600">
@@ -145,6 +122,17 @@
             <div id="simulador-tab" class="space-y-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Selecione o Produto e a Margem de Lucro</h2>
+                    
+                    <div class="mb-4">
+                        <label for="filtro-simulador" class="block text-sm font-medium text-gray-700 mb-1">Buscar Produto</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" id="filtro-simulador" onkeyup="filtrarSimuladorSelect()" placeholder="Digite para filtrar produtos..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="produto-select" class="block text-sm font-medium text-gray-700 mb-1">Produto</label>
@@ -161,6 +149,7 @@
                         </button>
                     </div>
                 </div>
+
                 <div id="resultado-precificacao" class="hidden bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Resultado da Precificação</h2>
                     <div id="resumo-produto" class="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200"></div>
@@ -169,6 +158,7 @@
                         <h3 class="text-xl font-semibold mb-2 text-gray-700">✨ Análise de Preço com IA</h3>
                         <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600"></div>
                     </div>
+                    
                     <div id="simulador-promocao" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Simulador de Promoções iFood</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -184,6 +174,7 @@
                         </div>
                         <div id="resultado-promocao" class="mt-6 hidden"></div>
                     </div>
+
                     <div id="simulador-frete" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">4. Simulador de Frete Embutido</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -201,6 +192,7 @@
                     </div>
                 </div>
             </div>
+
             <div id="produtos-tab" class="hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -209,9 +201,20 @@
                             <i class="fas fa-plus mr-2"></i> Novo Produto
                         </button>
                     </div>
+                    
+                    <div class="mb-4">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" id="filtro-produtos" onkeyup="filtrarProdutos()" placeholder="Buscar por nome do produto..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+                    
                     <div id="lista-produtos" class="overflow-x-auto"></div>
                 </div>
             </div>
+
             <div id="insumos-tab" class="hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -220,9 +223,20 @@
                             <i class="fas fa-plus mr-2"></i> Novo Insumo
                         </button>
                     </div>
+
+                    <div class="mb-4">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" id="filtro-insumos" onkeyup="filtrarInsumos()" placeholder="Buscar por nome do insumo..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+
                     <div id="lista-insumos" class="overflow-x-auto"></div>
                 </div>
             </div>
+            
             <div id="analise-tab" class="hidden space-y-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Registo de Vendas</h2>
@@ -247,6 +261,7 @@
                     </div>
                 </div>
             </div>
+
             <div id="configuracoes-tab" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">
@@ -298,13 +313,10 @@
     </div>
     
     <script type="module">
-        // Importações do Firebase ATUALIZADAS
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // AJUSTE FEITO AQUI PARA INCLUIR getDocs
-        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // SUA CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
             authDomain: "meu-precificador-show.firebaseapp.com",
@@ -319,25 +331,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-
-        function loginComGoogle() {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider)
-                .then((result) => {
-                    console.log("Login bem-sucedido!", result.user);
-                }).catch((error) => {
-                    console.error("Erro ao fazer login com Google:", error);
-                    alert("Ocorreu um erro ao tentar fazer login. Tente novamente.");
-                });
-        }
-
-        function logout() {
-            signOut(auth).then(() => {
-                console.log("Logout bem-sucedido.");
-            }).catch((error) => {
-                console.error("Erro ao fazer logout:", error);
-            });
-        }
 
         let insumosCache = [];
         let produtosCache = [];
@@ -363,12 +356,8 @@
             insumosCache: () => insumosCache,
             produtosCache: () => produtosCache,
             configCache: () => configCache,
-            // AJUSTE FEITO AQUI, ADICIONANDO getDocs
-            doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs
+            doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc
         };
-
-        window.loginComGoogle = loginComGoogle;
-        window.logout = logout;
 
         function initializeAppState() {
             if (!window.appState.isReady || !window.appState.userId) return;
@@ -376,16 +365,15 @@
             const insumosRef = getCollectionRef('insumos');
             if (insumosRef) onSnapshot(insumosRef, snapshot => {
                 insumosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderInsumos();
-                updateProdutoSelect(); 
+                filtrarInsumos(); 
             });
 
             const produtosRef = getCollectionRef('produtos');
             if (produtosRef) onSnapshot(produtosRef, snapshot => {
                 produtosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderProdutos();
-                updateProdutoSelect();
-                renderRegistroVendas();
+                filtrarProdutos();
+                filtrarSimuladorSelect();
+                // renderRegistroVendas(); // Esta função não estava no seu código original
             });
 
             const configRef = getConfigDocRef();
@@ -413,22 +401,11 @@
         }
         
         onAuthStateChanged(auth, user => {
-            const loginContainer = document.getElementById('login-container');
-            const appContainer = document.getElementById('app');
-            const userInfoContainer = document.getElementById('user-info');
-
             if (user) {
-                if (window.appState.isReady && window.appState.userId === user.uid) return;
+                if (window.appState.isReady) return; 
 
                 window.appState.userId = user.uid;
                 window.appState.isReady = true;
-
-                loginContainer.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                userInfoContainer.classList.remove('hidden');
-
-                document.getElementById('user-name').textContent = user.displayName || 'Utilizador';
-                document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/150';
 
                 const statusDot = document.getElementById('db-status-dot');
                 const statusText = document.getElementById('db-status-text');
@@ -443,17 +420,40 @@
                 initializeAppState();
 
             } else {
-                window.appState.isReady = false;
-                window.appState.userId = null;
-
-                loginContainer.classList.remove('hidden');
-                appContainer.classList.add('hidden');
-                userInfoContainer.classList.add('hidden');
+                signInAnonymously(auth).catch(error => {
+                    console.error("Erro na autenticação anônima:", error);
+                    const statusDot = document.getElementById('db-status-dot');
+                    const statusText = document.getElementById('db-status-text');
+                    statusDot.classList.remove('bg-yellow-400', 'animate-pulse');
+                    statusDot.classList.add('bg-red-500');
+                    statusText.textContent = 'Erro na ligação. Verifique a configuração do Firebase.';
+                });
             }
         });
+
     </script>
 
     <script>
+        // FUNÇÕES DE FILTRO (NOVAS)
+        function filtrarInsumos() {
+            const filtro = document.getElementById('filtro-insumos').value.toLowerCase();
+            const todosInsumos = window.appState.insumosCache();
+            const insumosFiltrados = todosInsumos.filter(insumo => insumo.nome.toLowerCase().includes(filtro));
+            renderInsumos(insumosFiltrados);
+        }
+
+        function filtrarProdutos() {
+            const filtro = document.getElementById('filtro-produtos').value.toLowerCase();
+            const todosProdutos = window.appState.produtosCache();
+            const produtosFiltrados = todosProdutos.filter(produto => produto.nome.toLowerCase().includes(filtro));
+            renderProdutos(produtosFiltrados);
+        }
+
+        function filtrarSimuladorSelect() {
+            const filtro = document.getElementById('filtro-simulador').value.toLowerCase();
+            updateProdutoSelect(filtro);
+        }
+        
         // --- LÓGICA DA API GEMINI ---
         async function callGeminiAPI(prompt) {
             const apiKey = window.appState.apiKey; 
@@ -493,6 +493,9 @@
                 throw error;
             }
         }
+
+        // --- LÓGICA DA INTERFACE (UI) ---
+
         function changeTab(tabName) {
             document.getElementById('simulador-tab').classList.add('hidden');
             document.getElementById('produtos-tab').classList.add('hidden');
@@ -505,19 +508,27 @@
             document.getElementById(`${tabName}-tab`).classList.remove('hidden');
             document.querySelector(`button[onclick="changeTab('${tabName}')"]`).classList.add('active');
         }
-        function updateProdutoSelect() {
-            const produtos = window.appState.produtosCache();
+        
+        // ATUALIZADA para aceitar um filtro
+        function updateProdutoSelect(filtro = '') {
+            const todosProdutos = window.appState.produtosCache();
+            const produtosFiltrados = todosProdutos.filter(produto => 
+                produto.nome.toLowerCase().includes(filtro.toLowerCase())
+            );
             const select = document.getElementById('produto-select');
             const currentVal = select.value;
             select.innerHTML = '<option value="">-- Selecione um produto --</option>';
-            produtos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(produto => {
+            produtosFiltrados.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(produto => {
                 const option = document.createElement('option');
                 option.value = produto.id;
                 option.textContent = produto.nome;
                 select.appendChild(option);
             });
-            select.value = currentVal;
+            if (produtosFiltrados.some(p => p.id === currentVal)) {
+                select.value = currentVal;
+            }
         }
+
         function updateCanalAnaliseSelect() {
             const canais = window.appState.configCache().canaisVenda || [];
             const select = document.getElementById('canal-analise');
@@ -529,11 +540,14 @@
                 select.appendChild(option);
             });
         }
-        function renderInsumos() {
-            const insumos = window.appState.insumosCache();
+
+        // --- RENDERIZAÇÃO ---
+        
+        // ATUALIZADA para aceitar uma lista
+        function renderInsumos(lista = window.appState.insumosCache()) {
             const container = document.getElementById('lista-insumos');
-            if (!insumos.length) {
-                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum insumo cadastrado. Clique em "Novo Insumo" para começar.</p>`;
+            if (!lista.length) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum insumo encontrado.</p>`;
                 return;
             }
             const table = document.createElement('table');
@@ -549,7 +563,7 @@
                 <tbody class="divide-y divide-gray-200"></tbody>
             `;
             const tbody = table.querySelector('tbody');
-            insumos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(insumo => {
+            lista.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(insumo => {
                 const rendimento = 1 - (parseFloat(insumo.percentualDesperdicio) || 0);
                 const custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
                 const unidadeCompra = insumo.unidadeCompra || 'un';
@@ -573,11 +587,12 @@
             container.innerHTML = '';
             container.appendChild(table);
         }
-        function renderProdutos() {
-            const produtos = window.appState.produtosCache();
+
+        // ATUALIZADA para aceitar uma lista
+        function renderProdutos(lista = window.appState.produtosCache()) {
             const container = document.getElementById('lista-produtos');
-                if (!produtos.length) {
-                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum produto cadastrado. Clique em "Novo Produto" para começar.</p>`;
+            if (!lista.length) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum produto encontrado.</p>`;
                 return;
             }
             const table = document.createElement('table');
@@ -593,7 +608,7 @@
                 <tbody class="divide-y divide-gray-200"></tbody>
             `;
             const tbody = table.querySelector('tbody');
-            produtos.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(produto => {
+            lista.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(produto => {
                 const custo = calcularCustoProduto(produto.id);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -609,6 +624,7 @@
             container.innerHTML = '';
             container.appendChild(table);
         }
+
         function renderConfiguracoes() {
             const config = window.appState.configCache();
             if (!config) return;
@@ -640,6 +656,7 @@
             });
             calcularTotaisConfig();
         }
+
         function calcularCustoInsumo(insumoId, quantidade, unidade) {
             const insumos = window.appState.insumosCache();
             const insumo = insumos.find(i => i.id === insumoId);
@@ -664,6 +681,7 @@
             }
             return custoPorUnidadeBase * quantidadeConvertida;
         }
+
         function calcularCustoProduto(produtoId) {
             const produtos = window.appState.produtosCache();
             const produto = produtos.find(p => p.id === produtoId);
@@ -672,6 +690,7 @@
                 return total + calcularCustoInsumo(item.insumoId, parseFloat(item.quantidade), item.unidade);
             }, 0);
         }
+
         function calcularTotaisConfig() {
             const config = window.appState.configCache();
             const totalCustos = (config.custosOperacionais || []).reduce((sum, custo) => sum + (parseFloat(custo.valor) || 0), 0);
