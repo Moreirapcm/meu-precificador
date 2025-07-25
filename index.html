@@ -1,45 +1,20 @@
-Peço desculpas por isso. O botão "Preview" é uma funcionalidade da plataforma e, por vezes, pode não ser exibido corretamente.
-
-Mas não se preocupe, há uma forma muito simples de contornar isso. Vou fornecer o código completo novamente abaixo. Você pode copiá-lo e executá-lo diretamente no seu computador.
-
-**Siga estes 3 passos:**
-
-1.  **Copie o código:** Clique no botão de cópia no canto superior direito do bloco de código abaixo.
-2.  **Salve o arquivo:** Abra um editor de texto simples (como o Bloco de Notas) e cole o código. Salve o arquivo com um nome que termine em `.html` (por exemplo: `precificador.html`).
-3.  **Abra no navegador:** Encontre o arquivo que você acabou de salvar no seu computador e dê um duplo clique sobre ele. Ele abrirá no seu navegador de internet (Google Chrome, Firefox, etc.) e você poderá ver a aplicação funcionando.
-
-Aqui está o código completo e melhorado:
-
-\<div class="lang-format-container"\>
-\<div class="lang-format-header"\>
-\<div class="lang-format-tag"\>html\</div\>
-\<div class="lang-format-copy-container"\>
-\<button class="lang-format-copy-button"\>
-\<svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" height="24" viewBox="0 -960 960 960" width="24"\>
-\<path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-160v-480 480Z"\>\</path\>
-\</svg\>
-Copy code
-\</button\>
-\</div\>
-\</div\>
-\<pre class="lang-format-pre"\>\<code class="lang-format-code"\>
-\&lt;\!DOCTYPE html\&gt;
-\&lt;html lang=\&quot;pt-BR\&quot;\&gt;
-\&lt;head\&gt;
-\&lt;meta charset=\&quot;UTF-8\&quot;\&gt;
-\&lt;meta name=\&quot;viewport\&quot; content=\&quot;width=device-width, initial-scale=1.0\&quot;\&gt;
-\&lt;title\&gt;Precificador Show de Delicias - Versão Melhorada\&lt;/title\&gt;
-\&lt;script src=\&quot;[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)\&quot;\&gt;\&lt;/script\&gt;
-\&lt;link href=\&quot;[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700\&amp;display=swap\&quot](https://www.google.com/search?q=https://fonts.googleapis.com/css2%3Ffamily%3DInter:wght%40400%3B500%3B600%3B700%26amp%3Bdisplay%3Dswap%26quot); rel=\&quot;stylesheet\&quot;\&gt;
-\&lt;link rel=\&quot;stylesheet\&quot; href=\&quot;[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css\&quot;\&gt](https://www.google.com/search?q=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css%26quot%3B%26gt);
-\&lt;link rel=\&quot;stylesheet\&quot; href=\&quot;[https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css\&quot;/\&gt](https://www.google.com/search?q=https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css%26quot%3B/%26gt);
-\&lt;script src=\&quot;[https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js\&quot;\&gt;\&lt;/script\&gt](https://www.google.com/search?q=https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js%26quot%3B%26gt%3B%26lt%3B/script%26gt);
-\&lt;\!-- Adicionando Chart.js para gráficos --\&gt;
-\&lt;script src=\&quot;[https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js\&quot;\&gt;\&lt;/script\&gt](https://www.google.com/search?q=https://cdn.jsdelivr.net/npm/chart.js%404.4.1/dist/chart.umd.min.js%26quot%3B%26gt%3B%26lt%3B/script%26gt);
-\&lt;style\&gt;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Precificador Show de Delicias - Versão Melhorada</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"; rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">;
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css"/>;
+<script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>;
+<!-- Adicionando Chart.js para gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>;
+<style>
 body {
 font-family: 'Inter', sans-serif;
-background-color: \#f3f4f6;
+background-color: #f3f4f6;
 }
 .modal-backdrop {
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -52,12 +27,12 @@ width: 90%; max-width: 600px; max-height: 90vh;
 overflow-y: auto; z-index: 50;
 }
 .tab-button.active {
-border-bottom: 2px solid \#4f46e5; color: \#4f46e5; font-weight: 600;
+border-bottom: 2px solid #4f46e5; color: #4f46e5; font-weight: 600;
 }
 .tooltip { position: relative; display: inline-block; }
 .tooltip .tooltiptext {
-visibility: hidden; width: 250px; background-color: \#555;
-color: \#fff; text-align: center; border-radius: 6px;
+visibility: hidden; width: 250px; background-color: #555;
+color: #fff; text-align: center; border-radius: 6px;
 padding: 5px; position: absolute; z-index: 1;
 bottom: 125%; left: 50%; margin-left: -125px;
 opacity: 0; transition: opacity 0.3s;
@@ -65,18 +40,16 @@ font-size: 0.8rem; font-weight: normal;
 }
 .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
 .spinner {
-border: 2px solid \#f3f3f3; border-top: 2px solid \#4f46e5;
+border: 2px solid #f3f3f3; border-top: 2px solid #4f46e5;
 border-radius: 50%; width: 16px; height: 16px;
 animation: spin 1s linear infinite; display: inline-block;
 margin-right: 8px;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
-\&lt;/style\&gt;
-\&lt;/head\&gt;
-\&lt;body class=\&quot;bg-gray-100 text-gray-800\&quot;\&gt;
-
-```
+</style>
+</head>
+<body class="bg-gray-100 text-gray-800">
 &lt;div id=&quot;app&quot; class=&quot;container mx-auto p-4 md:p-8&quot;&gt;
     &lt;header class=&quot;mb-4 text-center&quot;&gt;
         &lt;h1 class=&quot;text-4xl font-bold text-indigo-600&quot;&gt;Precificador Show de Delícias&lt;/h1&gt;
@@ -1263,7 +1236,3 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 
 &lt;/script&gt;
-```
-
-\</body\>
-\</html\>
