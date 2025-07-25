@@ -81,7 +81,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Estilo para botões desativados */
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -90,19 +89,40 @@
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div id="app" class="container mx-auto p-4 md:p-8">
-        <header class="mb-4 text-center">
+    <div id="login-container" class="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+        <div class="max-w-md w-full text-center bg-white p-8 rounded-xl shadow-lg">
             <h1 class="text-4xl font-bold text-indigo-600">Precificador Show de Delícias</h1>
-            <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
+            <p class="text-lg text-gray-600 mt-2 mb-8">Faça login para aceder à sua ferramenta.</p>
+            <button onclick="loginComGoogle()" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center shadow-md">
+                <i class="fab fa-google mr-3"></i>
+                Entrar com o Google
+            </button>
+        </div>
+    </div>
+
+    <div id="app" class="container mx-auto p-4 md:p-8 hidden">
+        <header class="mb-4">
+            <div id="user-info" class="hidden flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-4">
+                <div class="flex items-center">
+                    <img id="user-photo" src="" alt="Foto do Utilizador" class="w-10 h-10 rounded-full mr-3">
+                    <span id="user-name" class="font-semibold text-gray-700"></span>
+                </div>
+                <button onclick="logout()" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors text-sm">
+                    Sair
+                </button>
+            </div>
+    
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-indigo-600">Precificador Show de Delícias</h1>
+                <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
+            </div>
         </header>
 
-        <!-- Indicador de Status da Base de Dados -->
         <div id="db-status" class="flex items-center justify-center mb-6 text-sm text-gray-600">
             <span id="db-status-dot" class="h-3 w-3 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>
             <span id="db-status-text">A ligar à base de dados...</span>
         </div>
 
-        <!-- Painel de Navegação -->
         <div class="flex flex-wrap justify-center border-b border-gray-200 mb-8">
             <button onclick="changeTab('simulador')" class="tab-button active py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-calculator mr-2"></i> Simulador de Preços
@@ -121,9 +141,7 @@
             </button>
         </div>
 
-        <!-- Conteúdo das Abas -->
         <main>
-            <!-- ABA: Simulador de Preços -->
             <div id="simulador-tab" class="space-y-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Selecione o Produto e a Margem de Lucro</h2>
@@ -153,7 +171,6 @@
                         <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600"></div>
                     </div>
                     
-                    <!-- Simulador de Promoções -->
                     <div id="simulador-promocao" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Simulador de Promoções iFood</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -170,7 +187,6 @@
                         <div id="resultado-promocao" class="mt-6 hidden"></div>
                     </div>
 
-                    <!-- Simulador de Frete Embutido -->
                     <div id="simulador-frete" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">4. Simulador de Frete Embutido</h2>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
@@ -189,7 +205,6 @@
                 </div>
             </div>
 
-            <!-- ABA: Produtos e Receitas -->
             <div id="produtos-tab" class="hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -202,7 +217,6 @@
                 </div>
             </div>
 
-            <!-- ABA: Insumos -->
             <div id="insumos-tab" class="hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
@@ -215,7 +229,6 @@
                 </div>
             </div>
             
-            <!-- ABA: Análise Estratégica -->
             <div id="analise-tab" class="hidden space-y-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Registo de Vendas</h2>
@@ -235,16 +248,13 @@
                     <div id="lista-registro-vendas" class="mt-6 max-h-96 overflow-y-auto"></div>
                 </div>
                 <div id="resultado-analise-cardapio" class="hidden bg-white p-6 rounded-lg shadow-md">
-                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Engenharia de Cardápio</h2>
-                     <div id="container-analise" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                         <!-- As categorias serão inseridas aqui -->
-                     </div>
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Engenharia de Cardápio</h2>
+                    <div id="container-analise" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        </div>
                 </div>
             </div>
 
-            <!-- ABA: Configurações -->
             <div id="configuracoes-tab" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Custos Operacionais -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">
                         Custos Operacionais
@@ -269,7 +279,6 @@
                     </div>
                 </div>
 
-                <!-- Canais de Venda -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">
                         Canais de Venda
@@ -283,7 +292,7 @@
                         <i class="fas fa-plus mr-2"></i> Adicionar Canal
                     </button>
                 </div>
-                 <div class="lg:col-span-2 text-center mt-4">
+                <div class="lg:col-span-2 text-center mt-4">
                     <button id="btn-salvar-config" onclick="salvarConfiguracoes()" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg" disabled>
                         <i class="fas fa-save mr-2"></i> Salvar Todas as Configurações
                     </button>
@@ -292,30 +301,25 @@
         </main>
     </div>
 
-    <!-- Modal Genérico -->
     <div id="modal-backdrop" class="modal-backdrop hidden">
         <div id="modal-content" class="modal-content">
-            <!-- Conteúdo do modal será injetado aqui -->
-        </div>
+            </div>
     </div>
     
-    <!-- Firebase -->
     <script type="module">
-        // Importações do Firebase
+        // Importações do Firebase ATUALIZADAS
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // <!-- PASSO IMPORTANTE: COLE A SUA CONFIGURAÇÃO DO FIREBASE AQUI -->
-        // Substitua todo o bloco "const firebaseConfig = { ... };" abaixo
-        // pelo bloco de código que você copiou da sua consola do Firebase.
+        // SUA CONFIGURAÇÃO DO FIREBASE (MANTENHA A MESMA)
         const firebaseConfig = {
-          apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
-          authDomain: "meu-precificador-show.firebaseapp.com",
-          projectId: "meu-precificador-show",
-          storageBucket: "meu-precificador-show.appspot.com",
-          messagingSenderId: "767394530716",
-          appId: "1:767394530716:web:412fe2b46d0081b6a07459"
+            apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
+            authDomain: "meu-precificador-show.firebaseapp.com",
+            projectId: "meu-precificador-show",
+            storageBucket: "meu-precificador-show.appspot.com",
+            messagingSenderId: "767394530716",
+            appId: "1:767394530716:web:412fe2b46d0081b6a07459"
         };
         
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
@@ -323,6 +327,26 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+
+        // ===== NOVAS FUNÇÕES DE LOGIN E LOGOUT =====
+        function loginComGoogle() {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    console.log("Login bem-sucedido!", result.user);
+                }).catch((error) => {
+                    console.error("Erro ao fazer login com Google:", error);
+                    alert("Ocorreu um erro ao tentar fazer login. Tente novamente.");
+                });
+        }
+
+        function logout() {
+            signOut(auth).then(() => {
+                console.log("Logout bem-sucedido.");
+            }).catch((error) => {
+                console.error("Erro ao fazer logout:", error);
+            });
+        }
 
         let insumosCache = [];
         let produtosCache = [];
@@ -344,20 +368,24 @@
             db,
             userId: null,
             isReady: false,
-            apiKey: firebaseConfig.apiKey, // <-- Chave de API agora está disponível globalmente
+            apiKey: firebaseConfig.apiKey, 
             getCollectionRef,
             getConfigDocRef,
             insumosCache: () => insumosCache,
             produtosCache: () => produtosCache,
             configCache: () => configCache,
-            // Funções do Firestore
             doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc
         };
+
+        // ===== EXPOR NOVAS FUNÇÕES =====
+        window.loginComGoogle = loginComGoogle;
+        window.logout = logout;
+
 
         function initializeAppState() {
             if (!window.appState.isReady || !window.appState.userId) return;
             
-            // Listeners do Firestore
+            // Listeners do Firestore (seu código original, sem alterações)
             const insumosRef = getCollectionRef('insumos');
             if (insumosRef) onSnapshot(insumosRef, snapshot => {
                 insumosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -370,7 +398,7 @@
                 produtosCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderProdutos();
                 updateProdutoSelect();
-                renderRegistroVendas(); // Atualiza a lista de vendas quando os produtos mudam
+                renderRegistroVendas();
             });
 
             const configRef = getConfigDocRef();
@@ -397,15 +425,29 @@
             });
         }
         
-        // --- AUTENTICAÇÃO E INICIALIZAÇÃO ---
+        // ===== LÓGICA DE AUTENTICAÇÃO PRINCIPAL (ATUALIZADA) =====
         onAuthStateChanged(auth, user => {
+            const loginContainer = document.getElementById('login-container');
+            const appContainer = document.getElementById('app');
+            const userInfoContainer = document.getElementById('user-info');
+
             if (user) {
-                if (window.appState.isReady) return; // Evitar reinicialização
+                // --- UTILIZADOR ESTÁ LOGADO ---
+                if (window.appState.isReady && window.appState.userId === user.uid) return;
 
                 window.appState.userId = user.uid;
                 window.appState.isReady = true;
 
-                // --- Atualiza a UI para o estado "Pronto" ---
+                // Mostrar a aplicação e esconder a tela de login
+                loginContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                userInfoContainer.classList.remove('hidden');
+
+                // Atualizar informações do utilizador na tela
+                document.getElementById('user-name').textContent = user.displayName || 'Utilizador';
+                document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/150';
+
+                // Atualiza a UI para o estado "Pronto"
                 const statusDot = document.getElementById('db-status-dot');
                 const statusText = document.getElementById('db-status-text');
                 statusDot.classList.remove('bg-yellow-400', 'animate-pulse');
@@ -420,14 +462,14 @@
                 initializeAppState();
 
             } else {
-                signInAnonymously(auth).catch(error => {
-                    console.error("Erro na autenticação anônima:", error);
-                    const statusDot = document.getElementById('db-status-dot');
-                    const statusText = document.getElementById('db-status-text');
-                    statusDot.classList.remove('bg-yellow-400', 'animate-pulse');
-                    statusDot.classList.add('bg-red-500');
-                    statusText.textContent = 'Erro na ligação. Verifique a configuração do Firebase.';
-                });
+                // --- UTILIZADOR NÃO ESTÁ LOGADO ---
+                window.appState.isReady = false;
+                window.appState.userId = null;
+
+                // Esconder a aplicação e mostrar a tela de login
+                loginContainer.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+                userInfoContainer.classList.add('hidden');
             }
         });
 
@@ -575,7 +617,7 @@
         function renderProdutos() {
             const produtos = window.appState.produtosCache();
             const container = document.getElementById('lista-produtos');
-             if (!produtos.length) {
+                if (!produtos.length) {
                 container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhum produto cadastrado. Clique em "Novo Produto" para começar.</p>`;
                 return;
             }
@@ -674,7 +716,7 @@
             } else if (unidadeCompra === 'g' && unidade === 'kg') {
                 quantidadeConvertida = quantidade * 1000;
             } else if (unidadeCompra === 'ml' && unidade === 'L') {
-                 quantidadeConvertida = quantidade * 1000;
+                quantidadeConvertida = quantidade * 1000;
             }
 
             return custoPorUnidadeBase * quantidadeConvertida;
@@ -979,7 +1021,8 @@
                 button.disabled = false;
             }
 
-// NOVA FUNÇÃO IMPLEMENTADA
+        }
+        
         window.sugerirPerdaComIA = async function(button) {
             const form = button.closest('form');
             const nomeInsumo = form.nome.value;
@@ -1014,9 +1057,6 @@
             }
         }
 
-
-        }
-
         // --- LÓGICA DOS MODAIS E FORMULÁRIOS ---
         
         function fecharModal() {
@@ -1038,8 +1078,8 @@
                 itemDiv.className = 'receita-item flex items-center gap-2 mb-2';
                 
                 const insumosOptions = insumos.sort((a,b) => a.nome.localeCompare(b.nome))
-                                              .map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`)
-                                              .join('');
+                                                .map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`)
+                                                .join('');
                 
                 const unidades = ['g', 'kg', 'ml', 'L', 'un'];
                 const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === item.unidade ? 'selected' : ''}>${u}</option>`).join('');
@@ -1399,7 +1439,6 @@
             resultadoContainer.innerHTML = htmlResult;
             resultadoContainer.classList.remove('hidden');
         }
-
     </script>
 </body>
 </html>
