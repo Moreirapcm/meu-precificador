@@ -746,6 +746,7 @@
                 return;
             }
             const precoVendaBase = custoProduto / denominadorBase;
+            const lucroPorPrato = precoVendaBase * margemLucro;
             const resumoContainer = document.getElementById('resumo-produto');
             resumoContainer.innerHTML = `
                 <h3 class="text-xl font-bold mb-2 text-indigo-800">${produto.nome}</h3>
@@ -765,6 +766,7 @@
                         <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Canal de Venda</th>
                         <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxas Totais</th>
                         <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço de Venda Final</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lucro (R$)</th>
                         <th class="py-3 px-6 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Análise IA</th>
                     </tr>
                 </thead>
@@ -790,6 +792,7 @@
                     <td class="py-4 px-6 whitespace-nowrap font-medium text-gray-900">${canal.nome}</td>
                     <td class="py-4 px-6 whitespace-nowrap text-gray-500">${(taxasTotais * 100).toFixed(2)}%</td>
                     <td class="py-4 px-6 whitespace-nowrap font-bold text-xl text-indigo-600">R$ ${precoFinal.toFixed(2)}</td>
+                    <td class="py-4 px-6 whitespace-nowrap font-bold text-green-600">R$ ${lucroPorPrato.toFixed(2)}</td>
                     <td class="py-4 px-6 whitespace-nowrap text-center">
                         <button onclick="analisarPrecoComIA('${produto.id}', '${canal.nome}', ${precoFinal}, this)" class="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-purple-600 transition-colors">
                             ✨ Analisar Preço
