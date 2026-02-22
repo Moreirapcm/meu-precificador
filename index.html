@@ -3459,7 +3459,51 @@
 
         // Compartilhar e visualizar
         window.previsualizarCardapio = function() {
-            const url = `${window.location.origin}${window.location.pathname.replace('index.html', '')}cardapio.html?loja=${window.appState.userId}`;
+            // Coletar dados atuais da tela (sem precisar salvar antes)
+            const produtos = window.appState.produtosCache();
+            const produtosCardapio = {};
+            document.querySelectorAll('.cardapio-produto-row').forEach(row => {
+                const id = row.dataset.id;
+                produtosCardapio[id] = {
+                    ativo: row.querySelector('.cp-ativo').checked,
+                    preco: parseFloat(row.querySelector('.cp-preco').value) || 0,
+                    precoPromocional: parseFloat(row.querySelector('.cp-preco-promo').value) || 0,
+                    categoria: row.querySelector('.cp-categoria').value.trim(),
+                    destaque: row.querySelector('.cp-destaque').checked
+                };
+            });
+
+            const previewData = {
+                loja: {
+                    nomeLoja: document.getElementById('loja-nome').value.trim(),
+                    descricaoLoja: document.getElementById('loja-descricao').value.trim(),
+                    whatsapp: document.getElementById('loja-whatsapp').value.trim(),
+                    instagram: document.getElementById('loja-instagram').value.trim(),
+                    endereco: document.getElementById('loja-endereco').value.trim(),
+                    horario: document.getElementById('loja-horario').value.trim(),
+                    taxaEntrega: parseFloat(document.getElementById('loja-taxa-entrega').value) || 0,
+                    pedidoMinimo: parseFloat(document.getElementById('loja-pedido-minimo').value) || 0,
+                    tempoEntrega: document.getElementById('loja-tempo-entrega').value.trim(),
+                    freteGratisAcima: parseFloat(document.getElementById('loja-frete-gratis').value) || 0,
+                    chavePix: document.getElementById('loja-chave-pix').value.trim(),
+                    entregaAtiva: document.getElementById('loja-entrega-ativa').checked,
+                    retiradaAtiva: document.getElementById('loja-retirada-ativa').checked,
+                    pagPix: document.getElementById('pag-pix').checked,
+                    pagCartaoCredito: document.getElementById('pag-cartao-credito').checked,
+                    pagCartaoDebito: document.getElementById('pag-cartao-debito').checked,
+                    pagDinheiro: document.getElementById('pag-dinheiro').checked,
+                    pagValeRefeicao: document.getElementById('pag-vale-refeicao').checked,
+                    logoUrl: cardapioConfig.logoUrl || '',
+                    bannerUrl: cardapioConfig.bannerUrl || '',
+                    corTema: cardapioConfig.corTema || '#ea580c',
+                    cupons: cardapioConfig.cupons || [],
+                    banners: cardapioConfig.banners || [],
+                    produtosCardapio: produtosCardapio
+                },
+                produtos: produtos
+            };
+            localStorage.setItem('cardapio_preview', JSON.stringify(previewData));
+            const url = `${window.location.origin}${window.location.pathname.replace('index.html', '')}cardapio.html?preview=1`;
             window.open(url, '_blank');
         };
 

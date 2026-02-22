@@ -168,22 +168,53 @@
 
         const params = new URLSearchParams(window.location.search);
         const lojaId = params.get('loja');
+        const isPreview = params.get('preview') === '1';
 
         let loja = {};
         let produtos = [];
         let carrinho = [];
         let cupomAplicado = null;
 
-        if (!lojaId) {
+        if (isPreview) {
+            carregarPreview();
+        } else if (lojaId) {
+            carregarLojaFirebase();
+        } else {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('erro-container').classList.remove('hidden');
-        } else {
-            carregarLoja();
         }
 
-        async function carregarLoja() {
+        // Modo preview: le dados do localStorage (definido pelo app principal)
+        function carregarPreview() {
             try {
-                // Carregar config do cardapio
+                const dados = JSON.parse(localStorage.getItem('cardapio_preview'));
+                if (!dados || !dados.loja) {
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('erro-container').classList.remove('hidden');
+                    return;
+                }
+                loja = dados.loja;
+                const todosProdutos = dados.produtos || [];
+                const pc = loja.produtosCardapio || {};
+                produtos = todosProdutos.filter(p => pc[p.id]?.ativo && pc[p.id]?.preco > 0).map(p => ({
+                    ...p,
+                    preco: pc[p.id].preco,
+                    precoPromocional: pc[p.id].precoPromocional || 0,
+                    categoria: pc[p.id].categoria || 'Outros',
+                    destaque: pc[p.id].destaque || false
+                }));
+                if (loja.corTema) document.documentElement.style.setProperty('--cor-tema', loja.corTema);
+                renderLoja();
+            } catch (e) {
+                console.error('Erro no preview:', e);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('erro-container').classList.remove('hidden');
+            }
+        }
+
+        // Modo publico: le dados do Firebase (requer regras de leitura publica)
+        async function carregarLojaFirebase() {
+            try {
                 const configRef = doc(db, `artifacts/${appId}/users/${lojaId}/configuracoes/cardapio`);
                 const configSnap = await getDoc(configRef);
                 if (!configSnap.exists()) {
@@ -193,13 +224,11 @@
                 }
                 loja = configSnap.data();
 
-                // Carregar produtos
                 const prodRef = collection(db, `artifacts/${appId}/users/${lojaId}/produtos`);
                 const prodSnap = await getDocs(prodRef);
                 const todosProdutos = [];
                 prodSnap.forEach(d => todosProdutos.push({ id: d.id, ...d.data() }));
 
-                // Filtrar apenas ativos no cardapio
                 const pc = loja.produtosCardapio || {};
                 produtos = todosProdutos.filter(p => pc[p.id]?.ativo && pc[p.id]?.preco > 0).map(p => ({
                     ...p,
@@ -209,9 +238,7 @@
                     destaque: pc[p.id].destaque || false
                 }));
 
-                // Aplicar cor tema
                 if (loja.corTema) document.documentElement.style.setProperty('--cor-tema', loja.corTema);
-
                 renderLoja();
             } catch (e) {
                 console.error('Erro ao carregar loja:', e);
@@ -637,56 +664,178 @@
             document.getElementById('modal-checkout').classList.remove('hidden');
         };
 
-        // Enviar pedido via WhatsApp
-        window.enviarPedido = function() {
+        // Montar dados do pedido (reutilizado por WhatsApp e impressao)
+        function montarDadosPedido() {
             const nome = document.getElementById('checkout-nome').value.trim();
             const telefone = document.getElementById('checkout-telefone').value.trim();
-            if (!nome) { alert('Informe seu nome.'); return; }
-
             const tipoEntrega = document.querySelector('input[name="entrega"]:checked')?.value || 'retirada';
             const pagamento = document.querySelector('input[name="pagamento"]:checked')?.value || 'pix';
             const endereco = document.getElementById('checkout-endereco')?.value?.trim() || '';
             const bairro = document.getElementById('checkout-bairro')?.value?.trim() || '';
             const obs = document.getElementById('checkout-obs')?.value?.trim() || '';
             const troco = document.getElementById('checkout-troco')?.value || '';
-
             const subtotal = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
-            let desconto = cupomAplicado ? (cupomAplicado.tipo === 'percentual' ? subtotal * cupomAplicado.valor / 100 : cupomAplicado.valor) : 0;
+            const desconto = cupomAplicado ? (cupomAplicado.tipo === 'percentual' ? subtotal * cupomAplicado.valor / 100 : cupomAplicado.valor) : 0;
             const taxaEntrega = (tipoEntrega === 'entrega' && loja.entregaAtiva) ? (loja.freteGratisAcima > 0 && subtotal >= loja.freteGratisAcima ? 0 : (loja.taxaEntrega || 0)) : 0;
             const total = Math.max(0, subtotal - desconto + taxaEntrega);
-
             const pagNomes = { pix: 'Pix', credito: 'Cartao Credito', debito: 'Cartao Debito', dinheiro: 'Dinheiro', vale: 'Vale Refeicao' };
+            const numeroPedido = Math.floor(Math.random() * 9000) + 1000;
+            return { nome, telefone, tipoEntrega, pagamento, pagNome: pagNomes[pagamento] || pagamento, endereco, bairro, obs, troco, subtotal, desconto, taxaEntrega, total, numeroPedido, itens: [...carrinho], cupom: cupomAplicado };
+        }
 
-            let msg = `*Novo Pedido - ${loja.nomeLoja || 'Cardapio Digital'}*\n\n`;
-            msg += `*Cliente:* ${nome}\n`;
-            if (telefone) msg += `*Telefone:* ${telefone}\n`;
-            msg += `*Entrega:* ${tipoEntrega === 'entrega' ? 'Delivery' : 'Retirada no local'}\n`;
-            if (tipoEntrega === 'entrega' && endereco) msg += `*Endereco:* ${endereco}${bairro ? ', ' + bairro : ''}\n`;
-            msg += `*Pagamento:* ${pagNomes[pagamento] || pagamento}\n`;
-            if (pagamento === 'dinheiro' && troco) msg += `*Troco para:* R$ ${parseFloat(troco).toFixed(2)}\n`;
+        // Enviar pedido via WhatsApp
+        window.enviarPedido = function() {
+            const d = montarDadosPedido();
+            if (!d.nome) { alert('Informe seu nome.'); return; }
+
+            // Salvar dados do pedido para tela de confirmacao
+            window._ultimoPedido = d;
+
+            let msg = `*Novo Pedido #${d.numeroPedido} - ${loja.nomeLoja || 'Cardapio Digital'}*\n\n`;
+            msg += `*Cliente:* ${d.nome}\n`;
+            if (d.telefone) msg += `*Telefone:* ${d.telefone}\n`;
+            msg += `*Entrega:* ${d.tipoEntrega === 'entrega' ? 'Delivery' : 'Retirada no local'}\n`;
+            if (d.tipoEntrega === 'entrega' && d.endereco) msg += `*Endereco:* ${d.endereco}${d.bairro ? ', ' + d.bairro : ''}\n`;
+            msg += `*Pagamento:* ${d.pagNome}\n`;
+            if (d.pagamento === 'dinheiro' && d.troco) msg += `*Troco para:* R$ ${parseFloat(d.troco).toFixed(2)}\n`;
             msg += `\n---\n*Itens:*\n`;
-            carrinho.forEach(item => {
+            d.itens.forEach(item => {
                 msg += `${item.qtd}x ${item.nome} - R$ ${(item.preco * item.qtd).toFixed(2)}`;
                 if (item.obs) msg += ` _(${item.obs})_`;
                 msg += `\n`;
             });
             msg += `---\n`;
-            if (desconto > 0) msg += `*Desconto (${cupomAplicado.codigo}):* -R$ ${desconto.toFixed(2)}\n`;
-            if (taxaEntrega > 0) msg += `*Taxa de entrega:* R$ ${taxaEntrega.toFixed(2)}\n`;
-            if (taxaEntrega === 0 && tipoEntrega === 'entrega') msg += `*Entrega:* GRATIS\n`;
-            msg += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
-            if (obs) msg += `\n\n*Obs:* ${obs}`;
+            if (d.desconto > 0) msg += `*Desconto (${d.cupom.codigo}):* -R$ ${d.desconto.toFixed(2)}\n`;
+            if (d.taxaEntrega > 0) msg += `*Taxa de entrega:* R$ ${d.taxaEntrega.toFixed(2)}\n`;
+            if (d.taxaEntrega === 0 && d.tipoEntrega === 'entrega') msg += `*Entrega:* GRATIS\n`;
+            msg += `\n*TOTAL: R$ ${d.total.toFixed(2)}*`;
+            if (d.obs) msg += `\n\n*Obs:* ${d.obs}`;
 
             const wppNum = loja.whatsapp ? loja.whatsapp.replace(/\D/g, '') : '';
             const url = `https://wa.me/55${wppNum}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
 
+            // Mostrar tela de confirmacao
+            fecharCheckout();
+            mostrarConfirmacaoPedido(d);
+
             // Limpar carrinho
             carrinho = [];
             cupomAplicado = null;
             atualizarCarrinhoUI();
-            fecharCheckout();
             renderProdutosCardapio(getListaFiltrada());
+        };
+
+        // Tela de confirmacao com opcao de imprimir
+        function mostrarConfirmacaoPedido(d) {
+            const modal = document.getElementById('modal-checkout-content');
+            modal.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="w-16 h-16 tema-bg rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">Pedido Enviado!</h3>
+                    <p class="text-gray-500 mt-1">Pedido <strong>#${d.numeroPedido}</strong> enviado para o WhatsApp da loja.</p>
+                    <p class="text-sm text-gray-400 mt-1">${new Date().toLocaleString('pt-BR')}</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4 mt-4 text-sm space-y-1">
+                    <div class="flex justify-between"><span class="text-gray-500">Cliente</span><span class="font-semibold">${d.nome}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Entrega</span><span class="font-semibold">${d.tipoEntrega === 'entrega' ? 'Delivery' : 'Retirada'}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Pagamento</span><span class="font-semibold">${d.pagNome}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Itens</span><span class="font-semibold">${d.itens.reduce((s, i) => s + i.qtd, 0)} item(ns)</span></div>
+                    <div class="flex justify-between border-t pt-2 mt-2"><span class="font-bold text-gray-800">Total</span><span class="font-bold text-lg tema-text">R$ ${d.total.toFixed(2)}</span></div>
+                </div>
+                ${loja.chavePix ? `<div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-xl text-center"><p class="text-xs text-green-700 font-bold mb-1"><i class="fas fa-qrcode mr-1"></i>Pague via Pix</p><p class="text-sm font-mono text-green-800 select-all">${loja.chavePix}</p></div>` : ''}
+                <div class="flex gap-3 mt-6">
+                    <button onclick="imprimirPedido()" class="flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl shadow-lg">
+                        <i class="fas fa-print mr-2"></i> Imprimir
+                    </button>
+                    <button onclick="fecharCheckout()" class="flex-1 tema-bg text-white font-bold py-3 rounded-xl shadow-lg">
+                        <i class="fas fa-utensils mr-2"></i> Novo Pedido
+                    </button>
+                </div>
+            `;
+            document.getElementById('modal-checkout').classList.remove('hidden');
+        }
+
+        // Impressao do pedido (comanda / cupom fiscal)
+        window.imprimirPedido = function() {
+            const d = window._ultimoPedido;
+            if (!d) return;
+
+            const agora = new Date().toLocaleString('pt-BR');
+            let itensHtml = '';
+            d.itens.forEach(item => {
+                itensHtml += `
+                    <tr>
+                        <td style="padding:2px 0;text-align:left">${item.qtd}x ${item.nome}</td>
+                        <td style="padding:2px 0;text-align:right">R$ ${(item.preco * item.qtd).toFixed(2)}</td>
+                    </tr>`;
+                if (item.obs) itensHtml += `<tr><td colspan="2" style="padding:0 0 2px 15px;font-size:11px;color:#666;">* ${item.obs}</td></tr>`;
+            });
+
+            const printHtml = `
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Pedido #${d.numeroPedido}</title>
+<style>
+    @page { margin: 5mm; size: 80mm auto; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Courier New', monospace; font-size: 13px; width: 72mm; margin: 0 auto; color: #000; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .line { border-top: 1px dashed #000; margin: 6px 0; }
+    .double-line { border-top: 2px solid #000; margin: 6px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    td { font-size: 12px; vertical-align: top; }
+    .total-row td { font-size: 16px; font-weight: bold; padding-top: 4px; }
+    .header { margin-bottom: 8px; }
+    .footer { margin-top: 10px; font-size: 11px; color: #555; }
+    @media print { body { width: 100%; } }
+</style></head><body>
+    <div class="header center">
+        <div class="bold" style="font-size:16px;">${loja.nomeLoja || 'Restaurante'}</div>
+        ${loja.endereco ? `<div style="font-size:10px;margin-top:2px;">${loja.endereco}</div>` : ''}
+        ${loja.whatsapp ? `<div style="font-size:10px;">WhatsApp: ${loja.whatsapp}</div>` : ''}
+    </div>
+    <div class="double-line"></div>
+    <div class="center bold" style="font-size:14px;">PEDIDO #${d.numeroPedido}</div>
+    <div class="center" style="font-size:11px;">${agora}</div>
+    <div class="line"></div>
+    <div style="margin-bottom:4px;">
+        <div><strong>Cliente:</strong> ${d.nome}</div>
+        ${d.telefone ? `<div><strong>Fone:</strong> ${d.telefone}</div>` : ''}
+        <div><strong>Entrega:</strong> ${d.tipoEntrega === 'entrega' ? 'DELIVERY' : 'RETIRADA NO LOCAL'}</div>
+        ${d.tipoEntrega === 'entrega' && d.endereco ? `<div><strong>End:</strong> ${d.endereco}${d.bairro ? ', ' + d.bairro : ''}</div>` : ''}
+        <div><strong>Pgto:</strong> ${d.pagNome}</div>
+        ${d.pagamento === 'dinheiro' && d.troco ? `<div><strong>Troco p/:</strong> R$ ${parseFloat(d.troco).toFixed(2)}</div>` : ''}
+    </div>
+    <div class="double-line"></div>
+    <div class="bold" style="margin-bottom:4px;">ITENS DO PEDIDO</div>
+    <table>${itensHtml}</table>
+    <div class="line"></div>
+    <table>
+        <tr><td>Subtotal</td><td style="text-align:right">R$ ${d.subtotal.toFixed(2)}</td></tr>
+        ${d.desconto > 0 ? `<tr><td>Desconto (${d.cupom.codigo})</td><td style="text-align:right;color:green;">-R$ ${d.desconto.toFixed(2)}</td></tr>` : ''}
+        ${d.tipoEntrega === 'entrega' ? `<tr><td>Entrega</td><td style="text-align:right">${d.taxaEntrega > 0 ? 'R$ ' + d.taxaEntrega.toFixed(2) : 'GRATIS'}</td></tr>` : ''}
+    </table>
+    <div class="double-line"></div>
+    <table><tr class="total-row"><td>TOTAL</td><td style="text-align:right">R$ ${d.total.toFixed(2)}</td></tr></table>
+    <div class="double-line"></div>
+    ${loja.chavePix && d.pagamento === 'pix' ? `<div class="center" style="margin-top:6px;"><div class="bold">CHAVE PIX:</div><div style="font-size:12px;word-break:break-all;">${loja.chavePix}</div></div><div class="line"></div>` : ''}
+    ${d.obs ? `<div style="margin-top:4px;"><strong>OBS:</strong> ${d.obs}</div><div class="line"></div>` : ''}
+    <div class="footer center">
+        <div>Obrigado pela preferencia!</div>
+        <div>${loja.nomeLoja || ''}</div>
+        ${loja.instagram ? `<div>${loja.instagram}</div>` : ''}
+    </div>
+</body></html>`;
+
+            const printWindow = window.open('', '_blank', 'width=350,height=600');
+            printWindow.document.write(printHtml);
+            printWindow.document.close();
+            printWindow.onload = function() {
+                printWindow.print();
+            };
         };
 
         // Filtros
