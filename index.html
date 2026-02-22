@@ -42,6 +42,15 @@
             color: #4f46e5;
             font-weight: 600;
         }
+        .tab-button.dashboard-btn {
+            border-bottom: none !important;
+        }
+        .tab-button.dashboard-btn.active {
+            background-color: #15803d !important;
+            color: white !important;
+            border-bottom: none !important;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+        }
         .tooltip {
             position: relative;
             display: inline-block;
@@ -203,7 +212,7 @@
             <button onclick="changeTab('insumos')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-carrot mr-2"></i> Insumos
             </button>
-            <button onclick="changeTab('dashboard')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+            <button onclick="changeTab('dashboard')" class="tab-button dashboard-btn py-4 px-6 text-white bg-green-600 hover:bg-green-700 rounded-lg mx-1 font-semibold shadow-md focus:outline-none transition-colors">
                 <i class="fas fa-chart-bar mr-2"></i> Dashboard
             </button>
             <button onclick="changeTab('analise')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
@@ -380,7 +389,54 @@
                 </div>
             </div>
 
-            <div id="insumos-tab" class="hidden">
+            <div id="insumos-tab" class="hidden space-y-6">
+                <!-- Guia de FC -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <button onclick="document.getElementById('fc-guia-content').classList.toggle('hidden')" class="flex items-center justify-between w-full text-left">
+                        <h2 class="text-lg font-semibold text-gray-700"><i class="fas fa-book text-blue-500 mr-2"></i>Guia: Fator de Correção (FC) - Referência Rápida</h2>
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <div id="fc-guia-content" class="hidden mt-4">
+                        <p class="text-sm text-gray-600 mb-3">O <strong>Fator de Correção (FC)</strong> representa quanto a mais você precisa comprar para compensar perdas no pré-preparo. <strong>FC = Peso Bruto / Peso Líquido</strong>.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                            <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <h4 class="font-bold text-red-800 mb-2"><i class="fas fa-drumstick-bite mr-1"></i> Carnes e Aves</h4>
+                                <table class="w-full">
+                                    <tr><td class="py-0.5">Alcatra</td><td class="text-right font-semibold">1,12-1,20</td></tr>
+                                    <tr><td class="py-0.5">Acém</td><td class="text-right font-semibold">1,11-1,28</td></tr>
+                                    <tr><td class="py-0.5">Peito de frango</td><td class="text-right font-semibold">2,17</td></tr>
+                                    <tr><td class="py-0.5">Frango inteiro</td><td class="text-right font-semibold">2,38</td></tr>
+                                    <tr><td class="py-0.5">Camarão</td><td class="text-right font-semibold">4,10</td></tr>
+                                </table>
+                            </div>
+                            <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <h4 class="font-bold text-green-800 mb-2"><i class="fas fa-carrot mr-1"></i> Legumes e Verduras</h4>
+                                <table class="w-full">
+                                    <tr><td class="py-0.5">Batata</td><td class="text-right font-semibold">1,06-1,33</td></tr>
+                                    <tr><td class="py-0.5">Cebola</td><td class="text-right font-semibold">1,03-1,17</td></tr>
+                                    <tr><td class="py-0.5">Cenoura</td><td class="text-right font-semibold">1,12-1,17</td></tr>
+                                    <tr><td class="py-0.5">Alface</td><td class="text-right font-semibold">1,33</td></tr>
+                                    <tr><td class="py-0.5">Brócolis</td><td class="text-right font-semibold">1,40-2,20</td></tr>
+                                </table>
+                            </div>
+                            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <h4 class="font-bold text-yellow-800 mb-2"><i class="fas fa-apple-alt mr-1"></i> Frutas</h4>
+                                <table class="w-full">
+                                    <tr><td class="py-0.5">Banana</td><td class="text-right font-semibold">1,51</td></tr>
+                                    <tr><td class="py-0.5">Laranja</td><td class="text-right font-semibold">1,34-2,00</td></tr>
+                                    <tr><td class="py-0.5">Maçã</td><td class="text-right font-semibold">1,13</td></tr>
+                                    <tr><td class="py-0.5">Abacaxi</td><td class="text-right font-semibold">1,47-1,89</td></tr>
+                                    <tr><td class="py-0.5">Manga</td><td class="text-right font-semibold">1,38-1,66</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                            <i class="fas fa-lightbulb mr-1"></i>
+                            <strong>Dica:</strong> FC 1,25 = 20% de desperdício. Se a carne custa R$40/kg e o FC é 1,25, o custo real é R$50/kg. Sempre meça o FC do seu próprio estabelecimento, pois varia conforme fornecedor e manipulador.
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-700">Gestão de Insumos</h2>
@@ -397,7 +453,7 @@
                             <input type="text" id="filtro-insumos" onkeyup="filtrarInsumos()" placeholder="Buscar por nome do insumo..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
                         </div>
                     </div>
-                    
+
                     <div id="lista-insumos" class="overflow-x-auto"></div>
                 </div>
             </div>
@@ -733,6 +789,32 @@
                         <i class="fas fa-plus mr-2"></i> Adicionar Canal
                     </button>
                 </div>
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+                        <i class="fas fa-robot text-purple-500 mr-2"></i>Assistente de IA (Gemini)
+                        <span class="tooltip">
+                            <i class="fas fa-info-circle text-gray-400"></i>
+                            <span class="tooltiptext">Configure sua chave da API Gemini para usar análises de preço, sugestões de ingredientes e consultoria com IA.</span>
+                        </span>
+                    </h2>
+                    <div id="ia-status-banner" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <strong>IA desativada.</strong> Configure sua chave da API Gemini abaixo para ativar as funcionalidades de IA (análise de preços, sugestões, consultoria).
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <div>
+                            <label for="gemini-api-key" class="block text-sm font-medium text-gray-700 mb-1">Chave da API Gemini (Google AI Studio)</label>
+                            <input type="password" id="gemini-api-key" placeholder="Cole sua chave aqui: AIzaSy..." class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            <p class="text-xs text-gray-500 mt-1">Obtenha em: <a href="https://aistudio.google.com/apikey" target="_blank" class="text-indigo-600 underline">aistudio.google.com/apikey</a> (gratuito)</p>
+                        </div>
+                        <div>
+                            <button onclick="testarConexaoIA()" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                                <i class="fas fa-plug mr-2"></i> Testar Conexão
+                            </button>
+                            <span id="ia-test-result" class="ml-2 text-sm"></span>
+                        </div>
+                    </div>
+                </div>
                 <div class="lg:col-span-2 text-center mt-4">
                     <button id="btn-salvar-config" onclick="salvarConfiguracoes()" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg" disabled>
                         <i class="fas fa-save mr-2"></i> Salvar Todas as Configurações
@@ -897,10 +979,59 @@
         }
 
         // --- LÓGICA DA API GEMINI ---
+        function getGeminiApiKey() {
+            // Prioridade: 1) campo configurado e salvo, 2) localStorage, 3) Firebase key como fallback
+            const savedKey = window.appState.configCache().geminiApiKey;
+            const inputKey = document.getElementById('gemini-api-key')?.value?.trim();
+            return inputKey || savedKey || localStorage.getItem('geminiApiKey') || '';
+        }
+
+        function atualizarStatusIA() {
+            const key = getGeminiApiKey();
+            const banner = document.getElementById('ia-status-banner');
+            if (banner) {
+                if (key && key.startsWith('AIza')) {
+                    banner.className = 'mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800';
+                    banner.innerHTML = '<i class="fas fa-check-circle mr-1"></i> <strong>IA ativada.</strong> As funcionalidades de IA estão prontas para uso.';
+                } else {
+                    banner.className = 'mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800';
+                    banner.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> <strong>IA desativada.</strong> Configure sua chave da API Gemini abaixo para ativar as funcionalidades de IA (análise de preços, sugestões, consultoria).';
+                }
+            }
+        }
+
+        window.testarConexaoIA = async function() {
+            const key = getGeminiApiKey();
+            const resultSpan = document.getElementById('ia-test-result');
+            if (!key) {
+                resultSpan.innerHTML = '<span class="text-red-600"><i class="fas fa-times mr-1"></i>Insira uma chave API primeiro.</span>';
+                return;
+            }
+            resultSpan.innerHTML = '<span class="text-gray-500"><span class="spinner"></span>Testando...</span>';
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Responda apenas: OK" }] }] })
+                });
+                if (response.ok) {
+                    resultSpan.innerHTML = '<span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Conexão OK! IA funcionando.</span>';
+                    localStorage.setItem('geminiApiKey', key);
+                    atualizarStatusIA();
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    resultSpan.innerHTML = `<span class="text-red-600"><i class="fas fa-times mr-1"></i>Erro ${response.status}: ${err.error?.message || 'Chave inválida'}</span>`;
+                }
+            } catch (e) {
+                resultSpan.innerHTML = `<span class="text-red-600"><i class="fas fa-times mr-1"></i>Erro de conexão: ${e.message}</span>`;
+            }
+        }
+
         async function callGeminiAPI(prompt) {
-            const apiKey = window.appState.apiKey; 
-            if (!apiKey || apiKey.includes("SUA_API")) {
-                throw new Error("A chave de API (apiKey) do Firebase não foi configurada corretamente no código.");
+            const apiKey = getGeminiApiKey();
+            if (!apiKey) {
+                throw new Error("Assistente de IA não configurado. Vá em Configurações e insira sua chave da API Gemini (gratuita em aistudio.google.com/apikey).");
             }
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const payload = {
@@ -1021,31 +1152,50 @@
             table.innerHTML = `
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Real (Pós-Desperdício)</th>
-                        <th class="py-3 px-6 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço Compra</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Desperdício</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">FC</th>
+                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Real</th>
+                        <th class="py-3 px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200"></tbody>
             `;
             const tbody = table.querySelector('tbody');
             lista.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(insumo => {
-                const rendimento = 1 - (parseFloat(insumo.percentualDesperdicio) || 0);
+                const despPerc = parseFloat(insumo.percentualDesperdicio) || 0;
+                const rendimento = 1 - despPerc;
+                const fc = rendimento > 0 ? (1 / rendimento) : 0;
                 const custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
                 const unidadeCompra = insumo.unidadeCompra || 'un';
+                const custoPorUnidade = parseFloat(insumo.qtdCompra) > 0 ? custoReal / parseFloat(insumo.qtdCompra) : 0;
+                // Cor do badge de desperdício
+                const despClass = despPerc > 0.40 ? 'bg-red-100 text-red-800' : despPerc > 0.20 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
+                const fcClass = fc > 1.5 ? 'text-red-600 font-bold' : fc > 1.2 ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold';
                 const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
                 tr.innerHTML = `
-                    <td class="py-4 px-6 whitespace-nowrap">
+                    <td class="py-3 px-4 whitespace-nowrap">
                         <div class="font-medium text-gray-900">${insumo.nome}</div>
-                        <div class="text-sm text-gray-500">Comprado a R$ ${parseFloat(insumo.precoCompra).toFixed(2)} / ${insumo.qtdCompra} ${unidadeCompra}</div>
                     </td>
-                    <td class="py-4 px-6 whitespace-nowrap">
-                        <div class="font-medium text-green-600">R$ ${custoReal.toFixed(2)} / ${insumo.qtdCompra} ${unidadeCompra}</div>
-                        <div class="text-sm text-gray-500">${(parseFloat(insumo.percentualDesperdicio) * 100).toFixed(0)}% de desperdício</div>
+                    <td class="py-3 px-4 whitespace-nowrap">
+                        <div class="text-gray-700">R$ ${parseFloat(insumo.precoCompra).toFixed(2)}</div>
+                        <div class="text-xs text-gray-400">${insumo.qtdCompra} ${unidadeCompra}</div>
                     </td>
-                    <td class="py-4 px-6 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="abrirModalInsumo('${insumo.id}')" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
-                        <button onclick="deletarItem('insumos', '${insumo.id}', 'insumo')" class="text-red-600 hover:text-red-900">Excluir</button>
+                    <td class="py-3 px-4 whitespace-nowrap text-center">
+                        <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold ${despClass}">${(despPerc * 100).toFixed(0)}%</span>
+                    </td>
+                    <td class="py-3 px-4 whitespace-nowrap text-center">
+                        <span class="${fcClass}">${fc.toFixed(2)}</span>
+                    </td>
+                    <td class="py-3 px-4 whitespace-nowrap">
+                        <div class="font-bold text-indigo-600">R$ ${custoReal.toFixed(2)} / ${insumo.qtdCompra} ${unidadeCompra}</div>
+                        <div class="text-xs text-gray-500">R$ ${custoPorUnidade.toFixed(4)} / ${unidadeCompra}</div>
+                    </td>
+                    <td class="py-3 px-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="abrirModalInsumo('${insumo.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fas fa-edit"></i></button>
+                        <button onclick="deletarItem('insumos', '${insumo.id}', 'insumo')" class="text-red-600 hover:text-red-900"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1120,6 +1270,13 @@
                 canaisContainer.appendChild(div);
             });
             calcularTotaisConfig();
+            // Carregar chave Gemini
+            const geminiKeyInput = document.getElementById('gemini-api-key');
+            if (geminiKeyInput) {
+                const savedKey = config.geminiApiKey || localStorage.getItem('geminiApiKey') || '';
+                if (savedKey) geminiKeyInput.value = savedKey;
+            }
+            atualizarStatusIA();
         }
 
         function calcularCustoInsumo(insumoId, quantidade, unidade) {
@@ -1132,7 +1289,11 @@
             const desperdicio = parseFloat(insumo.percentualDesperdicio);
             if (qtdCompra === 0) return 0;
             const rendimento = 1 - desperdicio;
-            const custoRealTotal = rendimento > 0 ? precoCompra / rendimento : precoCompra;
+            let custoRealTotal = rendimento > 0 ? precoCompra / rendimento : precoCompra;
+            // Aplicar índice de cocção se disponível
+            if (insumo.indiceCoccao && insumo.indiceCoccao > 0 && insumo.indiceCoccao < 1) {
+                custoRealTotal = custoRealTotal / insumo.indiceCoccao;
+            }
             let custoPorUnidadeBase = custoRealTotal / qtdCompra;
             let quantidadeConvertida = quantidade;
             if (unidadeCompra === 'kg' && unidade === 'g') {
@@ -1484,6 +1645,9 @@
             const modalContent = document.getElementById('modal-content');
             const unidades = ['kg', 'g', 'L', 'ml', 'un'];
             const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === (insumo.unidadeCompra || 'kg') ? 'selected' : ''}>${u}</option>`).join('');
+            const despVal = (insumo.percentualDesperdicio || 0) * 100;
+            const fcVal = despVal < 100 ? (1 / (1 - despVal / 100)).toFixed(2) : '0.00';
+            const indiceCoccao = insumo.indiceCoccao !== undefined ? (insumo.indiceCoccao * 100).toFixed(0) : '';
             modalContent.innerHTML = `
                 <h2 class="text-2xl font-bold mb-6">${id ? 'Editar' : 'Novo'} Insumo</h2>
                 <form id="form-insumo" onsubmit="salvarInsumo(event, '${id || ''}')" class="space-y-4">
@@ -1507,13 +1671,44 @@
                             </select>
                         </div>
                     </div>
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                           <label class="block text-sm font-medium text-gray-700">Percentual de Desperdício (%) <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Ex: Se de 1kg de carne, 300g são aparas, o desperdício é 30%. Insira 30.</span></span></label>
-                           <button type="button" onclick="sugerirPerdaComIA(this)" class="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600 transition-colors">✨ Sugerir Perda</button>
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h3 class="text-sm font-bold text-blue-800 mb-2"><i class="fas fa-cut mr-1"></i> Fator de Correção (FC) - Pré-preparo</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                   <label class="block text-sm font-medium text-gray-700">Desperdício no Pré-preparo (%)
+                                       <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Cascas, sementes, ossos, aparas. Ex: 1kg carne com 300g de aparas = 30%.</span></span>
+                                   </label>
+                                   <button type="button" onclick="sugerirPerdaComIA(this)" class="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600 transition-colors">✨ Sugerir Perda</button>
+                                </div>
+                                <input type="number" name="percentualDesperdicio" value="${despVal}" min="0" max="99" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md" oninput="atualizarFCPreview()">
+                                <div id="perda-ia-resultado" class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md hidden"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">FC Calculado</label>
+                                <div id="fc-preview" class="mt-1 p-2 bg-white border border-gray-300 rounded-md text-lg font-bold text-indigo-600">${fcVal}</div>
+                                <p class="text-xs text-gray-500 mt-1">FC = 1 / (1 - desp%). Ex: FC 1,43 = precisa comprar 43% a mais.</p>
+                            </div>
                         </div>
-                        <input type="number" name="percentualDesperdicio" value="${(insumo.percentualDesperdicio || 0) * 100}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
-                        <div id="perda-ia-resultado" class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md hidden"></div>
+                    </div>
+                    <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <h3 class="text-sm font-bold text-orange-800 mb-2"><i class="fas fa-fire mr-1"></i> Índice de Cocção (opcional)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Rendimento após cocção (%)
+                                    <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Quanto sobra após cozinhar. Ex: 1kg de carne assada vira 600g = 60%. Deixe vazio para ignorar.</span></span>
+                                </label>
+                                <input type="number" name="indiceCoccao" value="${indiceCoccao}" min="1" max="100" placeholder="Ex: 70 (opcional)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                                <p class="text-xs text-gray-500 mt-1">Carnes gordurosas: 40-50% | Carnes magras: 60-70% | Legumes: 80-90%</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Custo Real Estimado</label>
+                                <div id="custo-real-preview" class="mt-1 p-2 bg-white border border-gray-300 rounded-md text-lg font-bold text-green-600">
+                                    R$ ${(parseFloat(insumo.precoCompra || 0) / (1 - (insumo.percentualDesperdicio || 0))).toFixed(2)}
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Preço com FC aplicado (e cocção, se informada).</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex justify-end gap-4 pt-4"><button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button></div>
                 </form>
@@ -1557,6 +1752,29 @@
             renderReceitaItems(); 
             document.getElementById('modal-backdrop').classList.remove('hidden');
         }
+        window.atualizarFCPreview = function() {
+            const form = document.getElementById('form-insumo');
+            if (!form) return;
+            const desp = parseFloat(form.percentualDesperdicio.value) || 0;
+            const preco = parseFloat(form.precoCompra?.value) || 0;
+            const qtd = parseFloat(form.qtdCompra?.value) || 1;
+            const ic = parseFloat(form.indiceCoccao?.value) || 0;
+            const rendimento = 1 - desp / 100;
+            const fc = rendimento > 0 ? (1 / rendimento) : 0;
+            const fcPreview = document.getElementById('fc-preview');
+            if (fcPreview) {
+                fcPreview.textContent = fc.toFixed(2);
+                fcPreview.className = 'mt-1 p-2 bg-white border border-gray-300 rounded-md text-lg font-bold ' +
+                    (fc > 1.5 ? 'text-red-600' : fc > 1.2 ? 'text-yellow-600' : 'text-green-600');
+            }
+            const custoPreview = document.getElementById('custo-real-preview');
+            if (custoPreview && preco > 0) {
+                let custoReal = rendimento > 0 ? preco / rendimento : preco;
+                if (ic > 0 && ic < 100) custoReal = custoReal / (ic / 100);
+                custoPreview.textContent = `R$ ${custoReal.toFixed(2)}`;
+            }
+        }
+
         window.salvarInsumo = async function(event, id) {
             event.preventDefault();
             if (!window.appState.isReady) {
@@ -1564,6 +1782,7 @@
                 return;
             }
             const form = document.getElementById('form-insumo');
+            const indiceCoccaoVal = parseFloat(form.indiceCoccao?.value);
             const data = {
                 nome: form.nome.value,
                 precoCompra: parseFloat(form.precoCompra.value),
@@ -1571,6 +1790,11 @@
                 unidadeCompra: form.unidadeCompra.value,
                 percentualDesperdicio: parseFloat(form.percentualDesperdicio.value) / 100
             };
+            if (!isNaN(indiceCoccaoVal) && indiceCoccaoVal > 0) {
+                data.indiceCoccao = indiceCoccaoVal / 100;
+            } else {
+                data.indiceCoccao = null;
+            }
             try {
                 const { getCollectionRef, addDoc, updateDoc, doc } = window.appState;
                 const collectionRef = getCollectionRef('insumos');
@@ -1666,7 +1890,14 @@
                 const docRef = getConfigDocRef();
                 const config = window.appState.configCache();
                 config.faturamentoMedioMensal = parseFloat(document.getElementById('faturamento-mensal').value) || 0;
+                // Salvar chave Gemini
+                const geminiKey = document.getElementById('gemini-api-key')?.value?.trim();
+                if (geminiKey) {
+                    config.geminiApiKey = geminiKey;
+                    localStorage.setItem('geminiApiKey', geminiKey);
+                }
                 await setDoc(docRef, config);
+                atualizarStatusIA();
                 alert("Configurações salvas com sucesso!");
             } catch (e) {
                 console.error("Erro ao salvar configurações: ", e);
@@ -2513,6 +2744,178 @@
             if (val < 0) this.value = 0;
             if (val > 99) this.value = 99;
         });
+
+        // === ANÁLISE ESTRATÉGICA - Engenharia de Cardápio ===
+        window.vendasRegistradas = {};
+        let vendasRegistradas = window.vendasRegistradas;
+
+        window.renderRegistroVendas = function renderRegistroVendas() {
+            const container = document.getElementById('lista-registro-vendas');
+            if (!container) return;
+            const produtos = window.appState.produtosCache();
+            if (produtos.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-4">Cadastre produtos primeiro para registrar vendas.</p>';
+                return;
+            }
+            let html = `<table class="min-w-full bg-white text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-2 px-4 text-left text-xs font-medium text-gray-500 uppercase">Produto</th>
+                        <th class="py-2 px-4 text-center text-xs font-medium text-gray-500 uppercase">Qtd. Vendida</th>
+                        <th class="py-2 px-4 text-right text-xs font-medium text-gray-500 uppercase">Custo Unit.</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">`;
+            produtos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(p => {
+                const custo = calcularCustoProduto(p.id);
+                const qtdAtual = vendasRegistradas[p.id] || 0;
+                html += `<tr class="hover:bg-gray-50">
+                    <td class="py-2 px-4 font-medium text-gray-900">${p.nome}</td>
+                    <td class="py-2 px-4 text-center">
+                        <input type="number" min="0" value="${qtdAtual}" onchange="vendasRegistradas['${p.id}'] = parseInt(this.value) || 0"
+                            class="w-20 p-1 border border-gray-300 rounded-md text-center">
+                    </td>
+                    <td class="py-2 px-4 text-right text-gray-600">R$ ${custo.toFixed(2)}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        window.analisarVendas = function() {
+            const produtos = window.appState.produtosCache();
+            const config = window.appState.configCache();
+            const canal = document.getElementById('canal-analise').value;
+            if (!canal) {
+                alert('Selecione um canal de venda.');
+                return;
+            }
+
+            const canais = config.canaisVenda || [];
+            const canalObj = canais.find(c => c.nome === canal);
+            if (!canalObj) {
+                alert('Canal de venda não encontrado nas configurações.');
+                return;
+            }
+
+            const totalCustosOp = (config.custosOperacionais || []).reduce((s, c) => s + parseFloat(c.valor), 0);
+            const faturamento = parseFloat(config.faturamentoMedioMensal) || 1;
+            const custoOpPerc = totalCustosOp / faturamento;
+
+            // Classificar produtos pela Engenharia de Cardápio (BCG Matrix)
+            let dadosProdutos = [];
+            let totalVendas = 0;
+            let totalLucro = 0;
+
+            produtos.forEach(p => {
+                const qtdVendida = vendasRegistradas[p.id] || 0;
+                const custo = calcularCustoProduto(p.id);
+                const taxas = parseFloat(canalObj.taxaComissao) + parseFloat(canalObj.taxaTransacao);
+                const margem = 0.35; // margem padrão para análise
+                const denomBase = 1 - custoOpPerc - margem;
+                const precoBase = denomBase > 0 ? custo / denomBase : 0;
+                const precoFinal = (1 - taxas) > 0 ? precoBase / (1 - taxas) : 0;
+                const lucroUnit = precoBase * margem;
+                const lucroTotal = lucroUnit * qtdVendida;
+
+                totalVendas += qtdVendida;
+                totalLucro += lucroTotal;
+
+                dadosProdutos.push({
+                    nome: p.nome,
+                    qtdVendida,
+                    custo,
+                    precoFinal,
+                    lucroUnit,
+                    lucroTotal,
+                    margemPerc: precoFinal > 0 ? ((precoFinal - custo) / precoFinal * 100) : 0
+                });
+            });
+
+            // Calcular médias para classificação
+            const mediaVendas = totalVendas / Math.max(dadosProdutos.filter(p => p.qtdVendida > 0).length, 1);
+            const mediaLucro = dadosProdutos.filter(p => p.qtdVendida > 0).reduce((s, p) => s + p.lucroUnit, 0) / Math.max(dadosProdutos.filter(p => p.qtdVendida > 0).length, 1);
+
+            // Classificar: Estrela (alto vol, alto lucro), Burro de carga (alto vol, baixo lucro), Quebra-cabeça (baixo vol, alto lucro), Cão (baixo vol, baixo lucro)
+            dadosProdutos.forEach(p => {
+                if (p.qtdVendida === 0) {
+                    p.categoria = 'Sem dados';
+                    p.catIcon = 'fa-question-circle';
+                    p.catColor = 'text-gray-400';
+                } else if (p.qtdVendida >= mediaVendas && p.lucroUnit >= mediaLucro) {
+                    p.categoria = 'Estrela';
+                    p.catIcon = 'fa-star';
+                    p.catColor = 'text-yellow-500';
+                } else if (p.qtdVendida >= mediaVendas && p.lucroUnit < mediaLucro) {
+                    p.categoria = 'Burro de carga';
+                    p.catIcon = 'fa-horse';
+                    p.catColor = 'text-blue-500';
+                } else if (p.qtdVendida < mediaVendas && p.lucroUnit >= mediaLucro) {
+                    p.categoria = 'Quebra-cabeça';
+                    p.catIcon = 'fa-puzzle-piece';
+                    p.catColor = 'text-purple-500';
+                } else {
+                    p.categoria = 'Cão';
+                    p.catIcon = 'fa-dog';
+                    p.catColor = 'text-red-500';
+                }
+            });
+
+            // Renderizar resultado
+            const container = document.getElementById('container-analise');
+            let html = '';
+
+            // Tabela de classificação
+            html += `<div class="lg:col-span-2">
+                <table class="min-w-full bg-white text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase">Produto</th>
+                            <th class="py-2 px-3 text-center text-xs font-medium text-gray-500 uppercase">Vendas</th>
+                            <th class="py-2 px-3 text-right text-xs font-medium text-gray-500 uppercase">Lucro/Un</th>
+                            <th class="py-2 px-3 text-right text-xs font-medium text-gray-500 uppercase">Lucro Total</th>
+                            <th class="py-2 px-3 text-center text-xs font-medium text-gray-500 uppercase">Classificação</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">`;
+
+            dadosProdutos.sort((a, b) => b.lucroTotal - a.lucroTotal).forEach(p => {
+                html += `<tr class="hover:bg-gray-50">
+                    <td class="py-2 px-3 font-medium text-gray-900">${p.nome}</td>
+                    <td class="py-2 px-3 text-center">${p.qtdVendida}</td>
+                    <td class="py-2 px-3 text-right text-green-600 font-semibold">R$ ${p.lucroUnit.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right font-bold">R$ ${p.lucroTotal.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-center ${p.catColor}"><i class="fas ${p.catIcon} mr-1"></i>${p.categoria}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+
+            // Legenda e insights
+            html += `<div class="p-4 bg-gray-50 rounded-lg">
+                <h3 class="font-bold text-gray-800 mb-3">Legenda - Engenharia de Cardápio</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center"><i class="fas fa-star text-yellow-500 mr-2 w-5"></i><strong>Estrela:</strong><span class="ml-1 text-gray-600">Alto volume + alto lucro. Promova!</span></div>
+                    <div class="flex items-center"><i class="fas fa-horse text-blue-500 mr-2 w-5"></i><strong>Burro de carga:</strong><span class="ml-1 text-gray-600">Vende muito mas lucro baixo. Ajuste o preço.</span></div>
+                    <div class="flex items-center"><i class="fas fa-puzzle-piece text-purple-500 mr-2 w-5"></i><strong>Quebra-cabeça:</strong><span class="ml-1 text-gray-600">Lucro alto mas vende pouco. Invista em divulgação.</span></div>
+                    <div class="flex items-center"><i class="fas fa-dog text-red-500 mr-2 w-5"></i><strong>Cão:</strong><span class="ml-1 text-gray-600">Pouco volume e pouco lucro. Considere remover.</span></div>
+                </div>
+            </div>`;
+
+            // Resumo geral
+            html += `<div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                <h3 class="font-bold text-indigo-800 mb-2">Resumo do Período</h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div><span class="text-gray-600">Total vendas:</span> <strong>${totalVendas}</strong></div>
+                    <div><span class="text-gray-600">Lucro estimado:</span> <strong class="text-green-600">R$ ${totalLucro.toFixed(2)}</strong></div>
+                    <div><span class="text-gray-600">Canal:</span> <strong>${canal}</strong></div>
+                    <div><span class="text-gray-600">Produtos analisados:</span> <strong>${dadosProdutos.filter(p => p.qtdVendida > 0).length}</strong></div>
+                </div>
+            </div>`;
+
+            container.innerHTML = html;
+            document.getElementById('resultado-analise-cardapio').classList.remove('hidden');
+        }
 
         // ESC to close modal
         document.addEventListener('keydown', function(e) {
