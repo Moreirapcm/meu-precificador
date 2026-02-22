@@ -209,6 +209,9 @@
             <button onclick="changeTab('analise')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-chart-line mr-2"></i> Análise Estratégica
             </button>
+            <button onclick="changeTab('relatorios')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+                <i class="fas fa-file-csv mr-2"></i> Relatórios iFood
+            </button>
             <button onclick="changeTab('configuracoes')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-cogs mr-2"></i> Configurações
             </button>
@@ -277,6 +280,36 @@
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <!-- Campanha Inteligente Presets -->
+                            <div class="md:col-span-4 mb-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-bolt text-yellow-500 mr-1"></i> Descontos Fixos - Campanha Inteligente
+                                    <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Faixas oficiais do iFood. Pode ter até +R$5 extra do iFood por item. Clique para preencher automaticamente.</span></span>
+                                </label>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="presets-campanha">
+                                    <button onclick="aplicarPresetCampanha(5, 15, 24.99)" class="text-xs p-2 border-2 border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-400 transition-colors text-left">
+                                        <span class="font-bold text-orange-600 block">R$ 5 off</span>
+                                        <span class="text-gray-500">Itens R$15-R$24,99</span>
+                                    </button>
+                                    <button onclick="aplicarPresetCampanha(8, 25, 39.99)" class="text-xs p-2 border-2 border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-400 transition-colors text-left">
+                                        <span class="font-bold text-orange-600 block">R$ 8 off</span>
+                                        <span class="text-gray-500">Itens R$25-R$39,99</span>
+                                    </button>
+                                    <button onclick="aplicarPresetCampanha(10, 40, 60)" class="text-xs p-2 border-2 border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-400 transition-colors text-left">
+                                        <span class="font-bold text-orange-600 block">R$ 10 off</span>
+                                        <span class="text-gray-500">Itens R$40-R$60</span>
+                                    </button>
+                                    <button onclick="aplicarPresetCampanha(13, 60, 80)" class="text-xs p-2 border-2 border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-400 transition-colors text-left">
+                                        <span class="font-bold text-orange-600 block">R$ 13 off</span>
+                                        <span class="text-gray-500">Itens R$60-R$80 (pizzas)</span>
+                                    </button>
+                                    <button onclick="aplicarPresetFrete()" class="text-xs p-2 border-2 border-teal-200 rounded-lg hover:bg-teal-50 hover:border-teal-400 transition-colors text-left">
+                                        <span class="font-bold text-teal-600 block"><i class="fas fa-motorcycle mr-1"></i>Frete grátis</span>
+                                        <span class="text-gray-500">Até R$10 (ate 3km)</span>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1"><i class="fas fa-plus-circle text-green-400 mr-1"></i>iFood pode adicionar até +R$5 extra por item (subsídio iFood automático)</p>
+                            </div>
                             <div>
                                 <label for="desconto-cliente" class="block text-sm font-medium text-gray-700 mb-1">
                                     Desconto para o Cliente (R$)
@@ -550,6 +583,119 @@
                 </div>
             </div>
 
+            <!-- RELATÓRIOS IFOOD TAB -->
+            <div id="relatorios-tab" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-2 text-gray-700"><i class="fas fa-file-csv text-orange-500 mr-2"></i>Importar Relatório iFood</h2>
+                    <p class="text-sm text-gray-500 mb-4">Importe o relatório financeiro do Portal do Parceiro iFood para análise detalhada de vendas, comissões e lucro real.</p>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Como exportar -->
+                        <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <h3 class="font-bold text-sm text-orange-800 mb-3"><i class="fas fa-question-circle mr-1"></i> Como exportar do iFood?</h3>
+                            <ol class="text-xs text-orange-700 space-y-2 list-decimal list-inside">
+                                <li>Acesse o <strong>Portal do Parceiro</strong> (<em>portal.ifood.com.br</em>)</li>
+                                <li>Vá em <strong>Financeiro > Relatórios</strong></li>
+                                <li>Selecione o período desejado</li>
+                                <li>Clique em <strong>"Exportar CSV"</strong> ou <strong>"Exportar Excel"</strong></li>
+                                <li>Salve o arquivo e importe aqui abaixo</li>
+                            </ol>
+                            <div class="mt-3 p-2 bg-white rounded border border-orange-300 text-xs">
+                                <strong>Colunas esperadas:</strong> Data, Pedido, Itens, Valor Bruto, Desconto, Comissão, Taxa, Valor Líquido (nomes podem variar)
+                            </div>
+                        </div>
+
+                        <!-- Upload -->
+                        <div class="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-indigo-400 transition-colors" id="csv-drop-zone">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                            <p class="text-sm text-gray-600 mb-2">Arraste o arquivo CSV aqui ou clique para selecionar</p>
+                            <input type="file" id="csv-file-input" accept=".csv,.xlsx,.xls" class="hidden" onchange="processarRelatorioCSV(this.files[0])">
+                            <button onclick="document.getElementById('csv-file-input').click()" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors text-sm">
+                                <i class="fas fa-folder-open mr-2"></i> Selecionar Arquivo
+                            </button>
+                            <p class="text-xs text-gray-400 mt-2">Formatos aceitos: CSV (separado por ; ou ,)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado da análise do CSV -->
+                <div id="relatorio-resultado" class="hidden space-y-6">
+                    <!-- Cards de resumo -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="dashboard-card border-l-4 border-blue-500">
+                            <div class="stat-value text-blue-600" id="rel-total-pedidos">0</div>
+                            <div class="stat-label">Total de Pedidos</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-green-500">
+                            <div class="stat-value text-green-600" id="rel-faturamento-bruto">R$ 0</div>
+                            <div class="stat-label">Faturamento Bruto</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-red-500">
+                            <div class="stat-value text-red-600" id="rel-total-taxas">R$ 0</div>
+                            <div class="stat-label">Total Taxas + Comissões</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-indigo-500">
+                            <div class="stat-value text-indigo-600" id="rel-liquido">R$ 0</div>
+                            <div class="stat-label">Valor Líquido Recebido</div>
+                        </div>
+                    </div>
+
+                    <!-- Métricas extras -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="dashboard-card border-l-4 border-orange-500">
+                            <div class="stat-value text-orange-600" id="rel-ticket-medio">R$ 0</div>
+                            <div class="stat-label">Ticket Médio</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-purple-500">
+                            <div class="stat-value text-purple-600" id="rel-taxa-efetiva">0%</div>
+                            <div class="stat-label">Taxa Efetiva Real</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-yellow-500">
+                            <div class="stat-value text-yellow-600" id="rel-total-descontos">R$ 0</div>
+                            <div class="stat-label">Total Descontos/Promoções</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-teal-500">
+                            <div class="stat-value text-teal-600" id="rel-pedidos-dia">0</div>
+                            <div class="stat-label">Média Pedidos/Dia</div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700"><i class="fas fa-chart-line text-blue-500 mr-2"></i>Faturamento por Período</h3>
+                            <canvas id="rel-chart-faturamento" height="250"></canvas>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700"><i class="fas fa-chart-pie text-red-500 mr-2"></i>Composição: Líquido vs Taxas</h3>
+                            <div style="max-height:250px; display:flex; justify-content:center;">
+                                <canvas id="rel-chart-composicao"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela detalhada -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-700"><i class="fas fa-table text-green-500 mr-2"></i>Detalhamento dos Pedidos</h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="rel-filtro" placeholder="Filtrar..." class="p-2 border border-gray-300 rounded-md text-sm" onkeyup="filtrarTabelaRelatorio()">
+                                <button onclick="exportarAnaliseCSV()" class="bg-green-500 text-white text-xs font-bold py-2 px-3 rounded-lg hover:bg-green-600 transition-colors">
+                                    <i class="fas fa-download mr-1"></i> Exportar
+                                </button>
+                            </div>
+                        </div>
+                        <div id="rel-tabela-pedidos" class="overflow-x-auto max-h-96 overflow-y-auto"></div>
+                    </div>
+
+                    <!-- Insights do relatório -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Insights do Relatório</h3>
+                        <div id="rel-insights" class="space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+
             <div id="configuracoes-tab" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">
@@ -798,6 +944,7 @@
             document.getElementById('insumos-tab').classList.add('hidden');
             document.getElementById('dashboard-tab').classList.add('hidden');
             document.getElementById('analise-tab').classList.add('hidden');
+            document.getElementById('relatorios-tab').classList.add('hidden');
             document.getElementById('configuracoes-tab').classList.add('hidden');
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('active');
@@ -1700,6 +1847,313 @@
             resultadoContainer.innerHTML = htmlResult;
             resultadoContainer.classList.remove('hidden');
         }
+        // === CAMPANHA INTELIGENTE PRESETS ===
+        window.aplicarPresetCampanha = function(desconto, precoMin, precoMax) {
+            document.getElementById('desconto-cliente').value = desconto.toFixed(2);
+            // Se for cupom do restaurante, subsídio = 0; se compartilhado, iFood paga até R$5
+            if (tipoPromoSelecionado === 'cupom_restaurante') {
+                document.getElementById('subsidio-ifood').value = '0.00';
+            } else if (tipoPromoSelecionado === 'cupom_compartilhado') {
+                document.getElementById('subsidio-ifood').value = Math.min(5, desconto).toFixed(2);
+            }
+            // Verificar se o produto calculado está na faixa
+            if (Object.keys(ultimoCalculo).length > 0) {
+                let foraFaixa = false;
+                for (const canalNome in ultimoCalculo.canais) {
+                    if (canalNome.toLowerCase().includes('ifood')) {
+                        const preco = ultimoCalculo.canais[canalNome].precoFinal;
+                        if (preco < precoMin || preco > precoMax) {
+                            foraFaixa = true;
+                        }
+                    }
+                }
+                if (foraFaixa) {
+                    alert(`Atenção: Este desconto de R$${desconto} é recomendado para itens entre R$${precoMin.toFixed(2)} e R$${precoMax.toFixed(2)}. Verifique se o preço do seu produto está nesta faixa.`);
+                }
+            }
+            // Destaque visual no botão clicado
+            document.querySelectorAll('#presets-campanha button').forEach(btn => btn.classList.remove('bg-orange-100', 'border-orange-400'));
+            event.currentTarget.classList.add('bg-orange-100', 'border-orange-400');
+        }
+        window.aplicarPresetFrete = function() {
+            // Preencher o simulador de frete ao invés do simulador de promoção
+            document.getElementById('custo-real-entrega').value = '10.00';
+            document.getElementById('valor-pago-cliente').value = '0.00';
+            document.getElementById('simulador-frete').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // === RELATÓRIOS IFOOD - CSV IMPORT ===
+        let relatorioData = [];
+        let relFatChart = null;
+        let relCompChart = null;
+
+        // Drag and drop
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('csv-drop-zone');
+            if (dropZone) {
+                ['dragenter', 'dragover'].forEach(evt => {
+                    dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('border-indigo-400', 'bg-indigo-50'); });
+                });
+                ['dragleave', 'drop'].forEach(evt => {
+                    dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('border-indigo-400', 'bg-indigo-50'); });
+                });
+                dropZone.addEventListener('drop', e => {
+                    if (e.dataTransfer.files.length > 0) processarRelatorioCSV(e.dataTransfer.files[0]);
+                });
+            }
+        });
+
+        window.processarRelatorioCSV = function(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const dados = parseCSV(text);
+                    if (dados.length === 0) {
+                        alert('Arquivo vazio ou formato não reconhecido.');
+                        return;
+                    }
+                    relatorioData = dados;
+                    renderizarRelatorio(dados);
+                    document.getElementById('relatorio-resultado').classList.remove('hidden');
+                } catch (err) {
+                    alert('Erro ao processar o arquivo: ' + err.message);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split(/\r?\n/);
+            if (lines.length < 2) return [];
+            // Detectar separador
+            const sep = lines[0].includes(';') ? ';' : ',';
+            const headers = lines[0].split(sep).map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
+
+            // Mapear colunas de forma flexível
+            const colMap = {};
+            const mappings = {
+                data: ['data', 'date', 'data do pedido', 'data pedido', 'dt_pedido'],
+                pedido: ['pedido', 'order', 'nº pedido', 'numero pedido', 'id pedido', 'id_pedido', 'nº do pedido'],
+                itens: ['itens', 'items', 'item', 'descrição', 'descricao', 'produto', 'nome do item'],
+                valorBruto: ['valor bruto', 'valor total', 'total', 'valor do pedido', 'vlr_bruto', 'valor_bruto', 'subtotal', 'valor pedido'],
+                desconto: ['desconto', 'discount', 'valor desconto', 'vlr_desconto', 'valor_desconto', 'promoção', 'promocao'],
+                comissao: ['comissão', 'comissao', 'commission', 'taxa comissão', 'vlr_comissao', 'valor_comissao', 'comissão ifood'],
+                taxa: ['taxa', 'fee', 'taxa de serviço', 'taxa servico', 'vlr_taxa', 'taxa_servico', 'taxa pagamento', 'outras taxas'],
+                valorLiquido: ['valor líquido', 'valor liquido', 'net', 'vlr_liquido', 'valor_liquido', 'recebido', 'valor recebido', 'a receber']
+            };
+
+            for (const [key, alternatives] of Object.entries(mappings)) {
+                const idx = headers.findIndex(h => alternatives.some(alt => h.includes(alt)));
+                if (idx !== -1) colMap[key] = idx;
+            }
+
+            const dados = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(sep).map(c => c.trim().replace(/^["']|["']$/g, ''));
+                if (cols.length < 2 || cols.every(c => !c)) continue;
+
+                const parseNum = (idx) => {
+                    if (idx === undefined || !cols[idx]) return 0;
+                    return parseFloat(cols[idx].replace(/[R$\s]/g, '').replace('.', '').replace(',', '.')) || 0;
+                };
+
+                const registro = {
+                    data: colMap.data !== undefined ? cols[colMap.data] : '',
+                    pedido: colMap.pedido !== undefined ? cols[colMap.pedido] : `#${i}`,
+                    itens: colMap.itens !== undefined ? cols[colMap.itens] : '',
+                    valorBruto: parseNum(colMap.valorBruto),
+                    desconto: Math.abs(parseNum(colMap.desconto)),
+                    comissao: Math.abs(parseNum(colMap.comissao)),
+                    taxa: Math.abs(parseNum(colMap.taxa)),
+                    valorLiquido: parseNum(colMap.valorLiquido)
+                };
+                // Se não tem valor líquido calculado, calcular
+                if (!registro.valorLiquido && registro.valorBruto > 0) {
+                    registro.valorLiquido = registro.valorBruto - registro.desconto - registro.comissao - registro.taxa;
+                }
+                if (registro.valorBruto > 0) dados.push(registro);
+            }
+            return dados;
+        }
+
+        function renderizarRelatorio(dados) {
+            const totalPedidos = dados.length;
+            const faturamentoBruto = dados.reduce((s, d) => s + d.valorBruto, 0);
+            const totalDescontos = dados.reduce((s, d) => s + d.desconto, 0);
+            const totalComissao = dados.reduce((s, d) => s + d.comissao, 0);
+            const totalTaxa = dados.reduce((s, d) => s + d.taxa, 0);
+            const totalTaxas = totalComissao + totalTaxa;
+            const totalLiquido = dados.reduce((s, d) => s + d.valorLiquido, 0);
+            const ticketMedio = totalPedidos > 0 ? faturamentoBruto / totalPedidos : 0;
+            const taxaEfetiva = faturamentoBruto > 0 ? (totalTaxas / faturamentoBruto) * 100 : 0;
+
+            // Calcular dias únicos
+            const datasUnicas = new Set(dados.map(d => d.data).filter(Boolean));
+            const numDias = Math.max(datasUnicas.size, 1);
+            const pedidosDia = totalPedidos / numDias;
+
+            // Cards
+            document.getElementById('rel-total-pedidos').textContent = totalPedidos;
+            document.getElementById('rel-faturamento-bruto').textContent = `R$ ${faturamentoBruto.toFixed(2)}`;
+            document.getElementById('rel-total-taxas').textContent = `R$ ${totalTaxas.toFixed(2)}`;
+            document.getElementById('rel-liquido').textContent = `R$ ${totalLiquido.toFixed(2)}`;
+            document.getElementById('rel-ticket-medio').textContent = `R$ ${ticketMedio.toFixed(2)}`;
+            document.getElementById('rel-taxa-efetiva').textContent = `${taxaEfetiva.toFixed(1)}%`;
+            document.getElementById('rel-total-descontos').textContent = `R$ ${totalDescontos.toFixed(2)}`;
+            document.getElementById('rel-pedidos-dia').textContent = pedidosDia.toFixed(1);
+
+            // Gráfico de faturamento por data
+            const porData = {};
+            dados.forEach(d => {
+                const dt = d.data || 'Sem data';
+                if (!porData[dt]) porData[dt] = { bruto: 0, liquido: 0, pedidos: 0 };
+                porData[dt].bruto += d.valorBruto;
+                porData[dt].liquido += d.valorLiquido;
+                porData[dt].pedidos++;
+            });
+            const labels = Object.keys(porData).sort();
+            const brutoArr = labels.map(l => porData[l].bruto);
+            const liquidoArr = labels.map(l => porData[l].liquido);
+
+            if (relFatChart) relFatChart.destroy();
+            const ctx1 = document.getElementById('rel-chart-faturamento').getContext('2d');
+            relFatChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Bruto', data: brutoArr, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.3 },
+                        { label: 'Líquido', data: liquidoArr, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => 'R$' + v.toFixed(0) } } }
+                }
+            });
+
+            // Gráfico de composição (pizza)
+            if (relCompChart) relCompChart.destroy();
+            const ctx2 = document.getElementById('rel-chart-composicao').getContext('2d');
+            relCompChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Líquido Recebido', 'Comissão iFood', 'Taxas/Pgto', 'Descontos/Promoções'],
+                    datasets: [{
+                        data: [totalLiquido, totalComissao, totalTaxa, totalDescontos],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { callbacks: { label: ctx => `${ctx.label}: R$ ${ctx.parsed.toFixed(2)}` } }
+                    }
+                }
+            });
+
+            // Tabela de pedidos
+            let tabelaHtml = `<table class="min-w-full text-sm">
+                <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">Data</th>
+                        <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">Pedido</th>
+                        <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">Itens</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Bruto</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Desconto</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Comissão</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Taxas</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Líquido</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200" id="rel-tbody">`;
+            dados.forEach(d => {
+                const lucroClass = d.valorLiquido >= 0 ? 'text-green-600' : 'text-red-600';
+                tabelaHtml += `<tr class="rel-row hover:bg-gray-50">
+                    <td class="py-2 px-3">${d.data}</td>
+                    <td class="py-2 px-3 font-mono text-xs">${d.pedido}</td>
+                    <td class="py-2 px-3 max-w-xs truncate" title="${d.itens}">${d.itens || '-'}</td>
+                    <td class="py-2 px-3 text-right">R$ ${d.valorBruto.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right text-orange-500">${d.desconto > 0 ? '-R$ ' + d.desconto.toFixed(2) : '-'}</td>
+                    <td class="py-2 px-3 text-right text-red-500">-R$ ${d.comissao.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right text-red-400">-R$ ${d.taxa.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right font-bold ${lucroClass}">R$ ${d.valorLiquido.toFixed(2)}</td>
+                </tr>`;
+            });
+            tabelaHtml += `</tbody></table>`;
+            document.getElementById('rel-tabela-pedidos').innerHTML = tabelaHtml;
+
+            // Insights
+            const insightsHtml = gerarInsightsRelatorio(dados, faturamentoBruto, totalTaxas, totalDescontos, totalLiquido, ticketMedio, taxaEfetiva, pedidosDia);
+            document.getElementById('rel-insights').innerHTML = insightsHtml;
+        }
+
+        function gerarInsightsRelatorio(dados, bruto, taxas, descontos, liquido, ticket, taxaEfetiva, pedidosDia) {
+            let html = '';
+            // Taxa efetiva vs esperada
+            const taxaClass = taxaEfetiva > 26 ? 'alert-danger' : taxaEfetiva > 20 ? 'alert-warning' : 'alert-success';
+            const taxaIcon = taxaEfetiva > 26 ? 'times-circle' : taxaEfetiva > 20 ? 'exclamation-triangle' : 'check-circle';
+            html += `<div class="${taxaClass}">
+                <i class="fas fa-${taxaIcon} mr-2"></i>
+                <strong>Taxa efetiva real: ${taxaEfetiva.toFixed(1)}%</strong> -
+                ${taxaEfetiva > 26 ? 'Acima do Plano Entrega (26,2%). Promoções e descontos estão pesando.' :
+                  taxaEfetiva > 20 ? 'Compatível com Plano Entrega (~26,2%). Dentro do esperado.' :
+                  'Abaixo de 20%. Você pode estar no Plano Básico ou com bom controle de custos.'}
+            </div>`;
+
+            // Impacto das promoções
+            if (descontos > 0) {
+                const percDesconto = (descontos / bruto * 100);
+                html += `<div class="alert-warning">
+                    <i class="fas fa-tag mr-2"></i>
+                    <strong>Promoções representam ${percDesconto.toFixed(1)}% do faturamento bruto</strong> (R$ ${descontos.toFixed(2)}).
+                    ${percDesconto > 15 ? ' Valor alto! Avalie se o volume extra compensa.' : ' Dentro de uma faixa razoável.'}
+                </div>`;
+            }
+
+            // Ticket médio
+            html += `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                <i class="fas fa-receipt mr-2"></i>
+                <strong>Ticket médio: R$ ${ticket.toFixed(2)}</strong> | Média de <strong>${pedidosDia.toFixed(1)} pedidos/dia</strong>.
+                ${ticket < 25 ? ' Ticket baixo - considere combos para aumentar o valor médio.' :
+                  ticket > 50 ? ' Ticket alto - bom sinal de valor agregado!' : ' Ticket dentro da média.'}
+            </div>`;
+
+            // Retenção do iFood
+            const retencaoPerc = bruto > 0 ? ((bruto - liquido) / bruto * 100) : 0;
+            html += `<div class="p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-800">
+                <i class="fas fa-hand-holding-usd mr-2"></i>
+                <strong>O iFood retém ${retencaoPerc.toFixed(1)}% do seu faturamento bruto</strong>.
+                De cada R$ 100 que o cliente paga, você recebe R$ ${(100 - retencaoPerc).toFixed(2)}.
+            </div>`;
+
+            return html;
+        }
+
+        window.filtrarTabelaRelatorio = function() {
+            const filtro = document.getElementById('rel-filtro').value.toLowerCase();
+            document.querySelectorAll('.rel-row').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(filtro) ? '' : 'none';
+            });
+        }
+
+        window.exportarAnaliseCSV = function() {
+            if (relatorioData.length === 0) return;
+            let csv = 'Data;Pedido;Itens;Valor Bruto;Desconto;Comissão;Taxas;Valor Líquido\n';
+            relatorioData.forEach(d => {
+                csv += `${d.data};${d.pedido};"${d.itens}";${d.valorBruto.toFixed(2)};${d.desconto.toFixed(2)};${d.comissao.toFixed(2)};${d.taxa.toFixed(2)};${d.valorLiquido.toFixed(2)}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'analise_ifood_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+        }
+
         // === DASHBOARD FUNCTIONS ===
         let dashPriceChart = null;
         let dashCostChart = null;
