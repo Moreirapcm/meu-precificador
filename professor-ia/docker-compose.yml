@@ -1,0 +1,35 @@
+# ==============================================================
+# Docker Compose - Professor IA (Self-Hosted para VPS)
+# ==============================================================
+# Sobe o app completo com um comando:
+#   docker-compose up -d
+#
+# Acesse: http://seu-dominio.com (ou http://localhost:5000)
+# ==============================================================
+
+version: "3.8"
+
+services:
+  professor-ia:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      # Chave secreta para as sessões (TROQUE por algo aleatório!)
+      - SECRET_KEY=troque-por-uma-chave-secreta-aleatoria-aqui
+      # Chave Gemini global (opcional - alunos podem configurar a própria)
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Modo debug (false em produção)
+      - FLASK_DEBUG=false
+    volumes:
+      # Banco de dados persistente (sobrevive a restarts)
+      - professor_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  professor_data:
