@@ -353,6 +353,10 @@
             <button onclick="changeTab('cardapio')" class="tab-button py-4 px-6 text-white bg-orange-500 hover:bg-orange-600 rounded-lg mx-1 font-semibold shadow-md focus:outline-none transition-colors">
                 <i class="fas fa-store mr-2"></i> Cardápio Digital
             </button>
+            <button onclick="changeTab('pedidos')" class="tab-button py-4 px-6 text-white bg-green-500 hover:bg-green-600 rounded-lg mx-1 font-semibold shadow-md focus:outline-none transition-colors relative">
+                <i class="fas fa-bell mr-2"></i> Pedidos
+                <span id="pedidos-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">0</span>
+            </button>
         </div>
 
         <main>
@@ -1159,6 +1163,61 @@
                     </button>
                 </div>
             </div>
+
+            <!-- ===== ABA PEDIDOS RECEBIDOS ===== -->
+            <div id="pedidos-tab" class="hidden space-y-6">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-xl shadow-lg text-white">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold"><i class="fas fa-bell mr-2"></i>Pedidos Recebidos</h2>
+                            <p class="text-green-100 mt-1">Acompanhe em tempo real todos os pedidos do seu cardapio digital.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="carregarPedidos()" class="bg-white text-green-600 font-bold py-2 px-4 rounded-lg hover:bg-green-50 transition-colors text-sm">
+                                <i class="fas fa-sync-alt mr-1"></i> Atualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo dos pedidos -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl shadow-md text-center">
+                        <div class="text-3xl font-bold text-yellow-500" id="pedidos-novos-count">0</div>
+                        <div class="text-xs text-gray-500 mt-1">Novos</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-md text-center">
+                        <div class="text-3xl font-bold text-blue-500" id="pedidos-preparo-count">0</div>
+                        <div class="text-xs text-gray-500 mt-1">Em Preparo</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-md text-center">
+                        <div class="text-3xl font-bold text-green-500" id="pedidos-entregue-count">0</div>
+                        <div class="text-xs text-gray-500 mt-1">Entregues Hoje</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-md text-center">
+                        <div class="text-3xl font-bold text-emerald-600" id="pedidos-total-dia">R$ 0</div>
+                        <div class="text-xs text-gray-500 mt-1">Faturamento Hoje</div>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="filtrarPedidos('todos')" class="filtro-pedido-btn bg-gray-800 text-white text-sm font-bold py-2 px-4 rounded-lg">Todos</button>
+                    <button onclick="filtrarPedidos('novo')" class="filtro-pedido-btn bg-yellow-100 text-yellow-800 text-sm font-bold py-2 px-4 rounded-lg">Novos</button>
+                    <button onclick="filtrarPedidos('preparo')" class="filtro-pedido-btn bg-blue-100 text-blue-800 text-sm font-bold py-2 px-4 rounded-lg">Em Preparo</button>
+                    <button onclick="filtrarPedidos('entregue')" class="filtro-pedido-btn bg-green-100 text-green-800 text-sm font-bold py-2 px-4 rounded-lg">Entregues</button>
+                    <button onclick="filtrarPedidos('cancelado')" class="filtro-pedido-btn bg-red-100 text-red-800 text-sm font-bold py-2 px-4 rounded-lg">Cancelados</button>
+                </div>
+
+                <!-- Lista de pedidos -->
+                <div id="pedidos-lista" class="space-y-4">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-inbox text-5xl mb-4"></i>
+                        <p class="text-lg font-semibold">Nenhum pedido ainda</p>
+                        <p class="text-sm">Quando clientes fizerem pedidos pelo cardapio digital, eles aparecerao aqui.</p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -1242,6 +1301,17 @@
                 }
                 renderConfiguracoes();
                 updateCanalAnaliseSelect();
+            });
+
+            // Listener de pedidos em tempo real
+            const pedidosRef = getCollectionRef('pedidos');
+            if (pedidosRef) onSnapshot(pedidosRef, snapshot => {
+                pedidosCache = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                pedidosCache.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || ''));
+                atualizarBadgePedidos();
+                if (!document.getElementById('pedidos-tab').classList.contains('hidden')) {
+                    renderPedidos();
+                }
             });
         }
         
@@ -1698,6 +1768,7 @@
             document.getElementById('relatorios-tab').classList.add('hidden');
             document.getElementById('configuracoes-tab').classList.add('hidden');
             document.getElementById('cardapio-tab').classList.add('hidden');
+            document.getElementById('pedidos-tab').classList.add('hidden');
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('active');
             });
@@ -1713,6 +1784,9 @@
                 renderCupons();
                 renderBanners();
                 carregarCardapioConfig();
+            }
+            if (tabName === 'pedidos') {
+                carregarPedidos();
             }
         }
 
@@ -3520,6 +3594,164 @@
             navigator.clipboard.writeText(input.value).then(() => {
                 alert('Link copiado! Compartilhe com seus clientes.');
             });
+        };
+
+        // === PEDIDOS RECEBIDOS ===
+        let pedidosCache = [];
+        let pedidosFiltro = 'todos';
+
+        window.carregarPedidos = async function() {
+            if (!window.appState.userId) return;
+            try {
+                const pedidosRef = collection(db, `artifacts/${appId}/users/${window.appState.userId}/pedidos`);
+                const snap = await getDocs(pedidosRef);
+                pedidosCache = [];
+                snap.forEach(d => pedidosCache.push({ id: d.id, ...d.data() }));
+                pedidosCache.sort((a, b) => (b.criadoEm || '').localeCompare(a.criadoEm || ''));
+                renderPedidos();
+                atualizarBadgePedidos();
+            } catch (e) {
+                console.error('Erro ao carregar pedidos:', e);
+            }
+        };
+
+        function atualizarBadgePedidos() {
+            const novos = pedidosCache.filter(p => p.status === 'novo').length;
+            const badge = document.getElementById('pedidos-badge');
+            if (novos > 0) {
+                badge.textContent = novos;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        window.filtrarPedidos = function(filtro) {
+            pedidosFiltro = filtro;
+            document.querySelectorAll('.filtro-pedido-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-offset-2', 'ring-gray-400');
+            });
+            renderPedidos();
+        };
+
+        function renderPedidos() {
+            const container = document.getElementById('pedidos-lista');
+            let lista = pedidosCache;
+            if (pedidosFiltro !== 'todos') {
+                lista = lista.filter(p => p.status === pedidosFiltro);
+            }
+
+            // Contadores
+            const hoje = new Date().toISOString().slice(0, 10);
+            const pedidosHoje = pedidosCache.filter(p => (p.criadoEm || '').slice(0, 10) === hoje);
+            document.getElementById('pedidos-novos-count').textContent = pedidosCache.filter(p => p.status === 'novo').length;
+            document.getElementById('pedidos-preparo-count').textContent = pedidosCache.filter(p => p.status === 'preparo').length;
+            document.getElementById('pedidos-entregue-count').textContent = pedidosHoje.filter(p => p.status === 'entregue').length;
+            const faturamentoHoje = pedidosHoje.filter(p => p.status !== 'cancelado').reduce((s, p) => s + (p.total || 0), 0);
+            document.getElementById('pedidos-total-dia').textContent = `R$ ${faturamentoHoje.toFixed(2)}`;
+
+            if (lista.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-inbox text-5xl mb-4"></i>
+                        <p class="text-lg font-semibold">${pedidosFiltro === 'todos' ? 'Nenhum pedido ainda' : 'Nenhum pedido com este status'}</p>
+                        <p class="text-sm">Quando clientes fizerem pedidos pelo cardapio digital, eles aparecerao aqui.</p>
+                    </div>`;
+                return;
+            }
+
+            const statusConfig = {
+                novo: { cor: 'yellow', icone: 'fa-clock', texto: 'Novo' },
+                preparo: { cor: 'blue', icone: 'fa-fire', texto: 'Em Preparo' },
+                entregue: { cor: 'green', icone: 'fa-check-circle', texto: 'Entregue' },
+                cancelado: { cor: 'red', icone: 'fa-times-circle', texto: 'Cancelado' }
+            };
+
+            container.innerHTML = lista.map(p => {
+                const st = statusConfig[p.status] || statusConfig.novo;
+                const data = p.criadoEm ? new Date(p.criadoEm).toLocaleString('pt-BR') : '';
+                const itensResumo = (p.itens || []).map(i => `${i.qtd}x ${i.nome}`).join(', ');
+                return `
+                    <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-${st.cor}-500 hover:shadow-lg transition-shadow">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="bg-${st.cor}-100 text-${st.cor}-800 text-xs font-bold py-1 px-3 rounded-full"><i class="fas ${st.icone} mr-1"></i>${st.texto}</span>
+                                    <span class="font-bold text-gray-800">#${p.numeroPedido || '???'}</span>
+                                    <span class="text-xs text-gray-400">${data}</span>
+                                </div>
+                                <div class="text-sm text-gray-700">
+                                    <p><i class="fas fa-user text-gray-400 mr-1 w-4"></i><strong>${p.cliente || 'Sem nome'}</strong> ${p.telefone ? `<a href="https://wa.me/55${(p.telefone||'').replace(/\D/g,'')}" target="_blank" class="text-green-600 text-xs ml-1"><i class="fab fa-whatsapp"></i> ${p.telefone}</a>` : ''}</p>
+                                    <p class="text-xs text-gray-500 mt-1"><i class="fas fa-shopping-bag text-gray-400 mr-1 w-4"></i>${itensResumo || 'Sem itens'}</p>
+                                    ${p.tipoEntrega === 'entrega' && p.endereco ? `<p class="text-xs text-gray-500"><i class="fas fa-map-marker-alt text-gray-400 mr-1 w-4"></i>${p.endereco}${p.bairro ? ', ' + p.bairro : ''}</p>` : ''}
+                                    <p class="text-xs text-gray-500"><i class="fas fa-credit-card text-gray-400 mr-1 w-4"></i>${p.pagamentoNome || p.pagamento || ''} | ${p.tipoEntrega === 'entrega' ? 'Delivery' : 'Retirada'}</p>
+                                </div>
+                            </div>
+                            <div class="text-right flex flex-col items-end gap-2">
+                                <div class="text-xl font-bold text-green-600">R$ ${(p.total || 0).toFixed(2)}</div>
+                                <div class="flex gap-1">
+                                    ${p.status === 'novo' ? `<button onclick="atualizarStatusPedido('${p.id}','preparo')" class="bg-blue-500 text-white text-xs font-bold py-1.5 px-3 rounded-lg hover:bg-blue-600"><i class="fas fa-fire mr-1"></i>Preparar</button>` : ''}
+                                    ${p.status === 'preparo' ? `<button onclick="atualizarStatusPedido('${p.id}','entregue')" class="bg-green-500 text-white text-xs font-bold py-1.5 px-3 rounded-lg hover:bg-green-600"><i class="fas fa-check mr-1"></i>Entregue</button>` : ''}
+                                    ${p.status !== 'cancelado' && p.status !== 'entregue' ? `<button onclick="atualizarStatusPedido('${p.id}','cancelado')" class="bg-red-100 text-red-600 text-xs font-bold py-1.5 px-3 rounded-lg hover:bg-red-200"><i class="fas fa-times mr-1"></i>Cancelar</button>` : ''}
+                                    <button onclick="imprimirPedidoAdmin('${p.id}')" class="bg-gray-100 text-gray-600 text-xs font-bold py-1.5 px-3 rounded-lg hover:bg-gray-200"><i class="fas fa-print mr-1"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        ${p.observacoes ? `<div class="mt-2 bg-yellow-50 text-yellow-800 text-xs p-2 rounded-lg"><i class="fas fa-sticky-note mr-1"></i>${p.observacoes}</div>` : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        window.atualizarStatusPedido = async function(pedidoId, novoStatus) {
+            if (!window.appState.userId) return;
+            try {
+                const pedidoRef = doc(db, `artifacts/${appId}/users/${window.appState.userId}/pedidos/${pedidoId}`);
+                await setDoc(pedidoRef, { status: novoStatus, atualizadoEm: new Date().toISOString() }, { merge: true });
+                const pedido = pedidosCache.find(p => p.id === pedidoId);
+                if (pedido) pedido.status = novoStatus;
+                renderPedidos();
+                atualizarBadgePedidos();
+            } catch (e) {
+                console.error('Erro ao atualizar pedido:', e);
+                alert('Erro ao atualizar status do pedido.');
+            }
+        };
+
+        window.imprimirPedidoAdmin = function(pedidoId) {
+            const p = pedidosCache.find(x => x.id === pedidoId);
+            if (!p) return;
+            const agora = p.criadoEm ? new Date(p.criadoEm).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
+            let itensHtml = '';
+            (p.itens || []).forEach(item => {
+                itensHtml += `<tr><td style="padding:2px 0;text-align:left">${item.qtd}x ${item.nome}</td><td style="padding:2px 0;text-align:right">R$ ${(item.preco * item.qtd).toFixed(2)}</td></tr>`;
+                if (item.obs) itensHtml += `<tr><td colspan="2" style="padding:0 0 2px 15px;font-size:11px;color:#666;">* ${item.obs}</td></tr>`;
+            });
+            const nomeLoja = cardapioConfig?.nomeLoja || 'Restaurante';
+            const printHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido #${p.numeroPedido}</title>
+<style>@page{margin:5mm;size:80mm auto}*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;width:72mm;margin:0 auto;color:#000}.center{text-align:center}.bold{font-weight:bold}.line{border-top:1px dashed #000;margin:6px 0}.double-line{border-top:2px solid #000;margin:6px 0}table{width:100%;border-collapse:collapse}td{font-size:12px;vertical-align:top}.total-row td{font-size:16px;font-weight:bold;padding-top:4px}@media print{body{width:100%}}</style></head><body>
+<div class="center"><div class="bold" style="font-size:16px">${nomeLoja}</div></div>
+<div class="double-line"></div>
+<div class="center bold" style="font-size:14px">PEDIDO #${p.numeroPedido}</div>
+<div class="center" style="font-size:11px">${agora}</div>
+<div class="line"></div>
+<div><strong>Cliente:</strong> ${p.cliente || ''}<br>${p.telefone ? `<strong>Fone:</strong> ${p.telefone}<br>` : ''}<strong>Entrega:</strong> ${p.tipoEntrega === 'entrega' ? 'DELIVERY' : 'RETIRADA'}${p.tipoEntrega === 'entrega' && p.endereco ? `<br><strong>End:</strong> ${p.endereco}${p.bairro ? ', ' + p.bairro : ''}` : ''}<br><strong>Pgto:</strong> ${p.pagamentoNome || p.pagamento || ''}</div>
+<div class="double-line"></div>
+<div class="bold">ITENS DO PEDIDO</div>
+<table>${itensHtml}</table>
+<div class="line"></div>
+<table><tr><td>Subtotal</td><td style="text-align:right">R$ ${(p.subtotal || 0).toFixed(2)}</td></tr>
+${p.desconto > 0 ? `<tr><td>Desconto${p.cupom ? ' (' + p.cupom + ')' : ''}</td><td style="text-align:right;color:green">-R$ ${p.desconto.toFixed(2)}</td></tr>` : ''}
+${p.taxaEntrega > 0 ? `<tr><td>Entrega</td><td style="text-align:right">R$ ${p.taxaEntrega.toFixed(2)}</td></tr>` : ''}</table>
+<div class="double-line"></div>
+<table><tr class="total-row"><td>TOTAL</td><td style="text-align:right">R$ ${(p.total || 0).toFixed(2)}</td></tr></table>
+<div class="double-line"></div>
+${p.observacoes ? `<div><strong>OBS:</strong> ${p.observacoes}</div><div class="line"></div>` : ''}
+<div class="center" style="font-size:11px;color:#555;margin-top:6px">Obrigado pela preferencia!</div>
+</body></html>`;
+            const w = window.open('', '_blank', 'width=350,height=600');
+            w.document.write(printHtml);
+            w.document.close();
+            w.onload = function() { w.print(); };
         };
 
         // === DASHBOARD FUNCTIONS ===
