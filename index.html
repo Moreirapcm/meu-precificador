@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css"/>
     <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -85,6 +86,75 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .dashboard-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+        .bar-chart-bar {
+            transition: width 0.5s ease-out;
+            border-radius: 0 4px 4px 0;
+            min-width: 2px;
+        }
+        .promo-type-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .promo-type-card.selected {
+            border-color: #f97316;
+            background: #fff7ed;
+        }
+        .promo-type-card:hover {
+            border-color: #f97316;
+        }
+        .ifood-plan-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .alert-danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -133,8 +203,14 @@
             <button onclick="changeTab('insumos')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-carrot mr-2"></i> Insumos
             </button>
+            <button onclick="changeTab('dashboard')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+                <i class="fas fa-chart-bar mr-2"></i> Dashboard
+            </button>
             <button onclick="changeTab('analise')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-chart-line mr-2"></i> Análise Estratégica
+            </button>
+            <button onclick="changeTab('relatorios')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+                <i class="fas fa-file-csv mr-2"></i> Relatórios iFood
             </button>
             <button onclick="changeTab('configuracoes')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-cogs mr-2"></i> Configurações
@@ -183,17 +259,85 @@
                     </div>
                     <div id="simulador-promocao" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Simulador de Promoções iFood</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                            <div>
-                                <label for="desconto-cliente" class="block text-sm font-medium text-gray-700 mb-1">Desconto para o Cliente (R$)</label>
-                                <input type="number" id="desconto-cliente" value="5.00" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+
+                        <!-- Tipo de Promoção -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Promoção</label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="promo-type-card selected" onclick="selecionarTipoPromo('cupom_restaurante')" id="promo-cupom_restaurante">
+                                    <h4 class="font-bold text-sm text-gray-800"><i class="fas fa-tag text-orange-500 mr-1"></i> Cupom do Restaurante</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Desconto 100% bancado por você. Comissão iFood sobre o preço original.</p>
+                                </div>
+                                <div class="promo-type-card" onclick="selecionarTipoPromo('cupom_compartilhado')" id="promo-cupom_compartilhado">
+                                    <h4 class="font-bold text-sm text-gray-800"><i class="fas fa-handshake text-blue-500 mr-1"></i> Cupom Compartilhado</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Desconto dividido entre restaurante e iFood. iFood subsidia parte.</p>
+                                </div>
+                                <div class="promo-type-card" onclick="selecionarTipoPromo('cupom_ifood')" id="promo-cupom_ifood">
+                                    <h4 class="font-bold text-sm text-gray-800"><i class="fas fa-gift text-green-500 mr-1"></i> Cupom 100% iFood</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Desconto 100% subsidiado pelo iFood. Você recebe o valor cheio.</p>
+                                </div>
                             </div>
-                            <div>
-                                <label for="subsidio-ifood" class="block text-sm font-medium text-gray-700 mb-1">Subsídio do iFood (R$)</label>
-                                <input type="number" id="subsidio-ifood" value="2.50" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                            </div>
-                            <button onclick="simularPromocao()" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors h-10">Simular Promoção</button>
                         </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <!-- Campanha Inteligente Presets -->
+                            <div class="md:col-span-4 mb-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-bolt text-yellow-500 mr-1"></i> Descontos Fixos - Campanha Inteligente
+                                    <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Faixas oficiais do iFood. Pode ter até +R$5 extra do iFood por item. Clique para preencher automaticamente.</span></span>
+                                </label>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="presets-campanha">
+                                    <button onclick="aplicarPresetCampanha(5, 15, 24.99)" class="text-xs p-2 border-2 border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-400 transition-colors text-left">
+                                        <span class="font-bold text-orange-600 block">R$ 5 off</span>
+                                        <span class="text-gray-500">Itens R$15-R$24,99</span>
+                                    </button>
+                                    <button onclick="aplicarPresetCampanha(8, 25, 39.99)" class="text-xs p-2 border-2 border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-400 transition-colors text-left">
+                                        <span class="font-bold text-orange-600 block">R$ 8 off</span>
+                                        <span class="text-gray-500">Itens R$25-R$39,99</span>
+                                    </button>
+                                    <button onclick="aplicarPresetCampanha(10, 40, 60)" class="text-xs p-2 border-2 border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-400 transition-colors text-left">
+                                        <span class="font-bold text-orange-600 block">R$ 10 off</span>
+                                        <span class="text-gray-500">Itens R$40-R$60</span>
+                                    </button>
+                                    <button onclick="aplicarPresetCampanha(13, 60, 80)" class="text-xs p-2 border-2 border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-400 transition-colors text-left">
+                                        <span class="font-bold text-orange-600 block">R$ 13 off</span>
+                                        <span class="text-gray-500">Itens R$60-R$80 (pizzas)</span>
+                                    </button>
+                                    <button onclick="aplicarPresetFrete()" class="text-xs p-2 border-2 border-teal-200 rounded-lg hover:bg-teal-50 hover:border-teal-400 transition-colors text-left">
+                                        <span class="font-bold text-teal-600 block"><i class="fas fa-motorcycle mr-1"></i>Frete grátis</span>
+                                        <span class="text-gray-500">Até R$10 (ate 3km)</span>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1"><i class="fas fa-plus-circle text-green-400 mr-1"></i>iFood pode adicionar até +R$5 extra por item (subsídio iFood automático)</p>
+                            </div>
+                            <div>
+                                <label for="desconto-cliente" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Desconto para o Cliente (R$)
+                                    <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Valor total do desconto que o cliente vê no app</span></span>
+                                </label>
+                                <input type="number" id="desconto-cliente" value="5.00" min="0" step="0.50" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
+                                <label for="subsidio-ifood" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Subsídio do iFood (R$)
+                                    <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Quanto o iFood paga do desconto. No cupom do restaurante = R$0</span></span>
+                                </label>
+                                <input type="number" id="subsidio-ifood" value="0.00" min="0" step="0.50" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <button onclick="simularPromocao()" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors h-10">
+                                <i class="fas fa-play mr-1"></i> Simular
+                            </button>
+                        </div>
+
+                        <div class="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-800">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <strong>Como o iFood calcula:</strong>
+                            A comissão (ex: 23%) é cobrada sobre <strong>(preço do cardápio - subsídio que você banca)</strong>.
+                            A taxa de pagamento online (3,2%) é cobrada sobre o <strong>preço original</strong>.
+                            <br><strong>Exemplo:</strong> Prato R$30, cupom R$12 (seu custo): Comissão = 23% de R$18 = R$4,14. Taxa pgto = 3,2% de R$30 = R$0,96.
+                            Você recebe: R$18 - R$4,14 - R$0,96 = <strong>R$12,90</strong>.
+                        </div>
+
                         <div id="resultado-promocao" class="mt-6 hidden"></div>
                     </div>
                     <div id="simulador-frete" class="mt-8 pt-6 border-t border-gray-200">
@@ -258,6 +402,162 @@
                 </div>
             </div>
             
+            <!-- DASHBOARD TAB -->
+            <div id="dashboard-tab" class="hidden space-y-6">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="dashboard-card border-l-4 border-indigo-500">
+                        <div class="stat-value text-indigo-600" id="dash-total-produtos">0</div>
+                        <div class="stat-label">Produtos Cadastrados</div>
+                    </div>
+                    <div class="dashboard-card border-l-4 border-green-500">
+                        <div class="stat-value text-green-600" id="dash-custo-medio">R$ 0,00</div>
+                        <div class="stat-label">Custo Médio dos Produtos</div>
+                    </div>
+                    <div class="dashboard-card border-l-4 border-orange-500">
+                        <div class="stat-value text-orange-600" id="dash-total-insumos">0</div>
+                        <div class="stat-label">Insumos Cadastrados</div>
+                    </div>
+                    <div class="dashboard-card border-l-4 border-red-500">
+                        <div class="stat-value text-red-600" id="dash-custo-op">0%</div>
+                        <div class="stat-label">Custo Operacional</div>
+                    </div>
+                </div>
+
+                <!-- iFood Plans Info -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-info-circle text-orange-500 mr-2"></i>Planos iFood - Referência de Taxas</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 border-2 border-gray-200 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-gray-800">Plano Básico</h3>
+                                <span class="ifood-plan-badge bg-green-100 text-green-800">12%</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">Restaurante realiza a própria entrega</p>
+                            <ul class="text-xs text-gray-500 space-y-1">
+                                <li><i class="fas fa-check text-green-500 mr-1"></i> Comissão: 12%</li>
+                                <li><i class="fas fa-check text-green-500 mr-1"></i> Taxa pagamento online: 3,2%</li>
+                                <li><i class="fas fa-check text-green-500 mr-1"></i> Total: ~15,2%</li>
+                                <li><i class="fas fa-money-bill text-gray-400 mr-1"></i> Mensalidade: R$130 (se >R$1.800/mês)</li>
+                                <li><i class="fas fa-truck text-gray-400 mr-1"></i> Entrega por conta própria</li>
+                            </ul>
+                        </div>
+                        <div class="p-4 border-2 border-orange-200 bg-orange-50 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-gray-800">Plano Entrega</h3>
+                                <span class="ifood-plan-badge bg-orange-100 text-orange-800">23%</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">iFood realiza a entrega</p>
+                            <ul class="text-xs text-gray-500 space-y-1">
+                                <li><i class="fas fa-check text-orange-500 mr-1"></i> Comissão: 23%</li>
+                                <li><i class="fas fa-check text-orange-500 mr-1"></i> Taxa pagamento online: 3,2%</li>
+                                <li><i class="fas fa-check text-orange-500 mr-1"></i> Total: ~26,2%</li>
+                                <li><i class="fas fa-money-bill text-orange-400 mr-1"></i> Mensalidade: R$150</li>
+                                <li><i class="fas fa-truck text-orange-500 mr-1"></i> Entrega pelo iFood</li>
+                            </ul>
+                        </div>
+                        <div class="p-4 border-2 border-red-200 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-gray-800">Plano Premium</h3>
+                                <span class="ifood-plan-badge bg-red-100 text-red-800">27%</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">Maior visibilidade + entrega iFood</p>
+                            <ul class="text-xs text-gray-500 space-y-1">
+                                <li><i class="fas fa-check text-red-500 mr-1"></i> Comissão: 27%</li>
+                                <li><i class="fas fa-check text-red-500 mr-1"></i> Taxa pagamento online: 3,2%</li>
+                                <li><i class="fas fa-check text-red-500 mr-1"></i> Total: ~30,2%</li>
+                                <li><i class="fas fa-money-bill text-red-400 mr-1"></i> Mensalidade: R$150+</li>
+                                <li><i class="fas fa-star text-yellow-500 mr-1"></i> Destaque na plataforma</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <strong>Importante:</strong> Em promoções, o iFood cobra comissão sobre <strong>(preço - subsídio do restaurante)</strong>, não sobre o preço com desconto total. A taxa de pagamento online (3,2%) é cobrada sobre o preço original. Cadastre a comissão e taxa de pagamento separadamente nos Canais de Venda (Configurações).
+                    </div>
+                </div>
+
+                <!-- Price Comparison Chart -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-balance-scale mr-2 text-indigo-500"></i>Comparativo de Preços por Canal</h2>
+                    <p class="text-sm text-gray-500 mb-4">Selecione uma margem de lucro para ver os preços sugeridos em cada canal.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Margem de Lucro (%)</label>
+                            <input type="number" id="dash-margem" value="35" min="1" max="90" class="w-full p-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Filtrar Produto</label>
+                            <select id="dash-produto-select" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="todos">Todos os Produtos</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="gerarDashboard()" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
+                                <i class="fas fa-sync-alt mr-2"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                    <div id="dash-chart-container" class="hidden">
+                        <canvas id="dash-price-chart" height="300"></canvas>
+                    </div>
+                </div>
+
+                <!-- Products Profitability Table -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-table mr-2 text-green-500"></i>Relatório de Rentabilidade</h2>
+                    <div id="dash-tabela-rentabilidade" class="overflow-x-auto">
+                        <p class="text-center text-gray-500 py-4">Clique em "Gerar Relatório" para visualizar.</p>
+                    </div>
+                </div>
+
+                <!-- Cost Structure -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-chart-pie mr-2 text-purple-500"></i>Estrutura de Custos</h2>
+                        <div style="max-height:300px; display:flex; justify-content:center;">
+                            <canvas id="dash-cost-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-lightbulb mr-2 text-yellow-500"></i>Insights Rápidos</h2>
+                        <div id="dash-insights" class="space-y-3">
+                            <p class="text-center text-gray-500 py-4">Gere o relatório para ver insights.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- iFood Promotion Break-Even Calculator -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700"><i class="fas fa-calculator mr-2 text-orange-500"></i>Calculadora de Ponto de Equilíbrio - Promoções iFood</h2>
+                    <p class="text-sm text-gray-500 mb-4">Descubra quantas vendas extras você precisa para compensar o desconto de uma promoção.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Produto</label>
+                            <select id="dash-be-produto" class="w-full p-2 border border-gray-300 rounded-md"></select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Plano iFood</label>
+                            <select id="dash-be-plano" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="0.12">Básico (12%)</option>
+                                <option value="0.23" selected>Entrega (23%)</option>
+                                <option value="0.27">Premium (27%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Desconto (%)</label>
+                            <input type="number" id="dash-be-desconto" value="20" min="1" max="80" class="w-full p-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="calcularBreakEven()" class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors">
+                                <i class="fas fa-calculator mr-2"></i> Calcular
+                            </button>
+                        </div>
+                    </div>
+                    <div id="dash-be-resultado" class="hidden"></div>
+                </div>
+            </div>
+
             <div id="analise-tab" class="hidden space-y-8">
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">1. Registo de Vendas</h2>
@@ -279,6 +579,119 @@
                 <div id="resultado-analise-cardapio" class="hidden bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">2. Engenharia de Cardápio</h2>
                     <div id="container-analise" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    </div>
+                </div>
+            </div>
+
+            <!-- RELATÓRIOS IFOOD TAB -->
+            <div id="relatorios-tab" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-2 text-gray-700"><i class="fas fa-file-csv text-orange-500 mr-2"></i>Importar Relatório iFood</h2>
+                    <p class="text-sm text-gray-500 mb-4">Importe o relatório financeiro do Portal do Parceiro iFood para análise detalhada de vendas, comissões e lucro real.</p>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Como exportar -->
+                        <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <h3 class="font-bold text-sm text-orange-800 mb-3"><i class="fas fa-question-circle mr-1"></i> Como exportar do iFood?</h3>
+                            <ol class="text-xs text-orange-700 space-y-2 list-decimal list-inside">
+                                <li>Acesse o <strong>Portal do Parceiro</strong> (<em>portal.ifood.com.br</em>)</li>
+                                <li>Vá em <strong>Financeiro > Relatórios</strong></li>
+                                <li>Selecione o período desejado</li>
+                                <li>Clique em <strong>"Exportar CSV"</strong> ou <strong>"Exportar Excel"</strong></li>
+                                <li>Salve o arquivo e importe aqui abaixo</li>
+                            </ol>
+                            <div class="mt-3 p-2 bg-white rounded border border-orange-300 text-xs">
+                                <strong>Colunas esperadas:</strong> Data, Pedido, Itens, Valor Bruto, Desconto, Comissão, Taxa, Valor Líquido (nomes podem variar)
+                            </div>
+                        </div>
+
+                        <!-- Upload -->
+                        <div class="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-indigo-400 transition-colors" id="csv-drop-zone">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                            <p class="text-sm text-gray-600 mb-2">Arraste o arquivo CSV aqui ou clique para selecionar</p>
+                            <input type="file" id="csv-file-input" accept=".csv,.xlsx,.xls" class="hidden" onchange="processarRelatorioCSV(this.files[0])">
+                            <button onclick="document.getElementById('csv-file-input').click()" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors text-sm">
+                                <i class="fas fa-folder-open mr-2"></i> Selecionar Arquivo
+                            </button>
+                            <p class="text-xs text-gray-400 mt-2">Formatos aceitos: CSV (separado por ; ou ,)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado da análise do CSV -->
+                <div id="relatorio-resultado" class="hidden space-y-6">
+                    <!-- Cards de resumo -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="dashboard-card border-l-4 border-blue-500">
+                            <div class="stat-value text-blue-600" id="rel-total-pedidos">0</div>
+                            <div class="stat-label">Total de Pedidos</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-green-500">
+                            <div class="stat-value text-green-600" id="rel-faturamento-bruto">R$ 0</div>
+                            <div class="stat-label">Faturamento Bruto</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-red-500">
+                            <div class="stat-value text-red-600" id="rel-total-taxas">R$ 0</div>
+                            <div class="stat-label">Total Taxas + Comissões</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-indigo-500">
+                            <div class="stat-value text-indigo-600" id="rel-liquido">R$ 0</div>
+                            <div class="stat-label">Valor Líquido Recebido</div>
+                        </div>
+                    </div>
+
+                    <!-- Métricas extras -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="dashboard-card border-l-4 border-orange-500">
+                            <div class="stat-value text-orange-600" id="rel-ticket-medio">R$ 0</div>
+                            <div class="stat-label">Ticket Médio</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-purple-500">
+                            <div class="stat-value text-purple-600" id="rel-taxa-efetiva">0%</div>
+                            <div class="stat-label">Taxa Efetiva Real</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-yellow-500">
+                            <div class="stat-value text-yellow-600" id="rel-total-descontos">R$ 0</div>
+                            <div class="stat-label">Total Descontos/Promoções</div>
+                        </div>
+                        <div class="dashboard-card border-l-4 border-teal-500">
+                            <div class="stat-value text-teal-600" id="rel-pedidos-dia">0</div>
+                            <div class="stat-label">Média Pedidos/Dia</div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700"><i class="fas fa-chart-line text-blue-500 mr-2"></i>Faturamento por Período</h3>
+                            <canvas id="rel-chart-faturamento" height="250"></canvas>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700"><i class="fas fa-chart-pie text-red-500 mr-2"></i>Composição: Líquido vs Taxas</h3>
+                            <div style="max-height:250px; display:flex; justify-content:center;">
+                                <canvas id="rel-chart-composicao"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela detalhada -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-700"><i class="fas fa-table text-green-500 mr-2"></i>Detalhamento dos Pedidos</h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="rel-filtro" placeholder="Filtrar..." class="p-2 border border-gray-300 rounded-md text-sm" onkeyup="filtrarTabelaRelatorio()">
+                                <button onclick="exportarAnaliseCSV()" class="bg-green-500 text-white text-xs font-bold py-2 px-3 rounded-lg hover:bg-green-600 transition-colors">
+                                    <i class="fas fa-download mr-1"></i> Exportar
+                                </button>
+                            </div>
+                        </div>
+                        <div id="rel-tabela-pedidos" class="overflow-x-auto max-h-96 overflow-y-auto"></div>
+                    </div>
+
+                    <!-- Insights do relatório -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Insights do Relatório</h3>
+                        <div id="rel-insights" class="space-y-3"></div>
                     </div>
                 </div>
             </div>
@@ -529,13 +942,39 @@
             document.getElementById('simulador-tab').classList.add('hidden');
             document.getElementById('produtos-tab').classList.add('hidden');
             document.getElementById('insumos-tab').classList.add('hidden');
+            document.getElementById('dashboard-tab').classList.add('hidden');
             document.getElementById('analise-tab').classList.add('hidden');
+            document.getElementById('relatorios-tab').classList.add('hidden');
             document.getElementById('configuracoes-tab').classList.add('hidden');
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('active');
             });
             document.getElementById(`${tabName}-tab`).classList.remove('hidden');
             document.querySelector(`button[onclick="changeTab('${tabName}')"]`).classList.add('active');
+            if (tabName === 'dashboard') {
+                atualizarDashboardSelects();
+                atualizarDashboardCards();
+            }
+        }
+
+        // Tipo de promoção selecionado
+        let tipoPromoSelecionado = 'cupom_restaurante';
+        window.selecionarTipoPromo = function(tipo) {
+            tipoPromoSelecionado = tipo;
+            document.querySelectorAll('.promo-type-card').forEach(card => card.classList.remove('selected'));
+            document.getElementById('promo-' + tipo).classList.add('selected');
+            const subsidioInput = document.getElementById('subsidio-ifood');
+            const descontoInput = document.getElementById('desconto-cliente');
+            if (tipo === 'cupom_restaurante') {
+                subsidioInput.value = '0.00';
+                subsidioInput.disabled = true;
+            } else if (tipo === 'cupom_ifood') {
+                subsidioInput.value = descontoInput.value;
+                subsidioInput.disabled = true;
+            } else {
+                subsidioInput.disabled = false;
+                subsidioInput.value = (parseFloat(descontoInput.value) / 2).toFixed(2);
+            }
         }
         
         function updateProdutoSelect(filtro = '') {
@@ -728,18 +1167,27 @@
         let ultimoCalculo = {};
         window.calcularPrecos = function() {
             const produtoId = document.getElementById('produto-select').value;
-            const margemLucro = parseFloat(document.getElementById('margem-lucro-input').value) / 100;
-            if (!produtoId || isNaN(margemLucro)) {
-                alert("Por favor, selecione um produto e insira uma margem de lucro válida.");
+            const margemLucroRaw = parseFloat(document.getElementById('margem-lucro-input').value);
+            if (!produtoId) {
+                alert("Por favor, selecione um produto.");
                 return;
             }
+            if (isNaN(margemLucroRaw) || margemLucroRaw <= 0 || margemLucroRaw >= 100) {
+                alert("A margem de lucro deve ser entre 1% e 99%.");
+                return;
+            }
+            const margemLucro = margemLucroRaw / 100;
             const config = window.appState.configCache();
             const produtos = window.appState.produtosCache();
             const produto = produtos.find(p => p.id === produtoId);
             const custoProduto = calcularCustoProduto(produtoId);
             const totalCustosOp = (config.custosOperacionais || []).reduce((sum, c) => sum + parseFloat(c.valor), 0);
             const faturamento = parseFloat(config.faturamentoMedioMensal);
-            const custoOpPercentual = faturamento > 0 ? totalCustosOp / faturamento : 0;
+            if (!faturamento || faturamento <= 0) {
+                alert("Configure o Faturamento Médio Mensal nas Configurações antes de calcular preços.");
+                return;
+            }
+            const custoOpPercentual = totalCustosOp / faturamento;
             const denominadorBase = 1 - custoOpPercentual - margemLucro;
             if (denominadorBase <= 0) {
                 alert(`Erro: A soma do Custo Operacional (${(custoOpPercentual * 100).toFixed(2)}%) e da Margem de Lucro (${(margemLucro * 100).toFixed(2)}%) não pode ser maior ou igual a 100%.`);
@@ -779,12 +1227,16 @@
                 canais: {}
             };
             (config.canaisVenda || []).forEach(canal => {
-                const taxasTotais = parseFloat(canal.taxaComissao) + parseFloat(canal.taxaTransacao);
+                const taxaComissao = parseFloat(canal.taxaComissao);
+                const taxaTransacao = parseFloat(canal.taxaTransacao);
+                const taxasTotais = taxaComissao + taxaTransacao;
                 const denominadorCanal = 1 - taxasTotais;
                 const precoFinal = denominadorCanal > 0 ? precoVendaBase / denominadorCanal : Infinity;
                 ultimoCalculo.canais[canal.nome] = {
                     precoFinal: precoFinal,
                     taxasPercentual: taxasTotais,
+                    taxaComissao: taxaComissao,
+                    taxaTransacao: taxaTransacao,
                     liquidoOriginal: precoFinal * (1 - taxasTotais)
                 };
                 const tr = document.createElement('tr');
@@ -1222,51 +1674,132 @@
             }
         }
         window.simularPromocao = function() {
-            const desconto = parseFloat(document.getElementById('desconto-cliente').value);
-            const subsidio = parseFloat(document.getElementById('subsidio-ifood').value);
+            const desconto = parseFloat(document.getElementById('desconto-cliente').value) || 0;
+            const subsidio = parseFloat(document.getElementById('subsidio-ifood').value) || 0;
             const resultadoContainer = document.getElementById('resultado-promocao');
-            if (Object.keys(ultimoCalculo).length === 0) {
-                alert("Primeiro, calcule o preço de um produto.");
+
+            if (desconto < 0 || subsidio < 0) {
+                alert("Os valores de desconto e subsídio não podem ser negativos.");
                 return;
             }
+            if (subsidio > desconto) {
+                alert("O subsídio do iFood não pode ser maior que o desconto total.");
+                return;
+            }
+            if (Object.keys(ultimoCalculo).length === 0) {
+                alert("Primeiro, calcule o preço de um produto na seção acima.");
+                return;
+            }
+
+            // Custo bancado pelo restaurante = desconto total - o que o iFood paga
+            const custoBancadoRestaurante = desconto - subsidio;
+            const custoProduto = calcularCustoProduto(ultimoCalculo.produtoId);
+
             let htmlResult = `<h4 class="font-semibold text-lg mb-3">Resultado da Simulação de Promoção para "${ultimoCalculo.produtoNome}"</h4>`;
+
+            const tipoLabels = {
+                'cupom_restaurante': 'Cupom do Restaurante (100% seu custo)',
+                'cupom_compartilhado': 'Cupom Compartilhado (custo dividido)',
+                'cupom_ifood': 'Cupom 100% iFood (custo zero para você)'
+            };
+            htmlResult += `<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                <strong>Tipo:</strong> ${tipoLabels[tipoPromoSelecionado]} |
+                <strong>Desconto total:</strong> R$ ${desconto.toFixed(2)} |
+                <strong>iFood paga:</strong> R$ ${subsidio.toFixed(2)} |
+                <strong>Você paga:</strong> R$ ${custoBancadoRestaurante.toFixed(2)}
+            </div>`;
+
             htmlResult += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+            let temCanalIfood = false;
+
             for (const canalNome in ultimoCalculo.canais) {
                 if (canalNome.toLowerCase().includes('ifood')) {
+                    temCanalIfood = true;
                     const canal = ultimoCalculo.canais[canalNome];
                     const precoOriginal = canal.precoFinal;
                     const precoPromocional = precoOriginal - desconto;
-                    const taxasValor = precoPromocional * canal.taxasPercentual;
-                    const recebidoAntesSubsidio = precoPromocional - taxasValor;
-                    const novoLiquido = recebidoAntesSubsidio + subsidio;
-                    const impactoLucro = novoLiquido - canal.liquidoOriginal;
-                    const impactoClasse = impactoLucro < 0 ? 'text-red-500' : 'text-green-500';
+
+                    if (precoPromocional <= 0) {
+                        htmlResult += `<div class="alert-danger"><strong>${canalNome}:</strong> O desconto de R$ ${desconto.toFixed(2)} é maior que o preço do produto (R$ ${precoOriginal.toFixed(2)}). Promoção inviável.</div>`;
+                        continue;
+                    }
+
+                    // FÓRMULA CORRETA DO IFOOD (baseada em pesquisa):
+                    // Comissão: cobrada sobre (preço original - subsídio do restaurante)
+                    // Taxa pgto online: cobrada sobre o preço original
+                    // Recebido = (preço - custoBancadoRest) * (1 - comissão%) - preço * taxaPgto%
+                    const baseComissao = precoOriginal - custoBancadoRestaurante;
+                    const comissaoValor = baseComissao * canal.taxaComissao;
+                    const taxaPgtoValor = precoOriginal * canal.taxaTransacao;
+
+                    // O que o restaurante recebe líquido
+                    const recebidoRestaurante = (precoOriginal - custoBancadoRestaurante) - comissaoValor - taxaPgtoValor;
+                    const liquidoOriginal = canal.liquidoOriginal;
+                    const impactoLucro = recebidoRestaurante - liquidoOriginal;
+
+                    // Margem sobre o custo dos insumos
+                    const margemSobreCusto = recebidoRestaurante - custoProduto;
+                    const margemPercentual = recebidoRestaurante > 0 ? (margemSobreCusto / recebidoRestaurante) * 100 : 0;
+
+                    // Aumento de vendas necessário para compensar
+                    const lucroOriginal = liquidoOriginal - custoProduto;
+                    const lucroPromo = recebidoRestaurante - custoProduto;
+                    const aumentoNecessario = lucroPromo > 0 ? ((lucroOriginal / lucroPromo) - 1) * 100 : Infinity;
+
+                    const impactoClasse = impactoLucro < 0 ? 'text-red-600' : 'text-green-600';
+                    const alertaClass = margemSobreCusto < 0 ? 'alert-danger' : margemPercentual < 10 ? 'alert-warning' : 'alert-success';
+                    const alertaMsg = margemSobreCusto < 0
+                        ? '<i class="fas fa-times-circle mr-1"></i> PREJUÍZO! Você está vendendo abaixo do custo!'
+                        : margemPercentual < 10
+                        ? '<i class="fas fa-exclamation-triangle mr-1"></i> Margem muito baixa. Avalie se o volume compensa.'
+                        : '<i class="fas fa-check-circle mr-1"></i> Margem positiva. Promoção pode ser viável.';
+
                     const dadosPromocao = {
                         nomeProduto: ultimoCalculo.produtoNome,
                         precoOriginal: precoOriginal,
                         desconto: desconto,
                         subsidio: subsidio,
                         precoPromocional: precoPromocional,
-                        novoLiquido: novoLiquido,
-                        impactoLucro: impactoLucro
+                        novoLiquido: recebidoRestaurante,
+                        impactoLucro: impactoLucro,
+                        custoProduto: custoProduto,
+                        margemPercentual: margemPercentual,
+                        aumentoNecessario: aumentoNecessario
                     };
+
                     htmlResult += `
                         <div class="p-4 border rounded-lg bg-gray-50">
-                            <h5 class="font-bold text-md text-indigo-700 mb-2">${canalNome}</h5>
+                            <h5 class="font-bold text-md text-indigo-700 mb-3">${canalNome}</h5>
                             <div class="space-y-1 text-sm">
-                                <p>Preço Original: <span class="font-semibold float-right">R$ ${precoOriginal.toFixed(2)}</span></p>
-                                <p>Preço Promocional: <span class="font-semibold float-right">R$ ${precoPromocional.toFixed(2)}</span></p>
-                                <p>Líquido Original: <span class="font-semibold float-right">R$ ${canal.liquidoOriginal.toFixed(2)}</span></p>
-                                <p class="text-blue-600">Novo Líquido: <span class="font-bold float-right">R$ ${novoLiquido.toFixed(2)}</span></p>
-                                <p class="${impactoClasse}">Impacto no Lucro: <span class="font-bold float-right">${impactoLucro.toFixed(2)}</span></p>
+                                <p class="border-b pb-1">Preço no Cardápio: <span class="font-semibold float-right">R$ ${precoOriginal.toFixed(2)}</span></p>
+                                <p>Preço Promocional (cliente vê): <span class="font-semibold float-right">R$ ${precoPromocional.toFixed(2)}</span></p>
+                                <hr class="my-1">
+                                <p class="text-gray-500 text-xs">Base comissão (${(canal.taxaComissao * 100).toFixed(1)}%): R$ ${baseComissao.toFixed(2)} <em>(preço - seu subsídio)</em></p>
+                                <p class="text-red-500">Comissão iFood (${(canal.taxaComissao * 100).toFixed(1)}%): <span class="font-semibold float-right">- R$ ${comissaoValor.toFixed(2)}</span></p>
+                                <p class="text-red-400">Taxa pgto online (${(canal.taxaTransacao * 100).toFixed(1)}%): <span class="font-semibold float-right">- R$ ${taxaPgtoValor.toFixed(2)}</span></p>
+                                ${custoBancadoRestaurante > 0 ? `<p class="text-orange-500">Seu subsídio: <span class="font-semibold float-right">- R$ ${custoBancadoRestaurante.toFixed(2)}</span></p>` : ''}
+                                <p class="border-t pt-1 font-bold">Você recebe líquido: <span class="float-right text-blue-600">R$ ${recebidoRestaurante.toFixed(2)}</span></p>
+                                <p>Custo dos insumos: <span class="float-right">R$ ${custoProduto.toFixed(2)}</span></p>
+                                <p class="font-bold ${impactoClasse}">Lucro por unidade: <span class="float-right">R$ ${margemSobreCusto.toFixed(2)} (${margemPercentual.toFixed(1)}%)</span></p>
+                                <p class="${impactoClasse} border-t pt-1">Impacto vs. sem promoção: <span class="font-bold float-right">R$ ${impactoLucro.toFixed(2)}</span></p>
+                                ${aumentoNecessario !== Infinity && aumentoNecessario > 0 ? `<p class="text-orange-600 text-xs mt-1"><i class="fas fa-arrow-up mr-1"></i>Precisa vender <strong>${aumentoNecessario.toFixed(0)}% mais</strong> para compensar o desconto</p>` : ''}
                             </div>
-                            <button onclick='obterConsultoriaPromocaoIA(this, ${JSON.stringify(dadosPromocao)})' class="mt-4 w-full bg-gray-700 text-white text-xs font-bold py-2 px-2 rounded-md hover:bg-gray-800 transition-colors">
+                            <div class="mt-3 ${alertaClass} text-xs">${alertaMsg}</div>
+                            <button onclick='obterConsultoriaPromocaoIA(this, ${JSON.stringify(dadosPromocao)})' class="mt-3 w-full bg-gray-700 text-white text-xs font-bold py-2 px-2 rounded-md hover:bg-gray-800 transition-colors">
                                 ✨ Obter Consultoria da IA
                             </button>
                         </div>
                     `;
                 }
             }
+
+            if (!temCanalIfood) {
+                htmlResult += `<div class="col-span-2 alert-warning">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Nenhum canal com "iFood" no nome foi encontrado. Cadastre um canal com "iFood" no nome nas Configurações.
+                </div>`;
+            }
+
             htmlResult += `</div><div id="consultoria-ia-promocao" class="mt-4"></div>`;
             resultadoContainer.innerHTML = htmlResult;
             resultadoContainer.classList.remove('hidden');
@@ -1314,6 +1847,681 @@
             resultadoContainer.innerHTML = htmlResult;
             resultadoContainer.classList.remove('hidden');
         }
+        // === CAMPANHA INTELIGENTE PRESETS ===
+        window.aplicarPresetCampanha = function(desconto, precoMin, precoMax) {
+            document.getElementById('desconto-cliente').value = desconto.toFixed(2);
+            // Se for cupom do restaurante, subsídio = 0; se compartilhado, iFood paga até R$5
+            if (tipoPromoSelecionado === 'cupom_restaurante') {
+                document.getElementById('subsidio-ifood').value = '0.00';
+            } else if (tipoPromoSelecionado === 'cupom_compartilhado') {
+                document.getElementById('subsidio-ifood').value = Math.min(5, desconto).toFixed(2);
+            }
+            // Verificar se o produto calculado está na faixa
+            if (Object.keys(ultimoCalculo).length > 0) {
+                let foraFaixa = false;
+                for (const canalNome in ultimoCalculo.canais) {
+                    if (canalNome.toLowerCase().includes('ifood')) {
+                        const preco = ultimoCalculo.canais[canalNome].precoFinal;
+                        if (preco < precoMin || preco > precoMax) {
+                            foraFaixa = true;
+                        }
+                    }
+                }
+                if (foraFaixa) {
+                    alert(`Atenção: Este desconto de R$${desconto} é recomendado para itens entre R$${precoMin.toFixed(2)} e R$${precoMax.toFixed(2)}. Verifique se o preço do seu produto está nesta faixa.`);
+                }
+            }
+            // Destaque visual no botão clicado
+            document.querySelectorAll('#presets-campanha button').forEach(btn => btn.classList.remove('bg-orange-100', 'border-orange-400'));
+            event.currentTarget.classList.add('bg-orange-100', 'border-orange-400');
+        }
+        window.aplicarPresetFrete = function() {
+            // Preencher o simulador de frete ao invés do simulador de promoção
+            document.getElementById('custo-real-entrega').value = '10.00';
+            document.getElementById('valor-pago-cliente').value = '0.00';
+            document.getElementById('simulador-frete').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // === RELATÓRIOS IFOOD - CSV IMPORT ===
+        let relatorioData = [];
+        let relFatChart = null;
+        let relCompChart = null;
+
+        // Drag and drop
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('csv-drop-zone');
+            if (dropZone) {
+                ['dragenter', 'dragover'].forEach(evt => {
+                    dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('border-indigo-400', 'bg-indigo-50'); });
+                });
+                ['dragleave', 'drop'].forEach(evt => {
+                    dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('border-indigo-400', 'bg-indigo-50'); });
+                });
+                dropZone.addEventListener('drop', e => {
+                    if (e.dataTransfer.files.length > 0) processarRelatorioCSV(e.dataTransfer.files[0]);
+                });
+            }
+        });
+
+        window.processarRelatorioCSV = function(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const dados = parseCSV(text);
+                    if (dados.length === 0) {
+                        alert('Arquivo vazio ou formato não reconhecido.');
+                        return;
+                    }
+                    relatorioData = dados;
+                    renderizarRelatorio(dados);
+                    document.getElementById('relatorio-resultado').classList.remove('hidden');
+                } catch (err) {
+                    alert('Erro ao processar o arquivo: ' + err.message);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split(/\r?\n/);
+            if (lines.length < 2) return [];
+            // Detectar separador
+            const sep = lines[0].includes(';') ? ';' : ',';
+            const headers = lines[0].split(sep).map(h => h.trim().replace(/^["']|["']$/g, '').toLowerCase());
+
+            // Mapear colunas de forma flexível
+            const colMap = {};
+            const mappings = {
+                data: ['data', 'date', 'data do pedido', 'data pedido', 'dt_pedido'],
+                pedido: ['pedido', 'order', 'nº pedido', 'numero pedido', 'id pedido', 'id_pedido', 'nº do pedido'],
+                itens: ['itens', 'items', 'item', 'descrição', 'descricao', 'produto', 'nome do item'],
+                valorBruto: ['valor bruto', 'valor total', 'total', 'valor do pedido', 'vlr_bruto', 'valor_bruto', 'subtotal', 'valor pedido'],
+                desconto: ['desconto', 'discount', 'valor desconto', 'vlr_desconto', 'valor_desconto', 'promoção', 'promocao'],
+                comissao: ['comissão', 'comissao', 'commission', 'taxa comissão', 'vlr_comissao', 'valor_comissao', 'comissão ifood'],
+                taxa: ['taxa', 'fee', 'taxa de serviço', 'taxa servico', 'vlr_taxa', 'taxa_servico', 'taxa pagamento', 'outras taxas'],
+                valorLiquido: ['valor líquido', 'valor liquido', 'net', 'vlr_liquido', 'valor_liquido', 'recebido', 'valor recebido', 'a receber']
+            };
+
+            for (const [key, alternatives] of Object.entries(mappings)) {
+                const idx = headers.findIndex(h => alternatives.some(alt => h.includes(alt)));
+                if (idx !== -1) colMap[key] = idx;
+            }
+
+            const dados = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(sep).map(c => c.trim().replace(/^["']|["']$/g, ''));
+                if (cols.length < 2 || cols.every(c => !c)) continue;
+
+                const parseNum = (idx) => {
+                    if (idx === undefined || !cols[idx]) return 0;
+                    return parseFloat(cols[idx].replace(/[R$\s]/g, '').replace('.', '').replace(',', '.')) || 0;
+                };
+
+                const registro = {
+                    data: colMap.data !== undefined ? cols[colMap.data] : '',
+                    pedido: colMap.pedido !== undefined ? cols[colMap.pedido] : `#${i}`,
+                    itens: colMap.itens !== undefined ? cols[colMap.itens] : '',
+                    valorBruto: parseNum(colMap.valorBruto),
+                    desconto: Math.abs(parseNum(colMap.desconto)),
+                    comissao: Math.abs(parseNum(colMap.comissao)),
+                    taxa: Math.abs(parseNum(colMap.taxa)),
+                    valorLiquido: parseNum(colMap.valorLiquido)
+                };
+                // Se não tem valor líquido calculado, calcular
+                if (!registro.valorLiquido && registro.valorBruto > 0) {
+                    registro.valorLiquido = registro.valorBruto - registro.desconto - registro.comissao - registro.taxa;
+                }
+                if (registro.valorBruto > 0) dados.push(registro);
+            }
+            return dados;
+        }
+
+        function renderizarRelatorio(dados) {
+            const totalPedidos = dados.length;
+            const faturamentoBruto = dados.reduce((s, d) => s + d.valorBruto, 0);
+            const totalDescontos = dados.reduce((s, d) => s + d.desconto, 0);
+            const totalComissao = dados.reduce((s, d) => s + d.comissao, 0);
+            const totalTaxa = dados.reduce((s, d) => s + d.taxa, 0);
+            const totalTaxas = totalComissao + totalTaxa;
+            const totalLiquido = dados.reduce((s, d) => s + d.valorLiquido, 0);
+            const ticketMedio = totalPedidos > 0 ? faturamentoBruto / totalPedidos : 0;
+            const taxaEfetiva = faturamentoBruto > 0 ? (totalTaxas / faturamentoBruto) * 100 : 0;
+
+            // Calcular dias únicos
+            const datasUnicas = new Set(dados.map(d => d.data).filter(Boolean));
+            const numDias = Math.max(datasUnicas.size, 1);
+            const pedidosDia = totalPedidos / numDias;
+
+            // Cards
+            document.getElementById('rel-total-pedidos').textContent = totalPedidos;
+            document.getElementById('rel-faturamento-bruto').textContent = `R$ ${faturamentoBruto.toFixed(2)}`;
+            document.getElementById('rel-total-taxas').textContent = `R$ ${totalTaxas.toFixed(2)}`;
+            document.getElementById('rel-liquido').textContent = `R$ ${totalLiquido.toFixed(2)}`;
+            document.getElementById('rel-ticket-medio').textContent = `R$ ${ticketMedio.toFixed(2)}`;
+            document.getElementById('rel-taxa-efetiva').textContent = `${taxaEfetiva.toFixed(1)}%`;
+            document.getElementById('rel-total-descontos').textContent = `R$ ${totalDescontos.toFixed(2)}`;
+            document.getElementById('rel-pedidos-dia').textContent = pedidosDia.toFixed(1);
+
+            // Gráfico de faturamento por data
+            const porData = {};
+            dados.forEach(d => {
+                const dt = d.data || 'Sem data';
+                if (!porData[dt]) porData[dt] = { bruto: 0, liquido: 0, pedidos: 0 };
+                porData[dt].bruto += d.valorBruto;
+                porData[dt].liquido += d.valorLiquido;
+                porData[dt].pedidos++;
+            });
+            const labels = Object.keys(porData).sort();
+            const brutoArr = labels.map(l => porData[l].bruto);
+            const liquidoArr = labels.map(l => porData[l].liquido);
+
+            if (relFatChart) relFatChart.destroy();
+            const ctx1 = document.getElementById('rel-chart-faturamento').getContext('2d');
+            relFatChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Bruto', data: brutoArr, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.3 },
+                        { label: 'Líquido', data: liquidoArr, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => 'R$' + v.toFixed(0) } } }
+                }
+            });
+
+            // Gráfico de composição (pizza)
+            if (relCompChart) relCompChart.destroy();
+            const ctx2 = document.getElementById('rel-chart-composicao').getContext('2d');
+            relCompChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Líquido Recebido', 'Comissão iFood', 'Taxas/Pgto', 'Descontos/Promoções'],
+                    datasets: [{
+                        data: [totalLiquido, totalComissao, totalTaxa, totalDescontos],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#8b5cf6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { callbacks: { label: ctx => `${ctx.label}: R$ ${ctx.parsed.toFixed(2)}` } }
+                    }
+                }
+            });
+
+            // Tabela de pedidos
+            let tabelaHtml = `<table class="min-w-full text-sm">
+                <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">Data</th>
+                        <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">Pedido</th>
+                        <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">Itens</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Bruto</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Desconto</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Comissão</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Taxas</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">Líquido</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200" id="rel-tbody">`;
+            dados.forEach(d => {
+                const lucroClass = d.valorLiquido >= 0 ? 'text-green-600' : 'text-red-600';
+                tabelaHtml += `<tr class="rel-row hover:bg-gray-50">
+                    <td class="py-2 px-3">${d.data}</td>
+                    <td class="py-2 px-3 font-mono text-xs">${d.pedido}</td>
+                    <td class="py-2 px-3 max-w-xs truncate" title="${d.itens}">${d.itens || '-'}</td>
+                    <td class="py-2 px-3 text-right">R$ ${d.valorBruto.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right text-orange-500">${d.desconto > 0 ? '-R$ ' + d.desconto.toFixed(2) : '-'}</td>
+                    <td class="py-2 px-3 text-right text-red-500">-R$ ${d.comissao.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right text-red-400">-R$ ${d.taxa.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-right font-bold ${lucroClass}">R$ ${d.valorLiquido.toFixed(2)}</td>
+                </tr>`;
+            });
+            tabelaHtml += `</tbody></table>`;
+            document.getElementById('rel-tabela-pedidos').innerHTML = tabelaHtml;
+
+            // Insights
+            const insightsHtml = gerarInsightsRelatorio(dados, faturamentoBruto, totalTaxas, totalDescontos, totalLiquido, ticketMedio, taxaEfetiva, pedidosDia);
+            document.getElementById('rel-insights').innerHTML = insightsHtml;
+        }
+
+        function gerarInsightsRelatorio(dados, bruto, taxas, descontos, liquido, ticket, taxaEfetiva, pedidosDia) {
+            let html = '';
+            // Taxa efetiva vs esperada
+            const taxaClass = taxaEfetiva > 26 ? 'alert-danger' : taxaEfetiva > 20 ? 'alert-warning' : 'alert-success';
+            const taxaIcon = taxaEfetiva > 26 ? 'times-circle' : taxaEfetiva > 20 ? 'exclamation-triangle' : 'check-circle';
+            html += `<div class="${taxaClass}">
+                <i class="fas fa-${taxaIcon} mr-2"></i>
+                <strong>Taxa efetiva real: ${taxaEfetiva.toFixed(1)}%</strong> -
+                ${taxaEfetiva > 26 ? 'Acima do Plano Entrega (26,2%). Promoções e descontos estão pesando.' :
+                  taxaEfetiva > 20 ? 'Compatível com Plano Entrega (~26,2%). Dentro do esperado.' :
+                  'Abaixo de 20%. Você pode estar no Plano Básico ou com bom controle de custos.'}
+            </div>`;
+
+            // Impacto das promoções
+            if (descontos > 0) {
+                const percDesconto = (descontos / bruto * 100);
+                html += `<div class="alert-warning">
+                    <i class="fas fa-tag mr-2"></i>
+                    <strong>Promoções representam ${percDesconto.toFixed(1)}% do faturamento bruto</strong> (R$ ${descontos.toFixed(2)}).
+                    ${percDesconto > 15 ? ' Valor alto! Avalie se o volume extra compensa.' : ' Dentro de uma faixa razoável.'}
+                </div>`;
+            }
+
+            // Ticket médio
+            html += `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                <i class="fas fa-receipt mr-2"></i>
+                <strong>Ticket médio: R$ ${ticket.toFixed(2)}</strong> | Média de <strong>${pedidosDia.toFixed(1)} pedidos/dia</strong>.
+                ${ticket < 25 ? ' Ticket baixo - considere combos para aumentar o valor médio.' :
+                  ticket > 50 ? ' Ticket alto - bom sinal de valor agregado!' : ' Ticket dentro da média.'}
+            </div>`;
+
+            // Retenção do iFood
+            const retencaoPerc = bruto > 0 ? ((bruto - liquido) / bruto * 100) : 0;
+            html += `<div class="p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-800">
+                <i class="fas fa-hand-holding-usd mr-2"></i>
+                <strong>O iFood retém ${retencaoPerc.toFixed(1)}% do seu faturamento bruto</strong>.
+                De cada R$ 100 que o cliente paga, você recebe R$ ${(100 - retencaoPerc).toFixed(2)}.
+            </div>`;
+
+            return html;
+        }
+
+        window.filtrarTabelaRelatorio = function() {
+            const filtro = document.getElementById('rel-filtro').value.toLowerCase();
+            document.querySelectorAll('.rel-row').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(filtro) ? '' : 'none';
+            });
+        }
+
+        window.exportarAnaliseCSV = function() {
+            if (relatorioData.length === 0) return;
+            let csv = 'Data;Pedido;Itens;Valor Bruto;Desconto;Comissão;Taxas;Valor Líquido\n';
+            relatorioData.forEach(d => {
+                csv += `${d.data};${d.pedido};"${d.itens}";${d.valorBruto.toFixed(2)};${d.desconto.toFixed(2)};${d.comissao.toFixed(2)};${d.taxa.toFixed(2)};${d.valorLiquido.toFixed(2)}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'analise_ifood_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+        }
+
+        // === DASHBOARD FUNCTIONS ===
+        let dashPriceChart = null;
+        let dashCostChart = null;
+
+        function atualizarDashboardSelects() {
+            const produtos = window.appState.produtosCache();
+            const select1 = document.getElementById('dash-produto-select');
+            const select2 = document.getElementById('dash-be-produto');
+            if (!select1 || !select2) return;
+
+            select1.innerHTML = '<option value="todos">Todos os Produtos</option>';
+            select2.innerHTML = '<option value="">Selecione um produto</option>';
+            produtos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(p => {
+                const opt1 = document.createElement('option');
+                opt1.value = p.id;
+                opt1.textContent = p.nome;
+                select1.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = p.id;
+                opt2.textContent = p.nome;
+                select2.appendChild(opt2);
+            });
+        }
+
+        function atualizarDashboardCards() {
+            const produtos = window.appState.produtosCache();
+            const insumos = window.appState.insumosCache();
+            const config = window.appState.configCache();
+
+            document.getElementById('dash-total-produtos').textContent = produtos.length;
+            document.getElementById('dash-total-insumos').textContent = insumos.length;
+
+            if (produtos.length > 0) {
+                const custoMedio = produtos.reduce((sum, p) => sum + calcularCustoProduto(p.id), 0) / produtos.length;
+                document.getElementById('dash-custo-medio').textContent = `R$ ${custoMedio.toFixed(2)}`;
+            }
+
+            const totalCustos = (config.custosOperacionais || []).reduce((sum, c) => sum + (parseFloat(c.valor) || 0), 0);
+            const faturamento = parseFloat(config.faturamentoMedioMensal) || 0;
+            const custoOp = faturamento > 0 ? ((totalCustos / faturamento) * 100).toFixed(1) : '0';
+            document.getElementById('dash-custo-op').textContent = custoOp + '%';
+        }
+
+        window.gerarDashboard = function() {
+            const produtos = window.appState.produtosCache();
+            const config = window.appState.configCache();
+            const canais = config.canaisVenda || [];
+            const margemInput = parseFloat(document.getElementById('dash-margem').value) / 100;
+            const produtoFiltro = document.getElementById('dash-produto-select').value;
+
+            if (isNaN(margemInput) || margemInput <= 0 || margemInput >= 1) {
+                alert("Margem de lucro deve ser entre 1% e 99%.");
+                return;
+            }
+            if (canais.length === 0) {
+                alert("Cadastre canais de venda nas Configurações primeiro.");
+                return;
+            }
+            if (produtos.length === 0) {
+                alert("Cadastre produtos primeiro.");
+                return;
+            }
+
+            const totalCustosOp = (config.custosOperacionais || []).reduce((s, c) => s + parseFloat(c.valor), 0);
+            const faturamento = parseFloat(config.faturamentoMedioMensal) || 1;
+            const custoOpPerc = totalCustosOp / faturamento;
+            const denominadorBase = 1 - custoOpPerc - margemInput;
+
+            if (denominadorBase <= 0) {
+                alert("Custo operacional + margem >= 100%. Ajuste nas configurações.");
+                return;
+            }
+
+            const produtosParaAnalise = produtoFiltro === 'todos'
+                ? produtos
+                : produtos.filter(p => p.id === produtoFiltro);
+
+            // Generate profitability table
+            let tabelaHtml = `<table class="min-w-full bg-white text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase">Produto</th>
+                        <th class="py-2 px-3 text-right text-xs font-medium text-gray-500 uppercase">Custo</th>`;
+            canais.forEach(c => {
+                tabelaHtml += `<th class="py-2 px-3 text-right text-xs font-medium text-gray-500 uppercase">${c.nome}</th>`;
+            });
+            tabelaHtml += `<th class="py-2 px-3 text-right text-xs font-medium text-gray-500 uppercase">Lucro/Un</th>
+                        <th class="py-2 px-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr></thead><tbody class="divide-y divide-gray-200">`;
+
+            const chartLabels = [];
+            const chartDatasets = [];
+            const coresCanais = ['#6366f1', '#f97316', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+            canais.forEach((canal, idx) => {
+                chartDatasets.push({
+                    label: canal.nome,
+                    data: [],
+                    backgroundColor: coresCanais[idx % coresCanais.length],
+                    borderRadius: 4
+                });
+            });
+
+            let totalLucroEstimado = 0;
+            let produtoMaisRentavel = { nome: '', margem: 0 };
+            let produtoMenosRentavel = { nome: '', margem: 100 };
+
+            produtosParaAnalise.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(produto => {
+                const custo = calcularCustoProduto(produto.id);
+                const precoBase = custo / denominadorBase;
+                const lucroUnit = precoBase * margemInput;
+                chartLabels.push(produto.nome.length > 20 ? produto.nome.substring(0, 20) + '...' : produto.nome);
+
+                const margemReal = custo > 0 ? ((precoBase - custo) / precoBase * 100) : 0;
+                if (margemReal > produtoMaisRentavel.margem) produtoMaisRentavel = { nome: produto.nome, margem: margemReal };
+                if (margemReal < produtoMenosRentavel.margem && custo > 0) produtoMenosRentavel = { nome: produto.nome, margem: margemReal };
+
+                tabelaHtml += `<tr>
+                    <td class="py-2 px-3 font-medium text-gray-900">${produto.nome}</td>
+                    <td class="py-2 px-3 text-right text-gray-600">R$ ${custo.toFixed(2)}</td>`;
+
+                canais.forEach((canal, idx) => {
+                    const taxas = parseFloat(canal.taxaComissao) + parseFloat(canal.taxaTransacao);
+                    const denom = 1 - taxas;
+                    const precoFinal = denom > 0 ? precoBase / denom : 0;
+                    chartDatasets[idx].data.push(precoFinal.toFixed(2));
+                    tabelaHtml += `<td class="py-2 px-3 text-right font-semibold text-indigo-600">R$ ${precoFinal.toFixed(2)}</td>`;
+                });
+
+                totalLucroEstimado += lucroUnit;
+                const statusColor = custo === 0 ? 'text-gray-400' : lucroUnit > 0 ? 'text-green-600' : 'text-red-600';
+                const statusIcon = custo === 0 ? 'fa-question' : lucroUnit > 0 ? 'fa-check-circle' : 'fa-times-circle';
+
+                tabelaHtml += `<td class="py-2 px-3 text-right font-bold text-green-600">R$ ${lucroUnit.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-center ${statusColor}"><i class="fas ${statusIcon}"></i></td></tr>`;
+            });
+
+            tabelaHtml += `</tbody></table>`;
+            document.getElementById('dash-tabela-rentabilidade').innerHTML = tabelaHtml;
+
+            // Price comparison chart
+            const chartContainer = document.getElementById('dash-chart-container');
+            chartContainer.classList.remove('hidden');
+            if (dashPriceChart) dashPriceChart.destroy();
+            const ctx = document.getElementById('dash-price-chart').getContext('2d');
+            dashPriceChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: chartLabels, datasets: chartDatasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': R$ ' + parseFloat(context.raw).toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) { return 'R$ ' + value; }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Cost structure chart
+            const custosOp = config.custosOperacionais || [];
+            if (custosOp.length > 0) {
+                if (dashCostChart) dashCostChart.destroy();
+                const costCtx = document.getElementById('dash-cost-chart').getContext('2d');
+                const costLabels = custosOp.map(c => c.nome || 'Sem nome');
+                const costValues = custosOp.map(c => parseFloat(c.valor) || 0);
+                const costColors = ['#6366f1', '#f97316', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899', '#14b8a6', '#84cc16'];
+                dashCostChart = new Chart(costCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: costLabels,
+                        datasets: [{
+                            data: costValues,
+                            backgroundColor: costColors.slice(0, costLabels.length),
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { size: 11 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const perc = ((context.raw / total) * 100).toFixed(1);
+                                        return context.label + ': R$ ' + context.raw.toFixed(2) + ' (' + perc + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Insights
+            const insightsContainer = document.getElementById('dash-insights');
+            let insightsHtml = '';
+
+            insightsHtml += `<div class="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                <p class="text-sm font-semibold text-indigo-800"><i class="fas fa-trophy mr-1"></i> Mais Rentável</p>
+                <p class="text-xs text-indigo-600">${produtoMaisRentavel.nome} (margem ${produtoMaisRentavel.margem.toFixed(1)}%)</p>
+            </div>`;
+
+            if (produtoMenosRentavel.nome) {
+                insightsHtml += `<div class="p-3 bg-red-50 rounded-lg border border-red-200">
+                    <p class="text-sm font-semibold text-red-800"><i class="fas fa-exclamation-triangle mr-1"></i> Menos Rentável</p>
+                    <p class="text-xs text-red-600">${produtoMenosRentavel.nome} (margem ${produtoMenosRentavel.margem.toFixed(1)}%)</p>
+                </div>`;
+            }
+
+            const custoOpPercDisplay = (custoOpPerc * 100).toFixed(1);
+            const classeCustoOp = custoOpPerc > 0.35 ? 'bg-red-50 border-red-200 text-red-800' : custoOpPerc > 0.25 ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 'bg-green-50 border-green-200 text-green-800';
+            insightsHtml += `<div class="p-3 ${classeCustoOp} rounded-lg border">
+                <p class="text-sm font-semibold"><i class="fas fa-percentage mr-1"></i> Custo Operacional: ${custoOpPercDisplay}%</p>
+                <p class="text-xs">${custoOpPerc > 0.35 ? 'Acima do ideal (>35%). Revise seus custos.' : custoOpPerc > 0.25 ? 'Atenção (25-35%). Busque otimizar.' : 'Saudável (<25%). Bom controle de custos.'}</p>
+            </div>`;
+
+            // iFood specific insight
+            const canalIfood = canais.find(c => c.nome.toLowerCase().includes('ifood'));
+            if (canalIfood) {
+                const taxaIfood = ((parseFloat(canalIfood.taxaComissao) + parseFloat(canalIfood.taxaTransacao)) * 100).toFixed(1);
+                insightsHtml += `<div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <p class="text-sm font-semibold text-orange-800"><i class="fas fa-motorcycle mr-1"></i> Taxas iFood: ${taxaIfood}%</p>
+                    <p class="text-xs text-orange-600">Com margem de ${(margemInput * 100).toFixed(0)}%, seu preço no iFood é ~${((1 / (1 - parseFloat(canalIfood.taxaComissao) - parseFloat(canalIfood.taxaTransacao)) - 1) * 100).toFixed(0)}% maior que o preço base.</p>
+                </div>`;
+            }
+
+            insightsHtml += `<div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p class="text-sm font-semibold text-gray-800"><i class="fas fa-coins mr-1"></i> Lucro Estimado por Venda Completa</p>
+                <p class="text-xs text-gray-600">Se vender 1 de cada produto: R$ ${totalLucroEstimado.toFixed(2)} de lucro bruto</p>
+            </div>`;
+
+            insightsContainer.innerHTML = insightsHtml;
+        }
+
+        // Break-Even Calculator
+        window.calcularBreakEven = function() {
+            const produtoId = document.getElementById('dash-be-produto').value;
+            const comissao = parseFloat(document.getElementById('dash-be-plano').value);
+            const descontoPerc = parseFloat(document.getElementById('dash-be-desconto').value) / 100;
+            const resultadoContainer = document.getElementById('dash-be-resultado');
+
+            if (!produtoId) {
+                alert("Selecione um produto.");
+                return;
+            }
+            if (isNaN(descontoPerc) || descontoPerc <= 0 || descontoPerc >= 1) {
+                alert("Desconto deve ser entre 1% e 99%.");
+                return;
+            }
+
+            const config = window.appState.configCache();
+            const produtos = window.appState.produtosCache();
+            const produto = produtos.find(p => p.id === produtoId);
+            const custoProduto = calcularCustoProduto(produtoId);
+            const totalCustosOp = (config.custosOperacionais || []).reduce((s, c) => s + parseFloat(c.valor), 0);
+            const faturamento = parseFloat(config.faturamentoMedioMensal) || 1;
+            const custoOpPerc = totalCustosOp / faturamento;
+            const margemInput = parseFloat(document.getElementById('dash-margem').value) / 100 || 0.35;
+            const denominadorBase = 1 - custoOpPerc - margemInput;
+
+            if (denominadorBase <= 0) {
+                alert("Custo operacional + margem >= 100%.");
+                return;
+            }
+
+            const taxaTransacao = 0.032; // taxa de pagamento online iFood (3,2%)
+            const taxaTotal = comissao + taxaTransacao;
+            const precoBase = custoProduto / denominadorBase;
+            const precoFinal = precoBase / (1 - taxaTotal);
+            const descontoValor = precoFinal * descontoPerc;
+            const precoPromo = precoFinal - descontoValor;
+
+            // Comissão sobre preço ORIGINAL (padrão iFood)
+            const comissaoValor = precoFinal * taxaTotal;
+            const liquidoOriginal = precoFinal - (precoFinal * taxaTotal);
+            const liquidoPromo = precoPromo - comissaoValor; // comissão sobre preço original!
+            const lucroOriginal = liquidoOriginal - custoProduto;
+            const lucroPromo = liquidoPromo - custoProduto;
+
+            const isPreju = lucroPromo < 0;
+            const aumentoNecessario = lucroPromo > 0 ? ((lucroOriginal / lucroPromo) - 1) * 100 : Infinity;
+
+            // Preço mínimo para não ter prejuízo
+            const precoMinimo = (custoProduto + comissaoValor) / 1; // preço mínimo é custo + comissão
+            const descontoMaximo = precoFinal - (custoProduto / (1 - taxaTotal));
+            const descontoMaximoPerc = (descontoMaximo / precoFinal) * 100;
+
+            let html = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 border rounded-lg bg-gray-50">
+                    <h4 class="font-bold text-gray-800 mb-3"><i class="fas fa-receipt mr-1 text-indigo-500"></i> Análise sem Promoção</h4>
+                    <div class="space-y-1 text-sm">
+                        <p>Produto: <span class="font-semibold float-right">${produto.nome}</span></p>
+                        <p>Custo insumos: <span class="float-right">R$ ${custoProduto.toFixed(2)}</span></p>
+                        <p>Preço no iFood: <span class="font-semibold float-right">R$ ${precoFinal.toFixed(2)}</span></p>
+                        <p>Comissão (${(taxaTotal * 100).toFixed(1)}%): <span class="text-red-500 float-right">- R$ ${comissaoValor.toFixed(2)}</span></p>
+                        <p class="border-t pt-1 font-bold">Recebido: <span class="text-blue-600 float-right">R$ ${liquidoOriginal.toFixed(2)}</span></p>
+                        <p class="font-bold text-green-600">Lucro: <span class="float-right">R$ ${lucroOriginal.toFixed(2)}</span></p>
+                    </div>
+                </div>
+                <div class="p-4 border-2 rounded-lg ${isPreju ? 'bg-red-50 border-red-300' : 'bg-orange-50 border-orange-300'}">
+                    <h4 class="font-bold text-gray-800 mb-3"><i class="fas fa-tag mr-1 text-orange-500"></i> Com ${(descontoPerc * 100).toFixed(0)}% de Desconto</h4>
+                    <div class="space-y-1 text-sm">
+                        <p>Preço promocional: <span class="font-semibold float-right">R$ ${precoPromo.toFixed(2)}</span></p>
+                        <p>Desconto: <span class="text-orange-500 float-right">- R$ ${descontoValor.toFixed(2)}</span></p>
+                        <p class="text-red-500">Comissão sobre R$ ${precoFinal.toFixed(2)}: <span class="float-right">- R$ ${comissaoValor.toFixed(2)}</span></p>
+                        <p class="border-t pt-1 font-bold">Recebido: <span class="text-blue-600 float-right">R$ ${liquidoPromo.toFixed(2)}</span></p>
+                        <p class="font-bold ${isPreju ? 'text-red-600' : 'text-green-600'}">
+                            Lucro: <span class="float-right">R$ ${lucroPromo.toFixed(2)}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="${isPreju ? 'alert-danger' : aumentoNecessario > 100 ? 'alert-warning' : 'alert-success'}">
+                    <p class="font-bold text-sm">${isPreju ? '<i class="fas fa-times-circle mr-1"></i> PREJUÍZO!' : '<i class="fas fa-arrow-up mr-1"></i> Aumento de vendas necessário'}</p>
+                    <p class="text-2xl font-bold mt-1">${isPreju ? 'Inviável' : aumentoNecessario.toFixed(0) + '%'}</p>
+                    <p class="text-xs mt-1">${isPreju ? 'Você perde dinheiro a cada venda!' : 'Precisa vender ' + aumentoNecessario.toFixed(0) + '% mais para manter o mesmo lucro total'}</p>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="font-bold text-sm text-blue-800"><i class="fas fa-shield-alt mr-1"></i> Desconto máximo seguro</p>
+                    <p class="text-2xl font-bold text-blue-600 mt-1">${descontoMaximoPerc > 0 ? descontoMaximoPerc.toFixed(1) + '%' : '0%'}</p>
+                    <p class="text-xs text-blue-600 mt-1">Máximo antes de ter prejuízo (R$ ${descontoMaximo > 0 ? descontoMaximo.toFixed(2) : '0.00'})</p>
+                </div>
+                <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <p class="font-bold text-sm text-purple-800"><i class="fas fa-info-circle mr-1"></i> Impacto por unidade</p>
+                    <p class="text-2xl font-bold text-purple-600 mt-1">- R$ ${(lucroOriginal - lucroPromo).toFixed(2)}</p>
+                    <p class="text-xs text-purple-600 mt-1">Redução de lucro por unidade vendida</p>
+                </div>
+            </div>`;
+
+            resultadoContainer.innerHTML = html;
+            resultadoContainer.classList.remove('hidden');
+        }
+
+        // Input validation for margem de lucro
+        document.getElementById('margem-lucro-input').addEventListener('change', function() {
+            const val = parseFloat(this.value);
+            if (val < 0) this.value = 0;
+            if (val > 99) this.value = 99;
+        });
+
+        // ESC to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') fecharModal();
+        });
+        // Click outside modal to close
+        document.getElementById('modal-backdrop').addEventListener('click', function(e) {
+            if (e.target === this) fecharModal();
+        });
     </script>
 </body>
 </html>
