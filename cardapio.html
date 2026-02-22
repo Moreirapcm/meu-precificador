@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardapio Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --cor-tema: #ea580c; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f5f5f5; margin: 0; padding-bottom: 80px; }
+        .tema-bg { background-color: var(--cor-tema); }
+        .tema-text { color: var(--cor-tema); }
+        .tema-border { border-color: var(--cor-tema); }
+        .tema-bg-light { background-color: color-mix(in srgb, var(--cor-tema) 10%, white); }
+        .banner-carousel { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+        .banner-carousel > div { scroll-snap-align: start; }
+        .categoria-pill { transition: all 0.2s; }
+        .categoria-pill.active { background-color: var(--cor-tema); color: white; transform: scale(1.05); }
+        .produto-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .produto-card:active { transform: scale(0.98); }
+        .badge-promo { animation: pulse-badge 2s infinite; }
+        @keyframes pulse-badge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .cart-badge { position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; font-size: 11px; font-weight: bold; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+        .modal-sheet { background: white; border-radius: 1.5rem 1.5rem 0 0; max-height: 90vh; overflow-y: auto; width: 100%; max-width: 500px; }
+        .qty-btn { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: none; cursor: pointer; }
+        .destaque-badge { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+        @media(min-width: 768px) { body { max-width: 500px; margin: 0 auto; box-shadow: 0 0 30px rgba(0,0,0,0.1); min-height: 100vh; } .modal-sheet { border-radius: 1rem; margin-bottom: 1rem; } .modal-overlay { align-items: center; } }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div id="loading" class="min-h-screen flex items-center justify-center">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p class="text-gray-500">Carregando cardapio...</p>
+        </div>
+    </div>
+
+    <!-- Loja fechada / Erro -->
+    <div id="erro-container" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="text-center bg-white p-8 rounded-2xl shadow-lg max-w-sm">
+            <i class="fas fa-store-slash text-5xl text-gray-300 mb-4"></i>
+            <h2 class="text-xl font-bold text-gray-700 mb-2">Cardapio nao encontrado</h2>
+            <p class="text-gray-500 text-sm">Este link pode estar incorreto ou a loja nao esta disponivel.</p>
+        </div>
+    </div>
+
+    <!-- Conteudo Principal -->
+    <div id="cardapio-container" class="hidden">
+        <!-- Header da Loja -->
+        <div id="loja-header" class="tema-bg relative">
+            <div id="loja-banner-img" class="h-36 bg-gray-300 bg-cover bg-center"></div>
+            <div class="px-4 pb-4 pt-2 relative">
+                <div class="flex items-end gap-3 -mt-8">
+                    <div id="loja-logo-img" class="w-16 h-16 rounded-full bg-white shadow-lg border-2 border-white flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <i class="fas fa-store text-gray-300 text-2xl"></i>
+                    </div>
+                    <div class="flex-1 pt-8">
+                        <h1 id="loja-titulo" class="text-xl font-bold text-white">Restaurante</h1>
+                        <p id="loja-subtitulo" class="text-white/80 text-sm"></p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-3 mt-3 text-white/90 text-xs">
+                    <span id="info-horario" class="hidden"><i class="fas fa-clock mr-1"></i><span></span></span>
+                    <span id="info-entrega" class="hidden"><i class="fas fa-motorcycle mr-1"></i><span></span></span>
+                    <span id="info-pedido-min" class="hidden"><i class="fas fa-receipt mr-1"></i>Pedido min: R$ <span></span></span>
+                    <span id="info-frete-gratis" class="hidden"><i class="fas fa-gift mr-1"></i>Frete gratis acima de R$ <span></span></span>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <a id="btn-whatsapp" href="#" class="hidden bg-green-500 text-white text-xs py-1.5 px-3 rounded-full font-bold hover:bg-green-600"><i class="fab fa-whatsapp mr-1"></i>WhatsApp</a>
+                    <a id="btn-instagram" href="#" class="hidden bg-purple-500 text-white text-xs py-1.5 px-3 rounded-full font-bold hover:bg-purple-600"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+                    <span id="btn-endereco" class="hidden text-white/70 text-xs py-1.5"><i class="fas fa-map-marker-alt mr-1"></i><span></span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banners Promocionais -->
+        <div id="banners-container" class="hidden px-4 mt-4">
+            <div id="banners-carousel" class="flex gap-3 overflow-x-auto banner-carousel pb-2"></div>
+        </div>
+
+        <!-- Cupom ativo -->
+        <div id="cupom-destaque" class="hidden mx-4 mt-4 p-3 rounded-xl border-2 border-dashed tema-border tema-bg-light">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-ticket-alt tema-text text-lg"></i>
+                <div class="flex-1">
+                    <span class="font-bold text-sm tema-text" id="cupom-destaque-codigo"></span>
+                    <span class="text-xs text-gray-600 ml-2" id="cupom-destaque-desc"></span>
+                </div>
+                <button onclick="aplicarCupomDestaque()" class="tema-bg text-white text-xs font-bold py-1 px-3 rounded-full">Aplicar</button>
+            </div>
+        </div>
+
+        <!-- Campo de busca -->
+        <div class="px-4 mt-4">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                <input type="text" id="busca-produto" oninput="filtrarCardapio()" placeholder="Buscar no cardapio..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:ring-2 focus:ring-orange-300 focus:border-orange-300">
+            </div>
+        </div>
+
+        <!-- Categorias -->
+        <div class="px-4 mt-4">
+            <div id="categorias-bar" class="flex gap-2 overflow-x-auto pb-2"></div>
+        </div>
+
+        <!-- Destaques -->
+        <div id="destaques-section" class="hidden px-4 mt-4">
+            <h2 class="font-bold text-gray-800 mb-3"><i class="fas fa-fire text-orange-500 mr-1"></i> Destaques</h2>
+            <div id="destaques-lista" class="flex gap-3 overflow-x-auto pb-2"></div>
+        </div>
+
+        <!-- Lista de Produtos -->
+        <div id="produtos-container" class="px-4 mt-4 space-y-6 pb-24"></div>
+    </div>
+
+    <!-- Barra do Carrinho -->
+    <div id="cart-bar" class="cart-bar hidden">
+        <div class="tema-bg p-4 shadow-lg cursor-pointer" onclick="abrirCarrinho()">
+            <div class="flex items-center justify-between text-white max-w-lg mx-auto">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <i class="fas fa-shopping-bag text-xl"></i>
+                        <span id="cart-count" class="cart-badge">0</span>
+                    </div>
+                    <span class="font-bold">Ver Carrinho</span>
+                </div>
+                <span id="cart-total" class="font-bold text-lg">R$ 0,00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Produto -->
+    <div id="modal-produto" class="modal-overlay hidden" onclick="if(event.target===this)fecharModalProduto()">
+        <div class="modal-sheet" id="modal-produto-content"></div>
+    </div>
+
+    <!-- Modal Carrinho -->
+    <div id="modal-carrinho" class="modal-overlay hidden" onclick="if(event.target===this)fecharCarrinho()">
+        <div class="modal-sheet p-6" id="modal-carrinho-content"></div>
+    </div>
+
+    <!-- Modal Checkout -->
+    <div id="modal-checkout" class="modal-overlay hidden" onclick="if(event.target===this)fecharCheckout()">
+        <div class="modal-sheet p-6" id="modal-checkout-content"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMP9yXGBnoBm6RVHas69fU3G51-a2l-vg",
+            authDomain: "meu-precificador-show.firebaseapp.com",
+            projectId: "meu-precificador-show",
+            storageBucket: "meu-precificador-show.appspot.com",
+            messagingSenderId: "767394530716",
+            appId: "1:767394530716:web:412fe2b46d0081b6a07459"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'precificador-show-de-delicias';
+
+        const params = new URLSearchParams(window.location.search);
+        const lojaId = params.get('loja');
+
+        let loja = {};
+        let produtos = [];
+        let carrinho = [];
+        let cupomAplicado = null;
+
+        if (!lojaId) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('erro-container').classList.remove('hidden');
+        } else {
+            carregarLoja();
+        }
+
+        async function carregarLoja() {
+            try {
+                // Carregar config do cardapio
+                const configRef = doc(db, `artifacts/${appId}/users/${lojaId}/configuracoes/cardapio`);
+                const configSnap = await getDoc(configRef);
+                if (!configSnap.exists()) {
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('erro-container').classList.remove('hidden');
+                    return;
+                }
+                loja = configSnap.data();
+
+                // Carregar produtos
+                const prodRef = collection(db, `artifacts/${appId}/users/${lojaId}/produtos`);
+                const prodSnap = await getDocs(prodRef);
+                const todosProdutos = [];
+                prodSnap.forEach(d => todosProdutos.push({ id: d.id, ...d.data() }));
+
+                // Filtrar apenas ativos no cardapio
+                const pc = loja.produtosCardapio || {};
+                produtos = todosProdutos.filter(p => pc[p.id]?.ativo && pc[p.id]?.preco > 0).map(p => ({
+                    ...p,
+                    preco: pc[p.id].preco,
+                    precoPromocional: pc[p.id].precoPromocional || 0,
+                    categoria: pc[p.id].categoria || 'Outros',
+                    destaque: pc[p.id].destaque || false
+                }));
+
+                // Aplicar cor tema
+                if (loja.corTema) document.documentElement.style.setProperty('--cor-tema', loja.corTema);
+
+                renderLoja();
+            } catch (e) {
+                console.error('Erro ao carregar loja:', e);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('erro-container').classList.remove('hidden');
+            }
+        }
+
+        function renderLoja() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('cardapio-container').classList.remove('hidden');
+            document.title = (loja.nomeLoja || 'Cardapio') + ' - Cardapio Digital';
+
+            // Header
+            document.getElementById('loja-titulo').textContent = loja.nomeLoja || 'Restaurante';
+            document.getElementById('loja-subtitulo').textContent = loja.descricaoLoja || '';
+            if (loja.bannerUrl) {
+                document.getElementById('loja-banner-img').style.backgroundImage = `url(${loja.bannerUrl})`;
+            }
+            if (loja.logoUrl) {
+                document.getElementById('loja-logo-img').innerHTML = `<img src="${loja.logoUrl}" class="w-full h-full object-cover">`;
+            }
+
+            // Infos
+            if (loja.horario) { const el = document.getElementById('info-horario'); el.classList.remove('hidden'); el.querySelector('span').textContent = loja.horario; }
+            if (loja.tempoEntrega && loja.entregaAtiva) { const el = document.getElementById('info-entrega'); el.classList.remove('hidden'); el.querySelector('span').textContent = loja.tempoEntrega; }
+            if (loja.pedidoMinimo > 0) { const el = document.getElementById('info-pedido-min'); el.classList.remove('hidden'); el.querySelector('span').textContent = loja.pedidoMinimo.toFixed(2); }
+            if (loja.freteGratisAcima > 0) { const el = document.getElementById('info-frete-gratis'); el.classList.remove('hidden'); el.querySelector('span').textContent = loja.freteGratisAcima.toFixed(2); }
+
+            // Social
+            if (loja.whatsapp) {
+                const wpp = document.getElementById('btn-whatsapp');
+                wpp.classList.remove('hidden');
+                wpp.href = `https://wa.me/55${loja.whatsapp.replace(/\D/g, '')}`;
+            }
+            if (loja.instagram) {
+                const ig = document.getElementById('btn-instagram');
+                ig.classList.remove('hidden');
+                ig.href = `https://instagram.com/${loja.instagram.replace('@', '')}`;
+                ig.target = '_blank';
+            }
+            if (loja.endereco) {
+                const end = document.getElementById('btn-endereco');
+                end.classList.remove('hidden');
+                end.querySelector('span').textContent = loja.endereco;
+            }
+
+            // Banners
+            const bannersAtivos = (loja.banners || []).filter(b => b.ativo && b.imagemUrl);
+            if (bannersAtivos.length > 0) {
+                document.getElementById('banners-container').classList.remove('hidden');
+                const carousel = document.getElementById('banners-carousel');
+                carousel.innerHTML = '';
+                bannersAtivos.forEach(b => {
+                    carousel.innerHTML += `
+                        <div class="flex-shrink-0 w-72 h-28 rounded-xl overflow-hidden shadow-md">
+                            <img src="${b.imagemUrl}" alt="${b.titulo || ''}" class="w-full h-full object-cover">
+                        </div>`;
+                });
+            }
+
+            // Cupom destaque
+            const cuponsAtivos = (loja.cupons || []).filter(c => c.ativo && c.codigo);
+            if (cuponsAtivos.length > 0) {
+                const c = cuponsAtivos[0];
+                document.getElementById('cupom-destaque').classList.remove('hidden');
+                document.getElementById('cupom-destaque-codigo').textContent = c.codigo;
+                document.getElementById('cupom-destaque-desc').textContent = c.tipo === 'percentual' ? `${c.valor}% de desconto` : `R$ ${c.valor.toFixed(2)} de desconto`;
+            }
+
+            // Categorias
+            const categorias = [...new Set(produtos.map(p => p.categoria))].sort();
+            const catBar = document.getElementById('categorias-bar');
+            catBar.innerHTML = `<button onclick="filtrarCategoria('todos')" class="categoria-pill active flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700 whitespace-nowrap" data-cat="todos">Todos</button>`;
+            categorias.forEach(cat => {
+                catBar.innerHTML += `<button onclick="filtrarCategoria('${cat}')" class="categoria-pill flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 text-gray-700 whitespace-nowrap" data-cat="${cat}">${cat}</button>`;
+            });
+
+            // Destaques
+            const destaques = produtos.filter(p => p.destaque);
+            if (destaques.length > 0) {
+                document.getElementById('destaques-section').classList.remove('hidden');
+                const lista = document.getElementById('destaques-lista');
+                lista.innerHTML = '';
+                destaques.forEach(p => {
+                    const temPromo = p.precoPromocional > 0 && p.precoPromocional < p.preco;
+                    lista.innerHTML += `
+                        <div class="flex-shrink-0 w-40 bg-white rounded-xl shadow-md overflow-hidden cursor-pointer produto-card" onclick="abrirProduto('${p.id}')">
+                            <div class="relative h-28 bg-gray-100">
+                                ${p.imagemUrl ? `<img src="${p.imagemUrl}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fas fa-utensils text-3xl"></i></div>`}
+                                ${temPromo ? `<span class="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold py-0.5 px-2 rounded-full badge-promo">-${Math.round((1 - p.precoPromocional / p.preco) * 100)}%</span>` : ''}
+                                <span class="absolute top-1 left-1 destaque-badge text-white text-xs py-0.5 px-2 rounded-full font-bold"><i class="fas fa-fire text-xs"></i></span>
+                            </div>
+                            <div class="p-2">
+                                <p class="font-semibold text-xs text-gray-800 truncate">${p.nome}</p>
+                                <div class="mt-1">
+                                    ${temPromo
+                                        ? `<span class="text-xs text-gray-400 line-through">R$ ${p.preco.toFixed(2)}</span> <span class="font-bold text-sm tema-text">R$ ${p.precoPromocional.toFixed(2)}</span>`
+                                        : `<span class="font-bold text-sm tema-text">R$ ${p.preco.toFixed(2)}</span>`}
+                                </div>
+                            </div>
+                        </div>`;
+                });
+            }
+
+            renderProdutosCardapio(produtos);
+        }
+
+        function renderProdutosCardapio(lista) {
+            const container = document.getElementById('produtos-container');
+            container.innerHTML = '';
+            const categorias = [...new Set(lista.map(p => p.categoria))].sort();
+
+            categorias.forEach(cat => {
+                const prodsCat = lista.filter(p => p.categoria === cat);
+                const section = document.createElement('div');
+                section.innerHTML = `<h3 class="font-bold text-gray-800 text-lg mb-3">${cat}</h3>`;
+                const grid = document.createElement('div');
+                grid.className = 'space-y-3';
+
+                prodsCat.forEach(p => {
+                    const temPromo = p.precoPromocional > 0 && p.precoPromocional < p.preco;
+                    const precoFinal = temPromo ? p.precoPromocional : p.preco;
+                    const noCarrinho = carrinho.find(c => c.id === p.id);
+                    const card = document.createElement('div');
+                    card.className = 'produto-card bg-white rounded-xl shadow-sm overflow-hidden flex cursor-pointer';
+                    card.onclick = () => abrirProduto(p.id);
+                    card.innerHTML = `
+                        <div class="flex-1 p-3 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-start gap-1">
+                                    ${p.destaque ? `<span class="destaque-badge text-white text-xs py-0.5 px-1.5 rounded font-bold mt-0.5 flex-shrink-0"><i class="fas fa-fire"></i></span>` : ''}
+                                    <h4 class="font-bold text-gray-800 text-sm">${p.nome}</h4>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1 line-clamp-2">${p.descricao || ''}</p>
+                            </div>
+                            <div class="mt-2 flex items-center gap-2">
+                                ${temPromo ? `<span class="text-xs text-gray-400 line-through">R$ ${p.preco.toFixed(2)}</span>` : ''}
+                                <span class="font-bold tema-text">R$ ${precoFinal.toFixed(2)}</span>
+                                ${temPromo ? `<span class="bg-red-500 text-white text-xs font-bold py-0.5 px-1.5 rounded-full">-${Math.round((1 - p.precoPromocional / p.preco) * 100)}%</span>` : ''}
+                            </div>
+                            ${noCarrinho ? `<span class="text-xs tema-text font-semibold mt-1"><i class="fas fa-check-circle mr-1"></i>${noCarrinho.qtd}x no carrinho</span>` : ''}
+                        </div>
+                        <div class="w-28 h-28 flex-shrink-0 bg-gray-100 relative">
+                            ${p.imagemUrl ? `<img src="${p.imagemUrl}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fas fa-utensils text-2xl"></i></div>`}
+                            <button class="absolute bottom-2 right-2 w-8 h-8 tema-bg text-white rounded-full flex items-center justify-center shadow-lg text-lg font-bold" onclick="event.stopPropagation(); adicionarAoCarrinho('${p.id}')">+</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+                section.appendChild(grid);
+                container.appendChild(section);
+            });
+
+            if (lista.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-400"><i class="fas fa-search text-4xl mb-3 block"></i><p>Nenhum produto encontrado.</p></div>`;
+            }
+        }
+
+        // Produto modal
+        window.abrirProduto = function(id) {
+            const p = produtos.find(pr => pr.id === id);
+            if (!p) return;
+            const temPromo = p.precoPromocional > 0 && p.precoPromocional < p.preco;
+            const precoFinal = temPromo ? p.precoPromocional : p.preco;
+            const noCarrinho = carrinho.find(c => c.id === p.id);
+            const qtd = noCarrinho ? noCarrinho.qtd : 1;
+            const modal = document.getElementById('modal-produto-content');
+            modal.innerHTML = `
+                <div class="relative">
+                    ${p.imagemUrl ? `<img src="${p.imagemUrl}" class="w-full h-56 object-cover">` : `<div class="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-300"><i class="fas fa-utensils text-5xl"></i></div>`}
+                    <button onclick="fecharModalProduto()" class="absolute top-3 right-3 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-gray-700 shadow"><i class="fas fa-times"></i></button>
+                    ${temPromo ? `<span class="absolute top-3 left-3 bg-red-500 text-white text-sm font-bold py-1 px-3 rounded-full badge-promo">-${Math.round((1 - p.precoPromocional / p.preco) * 100)}% OFF</span>` : ''}
+                </div>
+                <div class="p-5">
+                    <h3 class="text-xl font-bold text-gray-800">${p.nome}</h3>
+                    <p class="text-sm text-gray-500 mt-2">${p.descricao || 'Delicioso prato preparado com ingredientes selecionados.'}</p>
+                    <div class="mt-4 flex items-center gap-3">
+                        ${temPromo ? `<span class="text-lg text-gray-400 line-through">R$ ${p.preco.toFixed(2)}</span>` : ''}
+                        <span class="text-2xl font-bold tema-text">R$ ${precoFinal.toFixed(2)}</span>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Observacoes</label>
+                        <textarea id="obs-produto" rows="2" class="w-full p-2 border rounded-lg text-sm" placeholder="Ex: Sem cebola, bem passado...">${noCarrinho?.obs || ''}</textarea>
+                    </div>
+                    <div class="mt-4 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <button class="qty-btn bg-gray-200 text-gray-700" onclick="alterarQtdModal(-1)">-</button>
+                            <span id="modal-qtd" class="text-lg font-bold w-8 text-center">${qtd}</span>
+                            <button class="qty-btn tema-bg text-white" onclick="alterarQtdModal(1)">+</button>
+                        </div>
+                        <button onclick="confirmarAdicionarCarrinho('${p.id}')" class="tema-bg text-white font-bold py-3 px-6 rounded-xl shadow-lg">
+                            Adicionar R$ <span id="modal-total">${(precoFinal * qtd).toFixed(2)}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            window._modalProdutoId = id;
+            window._modalQtd = qtd;
+            document.getElementById('modal-produto').classList.remove('hidden');
+        };
+
+        window.alterarQtdModal = function(delta) {
+            window._modalQtd = Math.max(1, (window._modalQtd || 1) + delta);
+            document.getElementById('modal-qtd').textContent = window._modalQtd;
+            const p = produtos.find(pr => pr.id === window._modalProdutoId);
+            const preco = (p.precoPromocional > 0 && p.precoPromocional < p.preco) ? p.precoPromocional : p.preco;
+            document.getElementById('modal-total').textContent = (preco * window._modalQtd).toFixed(2);
+        };
+
+        window.fecharModalProduto = () => document.getElementById('modal-produto').classList.add('hidden');
+        window.fecharCarrinho = () => document.getElementById('modal-carrinho').classList.add('hidden');
+        window.fecharCheckout = () => document.getElementById('modal-checkout').classList.add('hidden');
+
+        window.confirmarAdicionarCarrinho = function(id) {
+            const p = produtos.find(pr => pr.id === id);
+            const preco = (p.precoPromocional > 0 && p.precoPromocional < p.preco) ? p.precoPromocional : p.preco;
+            const obs = document.getElementById('obs-produto')?.value || '';
+            const existente = carrinho.find(c => c.id === id);
+            if (existente) {
+                existente.qtd = window._modalQtd;
+                existente.obs = obs;
+            } else {
+                carrinho.push({ id, nome: p.nome, preco, qtd: window._modalQtd, obs });
+            }
+            fecharModalProduto();
+            atualizarCarrinhoUI();
+            renderProdutosCardapio(getListaFiltrada());
+        };
+
+        window.adicionarAoCarrinho = function(id) {
+            const p = produtos.find(pr => pr.id === id);
+            const preco = (p.precoPromocional > 0 && p.precoPromocional < p.preco) ? p.precoPromocional : p.preco;
+            const existente = carrinho.find(c => c.id === id);
+            if (existente) { existente.qtd++; }
+            else { carrinho.push({ id, nome: p.nome, preco, qtd: 1, obs: '' }); }
+            atualizarCarrinhoUI();
+            renderProdutosCardapio(getListaFiltrada());
+        };
+
+        function atualizarCarrinhoUI() {
+            const total = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+            const qtd = carrinho.reduce((s, i) => s + i.qtd, 0);
+            const bar = document.getElementById('cart-bar');
+            if (qtd > 0) {
+                bar.classList.remove('hidden');
+                document.getElementById('cart-count').textContent = qtd;
+                document.getElementById('cart-total').textContent = `R$ ${total.toFixed(2)}`;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        // Carrinho modal
+        window.abrirCarrinho = function() {
+            const subtotal = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+            let desconto = 0;
+            if (cupomAplicado) {
+                desconto = cupomAplicado.tipo === 'percentual' ? subtotal * cupomAplicado.valor / 100 : cupomAplicado.valor;
+            }
+            const taxaEntrega = loja.entregaAtiva ? (loja.freteGratisAcima > 0 && subtotal >= loja.freteGratisAcima ? 0 : (loja.taxaEntrega || 0)) : 0;
+            const total = Math.max(0, subtotal - desconto + taxaEntrega);
+
+            const modal = document.getElementById('modal-carrinho-content');
+            let itensHtml = '';
+            carrinho.forEach((item, i) => {
+                itensHtml += `
+                    <div class="flex items-center gap-3 py-3 border-b border-gray-100">
+                        <div class="flex-1">
+                            <p class="font-semibold text-sm text-gray-800">${item.nome}</p>
+                            ${item.obs ? `<p class="text-xs text-gray-400">${item.obs}</p>` : ''}
+                            <p class="tema-text font-bold text-sm mt-1">R$ ${(item.preco * item.qtd).toFixed(2)}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="qty-btn bg-gray-200 text-gray-700 text-sm" onclick="alterarQtdCarrinho(${i}, -1)">-</button>
+                            <span class="font-bold w-6 text-center">${item.qtd}</span>
+                            <button class="qty-btn tema-bg text-white text-sm" onclick="alterarQtdCarrinho(${i}, 1)">+</button>
+                        </div>
+                        <button onclick="removerDoCarrinho(${i})" class="text-red-400 hover:text-red-600 p-1"><i class="fas fa-trash text-sm"></i></button>
+                    </div>`;
+            });
+
+            modal.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-shopping-bag mr-2 tema-text"></i>Seu Pedido</h3>
+                    <button onclick="fecharCarrinho()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                ${carrinho.length === 0 ? '<p class="text-center text-gray-400 py-8"><i class="fas fa-shopping-bag text-4xl mb-2 block"></i>Carrinho vazio</p>' : `
+                    ${itensHtml}
+                    <!-- Cupom -->
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" id="input-cupom" placeholder="Codigo do cupom" class="flex-1 p-2 border rounded-lg text-sm uppercase" value="${cupomAplicado?.codigo || ''}">
+                        <button onclick="aplicarCupom()" class="tema-bg text-white text-sm font-bold py-2 px-4 rounded-lg">Aplicar</button>
+                    </div>
+                    ${cupomAplicado ? `<p class="text-green-600 text-xs mt-1"><i class="fas fa-check-circle mr-1"></i>Cupom ${cupomAplicado.codigo} aplicado!</p>` : ''}
+                    <div id="cupom-erro" class="text-red-500 text-xs mt-1 hidden"></div>
+                    <!-- Resumo -->
+                    <div class="mt-4 space-y-2 text-sm">
+                        <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>R$ ${subtotal.toFixed(2)}</span></div>
+                        ${desconto > 0 ? `<div class="flex justify-between text-green-600"><span>Desconto</span><span>- R$ ${desconto.toFixed(2)}</span></div>` : ''}
+                        ${loja.entregaAtiva ? `<div class="flex justify-between text-gray-600"><span>Entrega</span><span>${taxaEntrega === 0 ? '<span class="text-green-600 font-bold">Gratis!</span>' : `R$ ${taxaEntrega.toFixed(2)}`}</span></div>` : ''}
+                        <div class="flex justify-between font-bold text-lg border-t pt-2"><span>Total</span><span class="tema-text">R$ ${total.toFixed(2)}</span></div>
+                    </div>
+                    <button onclick="fecharCarrinho(); abrirCheckout();" class="w-full tema-bg text-white font-bold py-3 rounded-xl mt-4 shadow-lg text-lg">
+                        Finalizar Pedido
+                    </button>
+                `}
+            `;
+            document.getElementById('modal-carrinho').classList.remove('hidden');
+        };
+
+        window.alterarQtdCarrinho = function(i, delta) {
+            carrinho[i].qtd += delta;
+            if (carrinho[i].qtd <= 0) carrinho.splice(i, 1);
+            atualizarCarrinhoUI();
+            renderProdutosCardapio(getListaFiltrada());
+            abrirCarrinho();
+        };
+
+        window.removerDoCarrinho = function(i) {
+            carrinho.splice(i, 1);
+            atualizarCarrinhoUI();
+            renderProdutosCardapio(getListaFiltrada());
+            abrirCarrinho();
+        };
+
+        // Cupom
+        window.aplicarCupom = function() {
+            const codigo = document.getElementById('input-cupom').value.trim().toUpperCase();
+            const cuponsDisponiveis = (loja.cupons || []).filter(c => c.ativo);
+            const cupom = cuponsDisponiveis.find(c => c.codigo.toUpperCase() === codigo);
+            const erroEl = document.getElementById('cupom-erro');
+            if (!cupom) {
+                erroEl.textContent = 'Cupom invalido ou expirado.';
+                erroEl.classList.remove('hidden');
+                cupomAplicado = null;
+            } else {
+                cupomAplicado = cupom;
+                erroEl.classList.add('hidden');
+            }
+            abrirCarrinho();
+        };
+
+        window.aplicarCupomDestaque = function() {
+            const cuponsAtivos = (loja.cupons || []).filter(c => c.ativo && c.codigo);
+            if (cuponsAtivos.length > 0) {
+                cupomAplicado = cuponsAtivos[0];
+                atualizarCarrinhoUI();
+                const el = document.getElementById('cupom-destaque');
+                el.innerHTML = `<div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-600 text-lg"></i><span class="text-sm font-bold text-green-700">Cupom ${cupomAplicado.codigo} aplicado ao carrinho!</span></div>`;
+            }
+        };
+
+        // Checkout
+        window.abrirCheckout = function() {
+            const subtotal = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+            let desconto = cupomAplicado ? (cupomAplicado.tipo === 'percentual' ? subtotal * cupomAplicado.valor / 100 : cupomAplicado.valor) : 0;
+            const taxaEntrega = loja.entregaAtiva ? (loja.freteGratisAcima > 0 && subtotal >= loja.freteGratisAcima ? 0 : (loja.taxaEntrega || 0)) : 0;
+
+            let pagOpcoes = '';
+            if (loja.pagPix) pagOpcoes += `<label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="pagamento" value="pix" checked class="text-orange-500"><i class="fas fa-qrcode text-green-600"></i><span class="text-sm">Pix</span></label>`;
+            if (loja.pagCartaoCredito) pagOpcoes += `<label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="pagamento" value="credito" class="text-orange-500"><i class="fas fa-credit-card text-blue-600"></i><span class="text-sm">Credito</span></label>`;
+            if (loja.pagCartaoDebito) pagOpcoes += `<label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="pagamento" value="debito" class="text-orange-500"><i class="fas fa-credit-card text-purple-600"></i><span class="text-sm">Debito</span></label>`;
+            if (loja.pagDinheiro) pagOpcoes += `<label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="pagamento" value="dinheiro" class="text-orange-500"><i class="fas fa-money-bill-wave text-green-700"></i><span class="text-sm">Dinheiro</span></label>`;
+            if (loja.pagValeRefeicao) pagOpcoes += `<label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="pagamento" value="vale" class="text-orange-500"><i class="fas fa-ticket-alt text-orange-600"></i><span class="text-sm">Vale Refeicao</span></label>`;
+
+            let entregaOpcoes = '';
+            if (loja.entregaAtiva) entregaOpcoes += `<label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="entrega" value="entrega" checked class="text-orange-500"><i class="fas fa-motorcycle text-orange-500"></i><span class="text-sm">Entrega ${taxaEntrega > 0 ? `(R$ ${taxaEntrega.toFixed(2)})` : '(Gratis!)'}</span></label>`;
+            if (loja.retiradaAtiva) entregaOpcoes += `<label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="entrega" value="retirada" ${!loja.entregaAtiva ? 'checked' : ''} class="text-orange-500"><i class="fas fa-store text-blue-500"></i><span class="text-sm">Retirar no local</span></label>`;
+
+            const modal = document.getElementById('modal-checkout-content');
+            modal.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-receipt mr-2 tema-text"></i>Finalizar Pedido</h3>
+                    <button onclick="fecharCheckout()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Seu Nome</label>
+                        <input type="text" id="checkout-nome" placeholder="Nome completo" class="w-full p-2.5 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Telefone / WhatsApp</label>
+                        <input type="text" id="checkout-telefone" placeholder="(00) 00000-0000" class="w-full p-2.5 border rounded-lg text-sm">
+                    </div>
+                    ${entregaOpcoes ? `<div><label class="block text-sm font-bold text-gray-700 mb-2">Tipo de entrega</label><div class="space-y-2">${entregaOpcoes}</div></div>` : ''}
+                    <div id="endereco-entrega-section">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Endereco de Entrega</label>
+                        <input type="text" id="checkout-endereco" placeholder="Rua, numero, complemento" class="w-full p-2.5 border rounded-lg text-sm mb-2">
+                        <input type="text" id="checkout-bairro" placeholder="Bairro" class="w-full p-2.5 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Pagamento</label>
+                        <div class="space-y-2">${pagOpcoes}</div>
+                    </div>
+                    <div id="troco-section" class="hidden">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Troco para quanto?</label>
+                        <input type="number" id="checkout-troco" placeholder="Ex: 50.00" class="w-full p-2.5 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Observacoes do pedido</label>
+                        <textarea id="checkout-obs" rows="2" class="w-full p-2 border rounded-lg text-sm" placeholder="Alguma observacao geral?"></textarea>
+                    </div>
+                    <button onclick="enviarPedido()" class="w-full tema-bg text-white font-bold py-3.5 rounded-xl shadow-lg text-lg">
+                        <i class="fab fa-whatsapp mr-2"></i> Enviar Pedido via WhatsApp
+                    </button>
+                    ${loja.chavePix ? `<p class="text-center text-xs text-gray-400 mt-2"><i class="fas fa-qrcode mr-1"></i>Chave Pix: ${loja.chavePix}</p>` : ''}
+                </div>
+            `;
+
+            // Toggle troco/endereco
+            document.querySelectorAll('input[name="pagamento"]').forEach(r => {
+                r.addEventListener('change', () => {
+                    document.getElementById('troco-section').classList.toggle('hidden', r.value !== 'dinheiro');
+                });
+            });
+            document.querySelectorAll('input[name="entrega"]').forEach(r => {
+                r.addEventListener('change', () => {
+                    document.getElementById('endereco-entrega-section').classList.toggle('hidden', r.value === 'retirada');
+                });
+            });
+
+            document.getElementById('modal-checkout').classList.remove('hidden');
+        };
+
+        // Enviar pedido via WhatsApp
+        window.enviarPedido = function() {
+            const nome = document.getElementById('checkout-nome').value.trim();
+            const telefone = document.getElementById('checkout-telefone').value.trim();
+            if (!nome) { alert('Informe seu nome.'); return; }
+
+            const tipoEntrega = document.querySelector('input[name="entrega"]:checked')?.value || 'retirada';
+            const pagamento = document.querySelector('input[name="pagamento"]:checked')?.value || 'pix';
+            const endereco = document.getElementById('checkout-endereco')?.value?.trim() || '';
+            const bairro = document.getElementById('checkout-bairro')?.value?.trim() || '';
+            const obs = document.getElementById('checkout-obs')?.value?.trim() || '';
+            const troco = document.getElementById('checkout-troco')?.value || '';
+
+            const subtotal = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+            let desconto = cupomAplicado ? (cupomAplicado.tipo === 'percentual' ? subtotal * cupomAplicado.valor / 100 : cupomAplicado.valor) : 0;
+            const taxaEntrega = (tipoEntrega === 'entrega' && loja.entregaAtiva) ? (loja.freteGratisAcima > 0 && subtotal >= loja.freteGratisAcima ? 0 : (loja.taxaEntrega || 0)) : 0;
+            const total = Math.max(0, subtotal - desconto + taxaEntrega);
+
+            const pagNomes = { pix: 'Pix', credito: 'Cartao Credito', debito: 'Cartao Debito', dinheiro: 'Dinheiro', vale: 'Vale Refeicao' };
+
+            let msg = `*Novo Pedido - ${loja.nomeLoja || 'Cardapio Digital'}*\n\n`;
+            msg += `*Cliente:* ${nome}\n`;
+            if (telefone) msg += `*Telefone:* ${telefone}\n`;
+            msg += `*Entrega:* ${tipoEntrega === 'entrega' ? 'Delivery' : 'Retirada no local'}\n`;
+            if (tipoEntrega === 'entrega' && endereco) msg += `*Endereco:* ${endereco}${bairro ? ', ' + bairro : ''}\n`;
+            msg += `*Pagamento:* ${pagNomes[pagamento] || pagamento}\n`;
+            if (pagamento === 'dinheiro' && troco) msg += `*Troco para:* R$ ${parseFloat(troco).toFixed(2)}\n`;
+            msg += `\n---\n*Itens:*\n`;
+            carrinho.forEach(item => {
+                msg += `${item.qtd}x ${item.nome} - R$ ${(item.preco * item.qtd).toFixed(2)}`;
+                if (item.obs) msg += ` _(${item.obs})_`;
+                msg += `\n`;
+            });
+            msg += `---\n`;
+            if (desconto > 0) msg += `*Desconto (${cupomAplicado.codigo}):* -R$ ${desconto.toFixed(2)}\n`;
+            if (taxaEntrega > 0) msg += `*Taxa de entrega:* R$ ${taxaEntrega.toFixed(2)}\n`;
+            if (taxaEntrega === 0 && tipoEntrega === 'entrega') msg += `*Entrega:* GRATIS\n`;
+            msg += `\n*TOTAL: R$ ${total.toFixed(2)}*`;
+            if (obs) msg += `\n\n*Obs:* ${obs}`;
+
+            const wppNum = loja.whatsapp ? loja.whatsapp.replace(/\D/g, '') : '';
+            const url = `https://wa.me/55${wppNum}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+
+            // Limpar carrinho
+            carrinho = [];
+            cupomAplicado = null;
+            atualizarCarrinhoUI();
+            fecharCheckout();
+            renderProdutosCardapio(getListaFiltrada());
+        };
+
+        // Filtros
+        let categoriaAtiva = 'todos';
+
+        window.filtrarCategoria = function(cat) {
+            categoriaAtiva = cat;
+            document.querySelectorAll('.categoria-pill').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cat === cat);
+            });
+            renderProdutosCardapio(getListaFiltrada());
+        };
+
+        window.filtrarCardapio = function() {
+            renderProdutosCardapio(getListaFiltrada());
+        };
+
+        function getListaFiltrada() {
+            const busca = document.getElementById('busca-produto')?.value?.toLowerCase() || '';
+            return produtos.filter(p => {
+                const matchCat = categoriaAtiva === 'todos' || p.categoria === categoriaAtiva;
+                const matchBusca = !busca || p.nome.toLowerCase().includes(busca) || (p.descricao || '').toLowerCase().includes(busca);
+                return matchCat && matchBusca;
+            });
+        }
+    </script>
+</body>
+</html>
