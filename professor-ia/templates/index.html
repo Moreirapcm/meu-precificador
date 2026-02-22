@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor IA - Tutor de Matemática</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes pulse-dot { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .fade-in-up { animation: fadeInUp .5s ease-out forwards; }
+        .float-anim { animation: float 3s ease-in-out infinite; }
+        .typing-indicator span { display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8;margin:0 2px;animation:pulse-dot 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1){animation-delay:-.32s}
+        .typing-indicator span:nth-child(2){animation-delay:-.16s}
+
+        .msg-aluno { background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:18px 18px 4px 18px;max-width:85%;margin-left:auto; }
+        .msg-professor { background:#fff;color:#1f2937;border-radius:18px 18px 18px 4px;max-width:85%;border:1px solid #e5e7eb; }
+
+        .lousa-container { background:linear-gradient(135deg,#1a3a1a 0%,#2d5a2d 50%,#1a3a1a 100%);border:12px solid #8B5A2B;border-radius:8px;box-shadow:inset 0 0 30px rgba(0,0,0,.3),0 8px 32px rgba(0,0,0,.3);padding:24px;position:relative;overflow:hidden; }
+        .lousa-container::before { content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none; }
+        .giz { color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,.5); }
+        .giz-amarelo { color:#FFE066;text-shadow:1px 1px 2px rgba(0,0,0,.5); }
+        .giz-azul { color:#93C5FD;text-shadow:1px 1px 2px rgba(0,0,0,.5); }
+
+        .login-card { background:#fff;border-radius:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,.15);overflow:hidden; }
+        .gradient-header { background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#a78bfa 100%);padding:2rem;text-align:center;color:#fff; }
+        .chat-scroll::-webkit-scrollbar { width:6px; }
+        .chat-scroll::-webkit-scrollbar-track { background:transparent; }
+        .chat-scroll::-webkit-scrollbar-thumb { background:#cbd5e1;border-radius:3px; }
+        .nivel-btn.active { transform:scale(1.05);box-shadow:0 0 0 3px rgba(99,102,241,.3); }
+        .history-item { transition:all .2s; }
+        .history-item:hover { background:#f1f5f9;transform:translateX(4px); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- ====== TELA LOGIN ====== -->
+<div id="tela-login" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <div class="login-card w-full max-w-md">
+        <div class="gradient-header">
+            <div class="text-6xl mb-3">🎓</div>
+            <h1 class="text-2xl font-bold">Professor IA</h1>
+            <p class="text-indigo-100 mt-1">Seu tutor de matemática inteligente</p>
+        </div>
+        <div class="p-6">
+            <div class="flex mb-6 bg-gray-100 rounded-xl p-1">
+                <button onclick="abaLogin('login')" id="aba-login-btn"
+                    class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-indigo-600 shadow-sm">Entrar</button>
+                <button onclick="abaLogin('cadastro')" id="aba-cadastro-btn"
+                    class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500">Criar Conta</button>
+            </div>
+
+            <!-- Login -->
+            <div id="form-login" class="space-y-4">
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-400"></i>
+                    <input id="login-email" type="email" placeholder="Seu e-mail"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-3 top-3.5 text-gray-400"></i>
+                    <input id="login-senha" type="password" placeholder="Sua senha"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        onkeydown="if(event.key==='Enter')fazerLogin()">
+                </div>
+                <div id="login-erro" class="text-red-500 text-sm hidden"></div>
+                <button onclick="fazerLogin()"
+                    class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Entrar
+                </button>
+            </div>
+
+            <!-- Cadastro -->
+            <div id="form-cadastro" class="hidden space-y-4">
+                <div class="relative">
+                    <i class="fas fa-user absolute left-3 top-3.5 text-gray-400"></i>
+                    <input id="cad-nome" type="text" placeholder="Seu nome"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-400"></i>
+                    <input id="cad-email" type="email" placeholder="Seu e-mail"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-3 top-3.5 text-gray-400"></i>
+                    <input id="cad-senha" type="password" placeholder="Senha (mínimo 6 caracteres)"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        onkeydown="if(event.key==='Enter')fazerCadastro()">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-2">Nível escolar</label>
+                    <div class="flex gap-2" id="nivel-btns">
+                        <button onclick="selNivel(this,'1-3')" class="nivel-btn flex-1 py-2 px-2 rounded-xl border-2 border-gray-200 text-xs font-medium">1°-3° ano</button>
+                        <button onclick="selNivel(this,'4-5')" class="nivel-btn flex-1 py-2 px-2 rounded-xl border-2 border-indigo-500 bg-indigo-50 text-indigo-700 text-xs font-medium active">4°-5° ano</button>
+                        <button onclick="selNivel(this,'6-9')" class="nivel-btn flex-1 py-2 px-2 rounded-xl border-2 border-gray-200 text-xs font-medium">6°-9° ano</button>
+                    </div>
+                </div>
+                <div id="cad-erro" class="text-red-500 text-sm hidden"></div>
+                <button onclick="fazerCadastro()"
+                    class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all">
+                    <i class="fas fa-user-plus mr-2"></i>Criar Conta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== TELA APP ====== -->
+<div id="tela-app" class="hidden min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-xl">🎓</div>
+                <div>
+                    <h1 class="font-bold text-gray-800">Professor IA</h1>
+                    <p class="text-xs text-green-500 flex items-center gap-1">
+                        <span class="w-2 h-2 bg-green-400 rounded-full inline-block"></span> Online
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleHist()" class="p-2 hover:bg-gray-100 rounded-xl" title="Histórico"><i class="fas fa-history text-gray-500"></i></button>
+                <button onclick="abrirConfig()" class="p-2 hover:bg-gray-100 rounded-xl" title="Configurações"><i class="fas fa-cog text-gray-500"></i></button>
+                <button onclick="fazerLogout()" class="p-2 hover:bg-red-50 rounded-xl" title="Sair"><i class="fas fa-sign-out-alt text-gray-400"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden max-w-4xl mx-auto w-full">
+
+        <!-- Painel Histórico -->
+        <div id="painel-hist" class="hidden w-72 bg-white border-r border-gray-200 flex-shrink-0 overflow-y-auto p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-gray-700"><i class="fas fa-history mr-2"></i>Histórico</h3>
+                <button onclick="toggleHist()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <button onclick="novaConversa()" class="w-full py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-100 mb-4">
+                <i class="fas fa-plus mr-1"></i> Nova Conversa
+            </button>
+            <div id="lista-hist" class="space-y-2">
+                <p class="text-sm text-gray-400 text-center py-4">Nenhuma conversa ainda</p>
+            </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="flex-1 flex flex-col">
+            <div id="chat-area" class="flex-1 overflow-y-auto p-4 space-y-4 chat-scroll">
+                <div id="boas-vindas" class="flex flex-col items-center justify-center h-full text-center px-4">
+                    <div class="text-7xl mb-4 float-anim">🎓</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Oi, <span id="nome-aluno">aluno</span>!</h2>
+                    <p class="text-gray-500 max-w-md mb-8">Tire uma foto da questão de matemática e eu vou te ajudar a entender passo a passo!</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
+                        <button onclick="document.getElementById('input-foto').click()"
+                            class="p-4 bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-300 hover:shadow-lg transition-all group">
+                            <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">📸</div>
+                            <p class="text-sm font-semibold text-gray-700">Tirar Foto</p>
+                            <p class="text-xs text-gray-400">Da questão no caderno</p>
+                        </button>
+                        <button onclick="document.getElementById('input-arquivo').click()"
+                            class="p-4 bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-300 hover:shadow-lg transition-all group">
+                            <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">📁</div>
+                            <p class="text-sm font-semibold text-gray-700">Enviar Imagem</p>
+                            <p class="text-xs text-gray-400">Do computador</p>
+                        </button>
+                        <button onclick="focusTexto()"
+                            class="p-4 bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-300 hover:shadow-lg transition-all group">
+                            <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">✏️</div>
+                            <p class="text-sm font-semibold text-gray-700">Digitar</p>
+                            <p class="text-xs text-gray-400">Escrever a questão</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="border-t border-gray-200 bg-white p-3">
+                <div id="preview-box" class="hidden mb-3">
+                    <div class="relative inline-block">
+                        <img id="preview-img" class="h-24 rounded-xl border-2 border-indigo-200 object-cover">
+                        <button onclick="limparPreview()" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button onclick="document.getElementById('input-foto').click()" class="p-3 bg-gray-100 hover:bg-indigo-100 rounded-xl flex-shrink-0" title="Tirar foto">
+                        <i class="fas fa-camera text-gray-500"></i>
+                    </button>
+                    <button onclick="document.getElementById('input-arquivo').click()" class="p-3 bg-gray-100 hover:bg-indigo-100 rounded-xl flex-shrink-0" title="Enviar imagem">
+                        <i class="fas fa-image text-gray-500"></i>
+                    </button>
+                    <textarea id="input-texto" rows="1" placeholder="Digite sua questão ou envie uma foto..."
+                        class="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-sm"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviar()}"
+                        oninput="autoResize(this);atualizarBtn()"></textarea>
+                    <button onclick="enviar()" id="btn-enviar" disabled
+                        class="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex-shrink-0 disabled:opacity-40 transition-all">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <input type="file" id="input-foto" accept="image/*" capture="environment" class="hidden" onchange="selecionarImg(this)">
+                <input type="file" id="input-arquivo" accept="image/*" class="hidden" onchange="selecionarImg(this)">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== MODAL CONFIG ====== -->
+<div id="modal-config" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-bold"><i class="fas fa-cog mr-2"></i>Configurações</h2>
+                <button onclick="fecharConfig()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2"><i class="fas fa-key mr-1 text-amber-500"></i> Chave API Gemini</label>
+                <p class="text-xs text-gray-400 mb-2">Pegue grátis em <a href="https://aistudio.google.com/apikey" target="_blank" class="text-indigo-500 underline">Google AI Studio</a></p>
+                <div class="flex gap-2">
+                    <input id="cfg-gemini" type="password" placeholder="AIzaSy..."
+                        class="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button onclick="testarGemini()" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm hover:bg-indigo-700">Testar</button>
+                </div>
+                <div id="cfg-gemini-status" class="text-xs mt-2"></div>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2"><i class="fas fa-graduation-cap mr-1 text-indigo-500"></i> Nível Escolar</label>
+                <select id="cfg-nivel" class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="1-3">1° ao 3° ano (6-8 anos)</option>
+                    <option value="4-5" selected>4° ao 5° ano (9-10 anos)</option>
+                    <option value="6-9">6° ao 9° ano (11-14 anos)</option>
+                </select>
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2"><i class="fas fa-robot mr-1 text-purple-500"></i> Nome do Professor</label>
+                <input id="cfg-nome-prof" type="text" value="Professor Max"
+                    class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            <button onclick="salvarConfig()" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700">
+                <i class="fas fa-check mr-2"></i>Salvar
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// ==============================================================
+// ESTADO
+// ==============================================================
+let usuario = null;       // dados do usuário logado
+let conversaId = null;    // conversa ativa
+let imgBase64 = null;     // imagem selecionada
+let processando = false;
+let nivelCad = '4-5';
+
+// ==============================================================
+// HELPERS
+// ==============================================================
+function esc(t) { if(!t) return ''; const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+function $(id) { return document.getElementById(id); }
+function mostrarErro(id, msg) { const el=$(id); el.textContent=msg; el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),5000); }
+
+async function api(path, opts={}) {
+    const res = await fetch(path, {
+        headers: {'Content-Type':'application/json', ...opts.headers},
+        ...opts
+    });
+    return res.json();
+}
+
+// ==============================================================
+// AUTH
+// ==============================================================
+async function checarLogin() {
+    const data = await api('/api/eu');
+    if (data.logado) {
+        usuario = data;
+        mostrarApp();
+    } else {
+        mostrarLogin();
+    }
+}
+
+function mostrarLogin() {
+    $('tela-login').classList.remove('hidden');
+    $('tela-app').classList.add('hidden');
+}
+
+function mostrarApp() {
+    $('tela-login').classList.add('hidden');
+    $('tela-app').classList.remove('hidden');
+    $('nome-aluno').textContent = usuario.nome;
+    carregarHist();
+    if (!usuario.tem_gemini) setTimeout(abrirConfig, 800);
+}
+
+function abaLogin(aba) {
+    $('form-login').classList.toggle('hidden', aba!=='login');
+    $('form-cadastro').classList.toggle('hidden', aba!=='cadastro');
+    const lb=$('aba-login-btn'), cb=$('aba-cadastro-btn');
+    lb.className = `flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${aba==='login'?'bg-white text-indigo-600 shadow-sm':'text-gray-500'}`;
+    cb.className = `flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${aba==='cadastro'?'bg-white text-indigo-600 shadow-sm':'text-gray-500'}`;
+}
+
+function selNivel(btn, n) {
+    nivelCad = n;
+    document.querySelectorAll('.nivel-btn').forEach(b => {
+        b.classList.remove('active','border-indigo-500','bg-indigo-50','text-indigo-700');
+        b.classList.add('border-gray-200');
+    });
+    btn.classList.add('active','border-indigo-500','bg-indigo-50','text-indigo-700');
+    btn.classList.remove('border-gray-200');
+}
+
+async function fazerLogin() {
+    const email = $('login-email').value.trim();
+    const senha = $('login-senha').value;
+    if (!email||!senha) return mostrarErro('login-erro','Preencha todos os campos.');
+    const data = await api('/api/login', { method:'POST', body: JSON.stringify({email,senha}) });
+    if (data.erro) return mostrarErro('login-erro', data.erro);
+    checarLogin();
+}
+
+async function fazerCadastro() {
+    const nome=$('cad-nome').value.trim(), email=$('cad-email').value.trim(), senha=$('cad-senha').value;
+    if (!nome||!email||!senha) return mostrarErro('cad-erro','Preencha todos os campos.');
+    const data = await api('/api/cadastro', { method:'POST', body: JSON.stringify({nome,email,senha,nivel:nivelCad}) });
+    if (data.erro) return mostrarErro('cad-erro', data.erro);
+    checarLogin();
+}
+
+async function fazerLogout() {
+    await api('/api/logout', {method:'POST'});
+    usuario = null;
+    conversaId = null;
+    mostrarLogin();
+}
+
+// ==============================================================
+// CONFIG
+// ==============================================================
+function abrirConfig() {
+    $('modal-config').classList.remove('hidden');
+    $('cfg-gemini').value = usuario?.gemini_key || '';
+    $('cfg-nivel').value = usuario?.nivel || '4-5';
+    $('cfg-nome-prof').value = usuario?.nome_professor || 'Professor Max';
+}
+function fecharConfig() { $('modal-config').classList.add('hidden'); }
+
+async function salvarConfig() {
+    const gemini_key = $('cfg-gemini').value.trim();
+    const nivel = $('cfg-nivel').value;
+    const nome_professor = $('cfg-nome-prof').value.trim() || 'Professor Max';
+    await api('/api/config', { method:'POST', body: JSON.stringify({gemini_key,nivel,nome_professor}) });
+    usuario.gemini_key = gemini_key;
+    usuario.nivel = nivel;
+    usuario.nome_professor = nome_professor;
+    usuario.tem_gemini = !!gemini_key;
+    fecharConfig();
+}
+
+async function testarGemini() {
+    const key = $('cfg-gemini').value.trim();
+    const st = $('cfg-gemini-status');
+    if (!key) { st.innerHTML='<span class="text-red-500">Cole sua chave primeiro.</span>'; return; }
+    st.innerHTML='<span class="text-gray-500">Testando...</span>';
+    try {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({contents:[{parts:[{text:'Diga OK'}]}]})
+        });
+        st.innerHTML = r.ok
+            ? '<span class="text-green-600"><i class="fas fa-check-circle"></i> Funcionando!</span>'
+            : '<span class="text-red-500"><i class="fas fa-times-circle"></i> Chave inválida.</span>';
+    } catch { st.innerHTML='<span class="text-red-500">Erro de conexão.</span>'; }
+}
+
+// ==============================================================
+// IMAGEM
+// ==============================================================
+function selecionarImg(input) {
+    const file = input.files[0];
+    if (!file||!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        imgBase64 = e.target.result;
+        $('preview-img').src = imgBase64;
+        $('preview-box').classList.remove('hidden');
+        $('btn-enviar').disabled = false;
+        removerBoasVindas();
+    };
+    reader.readAsDataURL(file);
+}
+
+function limparPreview() {
+    imgBase64 = null;
+    $('preview-box').classList.add('hidden');
+    $('input-foto').value = '';
+    $('input-arquivo').value = '';
+    atualizarBtn();
+}
+
+function focusTexto() { $('input-texto').focus(); removerBoasVindas(); }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+function atualizarBtn() { $('btn-enviar').disabled = !$('input-texto').value.trim() && !imgBase64; }
+function removerBoasVindas() { const bv=$('boas-vindas'); if(bv) bv.remove(); }
+
+// ==============================================================
+// CHAT - ENVIAR
+// ==============================================================
+async function enviar() {
+    if (processando) return;
+    const texto = $('input-texto').value.trim();
+    const imagem = imgBase64;
+    if (!texto && !imagem) return;
+    if (!usuario?.tem_gemini) return abrirConfig();
+
+    removerBoasVindas();
+    addMsgAluno(texto, imagem);
+
+    $('input-texto').value = '';
+    $('input-texto').style.height = 'auto';
+    limparPreview();
+    processando = true;
+    $('btn-enviar').disabled = true;
+
+    const typingId = mostrarDigitando();
+
+    try {
+        const data = await api('/api/perguntar', {
+            method: 'POST',
+            body: JSON.stringify({ texto, imagem: imagem||'', conversa_id: conversaId||'' })
+        });
+
+        removerDigitando(typingId);
+
+        if (data.erro) {
+            addMsgProf(`<p class="text-sm text-red-600">Ops! ${esc(data.erro)}</p>`, true);
+        } else {
+            conversaId = data.conversa_id;
+            exibirResposta(data);
+            carregarHist();
+        }
+    } catch (e) {
+        removerDigitando(typingId);
+        addMsgProf(`<p class="text-sm text-red-600">Erro de conexão. Tente novamente.</p>`, true);
+    }
+
+    processando = false;
+    atualizarBtn();
+}
+
+// ==============================================================
+// CHAT - RENDERIZAR
+// ==============================================================
+function addMsgAluno(texto, imagem) {
+    const chat = $('chat-area');
+    const div = document.createElement('div');
+    div.className = 'flex justify-end fade-in-up';
+    div.innerHTML = `<div class="msg-aluno px-4 py-3 shadow-sm">
+        ${imagem ? `<img src="${imagem}" class="max-h-40 rounded-lg mb-2">` : ''}
+        ${texto ? `<p class="text-sm">${esc(texto)}</p>` : '<p class="text-sm text-indigo-100">📸 Foto da questão</p>'}
+    </div>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function addMsgProf(html, isError=false) {
+    const chat = $('chat-area');
+    const div = document.createElement('div');
+    div.className = 'flex justify-start fade-in-up';
+    div.innerHTML = `<div class="flex gap-3 max-w-[85%]">
+        <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-1">🎓</div>
+        <div class="msg-professor px-4 py-3 shadow-sm ${isError?'bg-red-50 border-red-200':''}">${html}</div>
+    </div>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function mostrarDigitando() {
+    const id = 'typing-' + Date.now();
+    const chat = $('chat-area');
+    const div = document.createElement('div');
+    div.id = id;
+    div.className = 'flex justify-start';
+    div.innerHTML = `<div class="flex gap-3 items-center">
+        <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-sm">🎓</div>
+        <div class="msg-professor px-4 py-3"><div class="typing-indicator"><span></span><span></span><span></span></div></div>
+    </div>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return id;
+}
+
+function removerDigitando(id) { $(id)?.remove(); }
+
+// ==============================================================
+// EXIBIR RESPOSTA + LOUSA
+// ==============================================================
+function exibirResposta(r) {
+    let html = '';
+    if (r.saudacao) html += `<p class="font-semibold text-indigo-600 mb-2">${esc(r.saudacao)}</p>`;
+    if (r.questao_identificada) html += `<p class="text-xs text-gray-400 mb-3"><i class="fas fa-search mr-1"></i>${esc(r.questao_identificada)}</p>`;
+    if (r.explicacao) html += `<p class="text-sm text-gray-700 mb-3 leading-relaxed whitespace-pre-line">${esc(r.explicacao)}</p>`;
+    if (r.pergunta_guia) html += `<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+        <p class="text-sm font-semibold text-amber-700"><i class="fas fa-lightbulb mr-1"></i> ${esc(r.pergunta_guia)}</p></div>`;
+    if (r.encorajamento) html += `<p class="text-sm text-indigo-500 font-medium">${esc(r.encorajamento)}</p>`;
+    addMsgProf(html);
+
+    if (r.numeros && r.numeros.length > 0) {
+        addMsgProf(gerarLousa(r));
+    }
+}
+
+// ==============================================================
+// LOUSA (HTML/CSS) - Geração no navegador
+// ==============================================================
+function gerarLousa(r) {
+    const nums = r.numeros||[], tipo = r.tipo_operacao||'', dica = r.dica_visual||'';
+    const simb = {soma:'+',subtração:'−',multiplicação:'×',divisão:'÷',fração:'/',equação:'='}[tipo]||'?';
+    const nomep = usuario?.nome_professor || 'Professor Max';
+
+    let conta = '';
+    if (nums.length>=2) conta = `${nums[0]} ${simb} ${nums[1]} = ?`;
+    else if (nums.length===1) conta = `${nums[0]} ${simb} ? = ?`;
+
+    let bolhas = '';
+    const total = nums[0]||0;
+    if (total>0 && total<=20) {
+        if (tipo==='divisão' && nums.length>=2 && nums[1]>0) {
+            const ppg = Math.ceil(total/nums[1]);
+            let grupos = [];
+            for (let g=0; g<nums[1]; g++) {
+                let gr = '';
+                for (let i=0; i<ppg && (g*ppg+i)<total; i++) gr += '<span class="inline-block w-4 h-4 rounded-full bg-yellow-300 border border-yellow-400 mx-0.5"></span>';
+                grupos.push(`<span class="inline-flex items-center">${gr}</span>`);
+            }
+            bolhas = `<div class="flex flex-wrap gap-3 justify-center mt-3">${grupos.join('<span class="giz text-lg mx-1">|</span>')}</div>`;
+        } else if (tipo==='soma' && nums.length>=2 && (nums[0]+nums[1])<=20) {
+            let b1='',b2='';
+            for(let i=0;i<nums[0];i++) b1+='<span class="inline-block w-4 h-4 rounded-full bg-yellow-300 border border-yellow-400 mx-0.5"></span>';
+            for(let i=0;i<nums[1];i++) b2+='<span class="inline-block w-4 h-4 rounded-full bg-orange-300 border border-orange-400 mx-0.5"></span>';
+            bolhas = `<div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+                <span class="inline-flex">${b1}</span><span class="giz-amarelo text-lg font-bold">+</span><span class="inline-flex">${b2}</span></div>`;
+        } else if (tipo==='subtração' && nums.length>=2 && nums[0]<=20) {
+            let bs='';
+            for(let i=0;i<nums[0];i++) {
+                const cor = i<(nums[0]-nums[1])?'bg-yellow-300 border-yellow-400':'bg-red-400 border-red-500 opacity-50';
+                bs+=`<span class="inline-block w-4 h-4 rounded-full ${cor} mx-0.5"></span>`;
+            }
+            bolhas = `<div class="flex flex-wrap justify-center mt-3">${bs}</div>`;
+        } else if (tipo==='multiplicação' && nums.length>=2 && (nums[0]*nums[1])<=30) {
+            let rows='';
+            for(let r=0;r<nums[1];r++) {
+                let row='';
+                for(let c=0;c<nums[0];c++) row+='<span class="inline-block w-3.5 h-3.5 rounded-full bg-yellow-300 border border-yellow-400 mx-0.5"></span>';
+                rows+=`<div class="flex justify-center">${row}</div>`;
+            }
+            bolhas = `<div class="space-y-1 mt-3">${rows}</div>`;
+        }
+    }
+
+    return `<div class="lousa-container relative">
+        <p class="giz-azul text-center text-sm mb-3 font-semibold relative z-10"><i class="fas fa-chalkboard-teacher mr-1"></i> ${esc(nomep)} - Lousa</p>
+        <div class="border-t border-green-600/30 mb-4 relative z-10"></div>
+        ${conta?`<p class="giz-amarelo text-center text-3xl sm:text-4xl font-bold mb-3 relative z-10">${esc(conta)}</p>`:''}
+        ${bolhas?`<div class="relative z-10">${bolhas}</div>`:''}
+        ${dica?`<div class="border-t border-green-600/30 mt-4 pt-3 relative z-10">
+            <p class="giz text-xs text-center opacity-75"><i class="fas fa-lightbulb mr-1" style="color:#FFE066"></i> ${esc(dica)}</p></div>`:''}
+    </div>`;
+}
+
+// ==============================================================
+// HISTÓRICO
+// ==============================================================
+async function carregarHist() {
+    try {
+        const lista = await api('/api/conversas');
+        const el = $('lista-hist');
+        if (!lista.length) { el.innerHTML='<p class="text-sm text-gray-400 text-center py-4">Nenhuma conversa ainda</p>'; return; }
+        el.innerHTML = '';
+        lista.forEach(c => {
+            const active = c.id === conversaId;
+            const d = document.createElement('div');
+            d.className = `history-item p-3 rounded-xl cursor-pointer ${active?'bg-indigo-50 border border-indigo-200':''}`;
+            d.innerHTML = `<div class="flex justify-between items-start">
+                <div class="flex-1 min-w-0"><p class="text-sm font-medium text-gray-700 truncate">${esc(c.titulo)}</p>
+                <p class="text-xs text-gray-400 mt-1">${c.criada_em ? new Date(c.criada_em).toLocaleDateString('pt-BR') : ''}</p></div>
+                <button onclick="event.stopPropagation();deletarConv('${c.id}')" class="text-gray-300 hover:text-red-500 ml-2 text-xs"><i class="fas fa-trash"></i></button>
+            </div>`;
+            d.onclick = () => abrirConv(c.id);
+            el.appendChild(d);
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function abrirConv(id) {
+    conversaId = id;
+    const chat = $('chat-area');
+    chat.innerHTML = '';
+    try {
+        const msgs = await api(`/api/conversas/${id}`);
+        msgs.forEach(m => {
+            if (m.tipo==='aluno') {
+                addMsgAluno(m.conteudo, null);
+            } else {
+                try { exibirResposta(JSON.parse(m.conteudo)); }
+                catch { addMsgProf(`<p class="text-sm">${esc(m.conteudo)}</p>`); }
+            }
+        });
+    } catch(e) { console.error(e); }
+    carregarHist();
+}
+
+async function deletarConv(id) {
+    if (!confirm('Apagar esta conversa?')) return;
+    await api(`/api/conversas/${id}`, {method:'DELETE'});
+    if (conversaId===id) novaConversa();
+    carregarHist();
+}
+
+function novaConversa() {
+    conversaId = null;
+    const chat = $('chat-area');
+    chat.innerHTML = `<div id="boas-vindas" class="flex flex-col items-center justify-center h-full text-center px-4">
+        <div class="text-7xl mb-4 float-anim">🎓</div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Oi, ${esc(usuario?.nome||'aluno')}!</h2>
+        <p class="text-gray-500 max-w-md mb-8">Tire uma foto ou digite a questão!</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
+            <button onclick="document.getElementById('input-foto').click()" class="p-4 bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-300 hover:shadow-lg transition-all group">
+                <div class="text-3xl mb-2">📸</div><p class="text-sm font-semibold text-gray-700">Tirar Foto</p></button>
+            <button onclick="document.getElementById('input-arquivo').click()" class="p-4 bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-300 hover:shadow-lg transition-all group">
+                <div class="text-3xl mb-2">📁</div><p class="text-sm font-semibold text-gray-700">Enviar Imagem</p></button>
+            <button onclick="focusTexto()" class="p-4 bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-300 hover:shadow-lg transition-all group">
+                <div class="text-3xl mb-2">✏️</div><p class="text-sm font-semibold text-gray-700">Digitar</p></button>
+        </div></div>`;
+    carregarHist();
+}
+
+function toggleHist() { $('painel-hist').classList.toggle('hidden'); }
+
+// ==============================================================
+// INIT
+// ==============================================================
+checarLogin();
+</script>
+</body>
+</html>

@@ -1,64 +1,35 @@
 # ==============================================================
-# Docker Compose - Professor IA
+# Docker Compose - Professor IA (Self-Hosted para VPS)
 # ==============================================================
-# Este arquivo define os 2 serviços que precisamos:
-#   1. n8n    = ferramenta de automação (o "gerente" do fluxo)
-#   2. lousa  = nosso servidor Python que gera imagens da lousa
+# Sobe o app completo com um comando:
+#   docker-compose up -d
 #
-# Para usar:
-#   docker-compose up -d      (ligar tudo)
-#   docker-compose ps         (ver status)
-#   docker-compose logs -f    (ver logs em tempo real)
-#   docker-compose down       (desligar tudo)
-#   docker-compose restart    (reiniciar)
+# Acesse: http://seu-dominio.com (ou http://localhost:5000)
 # ==============================================================
 
 version: "3.8"
 
 services:
-
-  # ============================================================
-  # SERVIÇO 1: n8n (Automação)
-  # É a ferramenta visual que conecta Telegram -> Gemini -> etc.
-  # Acesse: http://localhost:5678
-  # ============================================================
-  n8n:
-    image: n8nio/n8n:latest    # Usa a imagem oficial do n8n
+  professor-ia:
+    build: .
     ports:
-      - "5678:5678"            # Porta 5678 no navegador
+      - "5000:5000"
     environment:
-      # Autenticação básica (troque a senha!)
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=mudar_senha_aqui   # <-- TROQUE AQUI!
-      # Fuso horário brasileiro
-      - GENERIC_TIMEZONE=America/Sao_Paulo
-      - TZ=America/Sao_Paulo
-      - N8N_LOG_LEVEL=info
+      # Chave secreta para as sessões (TROQUE por algo aleatório!)
+      - SECRET_KEY=troque-por-uma-chave-secreta-aleatoria-aqui
+      # Chave Gemini global (opcional - alunos podem configurar a própria)
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Modo debug (false em produção)
+      - FLASK_DEBUG=false
     volumes:
-      # Salva os dados do n8n mesmo se reiniciar o container
-      - n8n_data:/home/node/.n8n
-    restart: unless-stopped     # Reinicia automaticamente se cair
-
-  # ============================================================
-  # SERVIÇO 2: Lousa (Gerador de imagens)
-  # É o nosso servidor Python que desenha a lousa
-  # Acesse: http://localhost:5000/health
-  # ============================================================
-  lousa:
-    build:
-      context: .               # Compila usando o Dockerfile desta pasta
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"            # Porta 5000
+      # Banco de dados persistente (sobrevive a restarts)
+      - professor_data:/app/data
     restart: unless-stopped
     healthcheck:
-      # Verifica a cada 30s se o servidor está vivo
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
 
-# Volume persistente (guarda dados mesmo reiniciando)
 volumes:
-  n8n_data:
+  professor_data:
