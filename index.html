@@ -350,6 +350,9 @@
             <button onclick="changeTab('configuracoes')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-cogs mr-2"></i> Configurações
             </button>
+            <button onclick="changeTab('cardapio')" class="tab-button py-4 px-6 text-white bg-orange-500 hover:bg-orange-600 rounded-lg mx-1 font-semibold shadow-md focus:outline-none transition-colors">
+                <i class="fas fa-store mr-2"></i> Cardápio Digital
+            </button>
         </div>
 
         <main>
@@ -947,6 +950,215 @@
                     </button>
                 </div>
             </div>
+
+            <!-- ===== ABA CARDAPIO DIGITAL ===== -->
+            <div id="cardapio-tab" class="hidden space-y-6">
+                <!-- Header com link -->
+                <div class="bg-gradient-to-r from-orange-500 to-red-500 p-6 rounded-xl shadow-lg text-white">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold"><i class="fas fa-store mr-2"></i>Seu Cardapio Digital</h2>
+                            <p class="text-orange-100 mt-1">Configure e compartilhe seu cardapio online com seus clientes.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="previsualizarCardapio()" class="bg-white text-orange-600 font-bold py-2 px-4 rounded-lg hover:bg-orange-50 transition-colors text-sm">
+                                <i class="fas fa-eye mr-1"></i> Visualizar
+                            </button>
+                            <button onclick="compartilharCardapio()" class="bg-orange-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-800 transition-colors text-sm">
+                                <i class="fas fa-share-alt mr-1"></i> Compartilhar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="cardapio-link-box" class="mt-4 bg-white/20 p-3 rounded-lg hidden">
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="cardapio-link" readonly class="flex-1 bg-white text-gray-800 p-2 rounded text-sm">
+                            <button onclick="copiarLinkCardapio()" class="bg-white text-orange-600 py-2 px-3 rounded text-sm font-bold hover:bg-orange-50">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Dados da Loja -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4"><i class="fas fa-store text-orange-500 mr-2"></i>Dados da Loja</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Nome do Restaurante / Loja</label>
+                                <input type="text" id="loja-nome" placeholder="Ex: Pizzaria Show de Delicias" class="w-full p-2 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Descricao curta</label>
+                                <input type="text" id="loja-descricao" placeholder="Ex: A melhor pizza artesanal da cidade" class="w-full p-2 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Logo da Loja</label>
+                                <div class="flex items-center gap-3">
+                                    <div id="loja-logo-preview" class="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                                        <i class="fas fa-camera text-gray-300 text-xl"></i>
+                                    </div>
+                                    <label class="bg-orange-500 text-white text-sm py-2 px-3 rounded-lg cursor-pointer hover:bg-orange-600">
+                                        <i class="fas fa-upload mr-1"></i> Enviar Logo
+                                        <input type="file" accept="image/*" onchange="uploadLogoLoja(event)" class="hidden">
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Banner / Capa</label>
+                                <div class="flex items-center gap-3">
+                                    <div id="loja-banner-preview" class="w-full h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                                        <i class="fas fa-image text-gray-300 text-xl"></i>
+                                    </div>
+                                </div>
+                                <label class="mt-2 inline-block bg-orange-500 text-white text-sm py-2 px-3 rounded-lg cursor-pointer hover:bg-orange-600">
+                                    <i class="fas fa-upload mr-1"></i> Enviar Banner
+                                    <input type="file" accept="image/*" onchange="uploadBannerLoja(event)" class="hidden">
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1">WhatsApp</label>
+                                    <input type="text" id="loja-whatsapp" placeholder="(92) 99999-9999" class="w-full p-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1">Instagram</label>
+                                    <input type="text" id="loja-instagram" placeholder="@seurestaurante" class="w-full p-2 border rounded-lg">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Endereco</label>
+                                <input type="text" id="loja-endereco" placeholder="Rua, numero - Bairro, Cidade" class="w-full p-2 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Horario de Funcionamento</label>
+                                <input type="text" id="loja-horario" placeholder="Seg-Sex: 11h-23h | Sab-Dom: 11h-00h" class="w-full p-2 border rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Cor do Tema</label>
+                                <div class="flex gap-2">
+                                    <button onclick="setCorTema('#ea580c')" class="w-8 h-8 rounded-full bg-orange-600 border-2 border-transparent hover:border-gray-400 cor-tema-btn" data-cor="#ea580c"></button>
+                                    <button onclick="setCorTema('#dc2626')" class="w-8 h-8 rounded-full bg-red-600 border-2 border-transparent hover:border-gray-400 cor-tema-btn" data-cor="#dc2626"></button>
+                                    <button onclick="setCorTema('#7c3aed')" class="w-8 h-8 rounded-full bg-purple-600 border-2 border-transparent hover:border-gray-400 cor-tema-btn" data-cor="#7c3aed"></button>
+                                    <button onclick="setCorTema('#059669')" class="w-8 h-8 rounded-full bg-emerald-600 border-2 border-transparent hover:border-gray-400 cor-tema-btn" data-cor="#059669"></button>
+                                    <button onclick="setCorTema('#2563eb')" class="w-8 h-8 rounded-full bg-blue-600 border-2 border-transparent hover:border-gray-400 cor-tema-btn" data-cor="#2563eb"></button>
+                                    <button onclick="setCorTema('#d97706')" class="w-8 h-8 rounded-full bg-amber-600 border-2 border-transparent hover:border-gray-400 cor-tema-btn" data-cor="#d97706"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Entrega e Pagamento -->
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-bold text-gray-700 mb-4"><i class="fas fa-motorcycle text-orange-500 mr-2"></i>Entrega e Logistica</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-sm font-medium text-gray-600">Entrega ativa</label>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="loja-entrega-ativa" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                                    </label>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <label class="text-sm font-medium text-gray-600">Retirada no local</label>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="loja-retirada-ativa" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                                    </label>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-600 mb-1">Taxa de entrega (R$)</label>
+                                        <input type="number" id="loja-taxa-entrega" placeholder="5.00" step="0.50" class="w-full p-2 border rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-600 mb-1">Pedido minimo (R$)</label>
+                                        <input type="number" id="loja-pedido-minimo" placeholder="20.00" step="1" class="w-full p-2 border rounded-lg">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1">Tempo estimado de entrega</label>
+                                    <input type="text" id="loja-tempo-entrega" placeholder="30-50 min" class="w-full p-2 border rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1">Entrega gratis acima de (R$)</label>
+                                    <input type="number" id="loja-frete-gratis" placeholder="50.00" step="5" class="w-full p-2 border rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-bold text-gray-700 mb-4"><i class="fas fa-credit-card text-orange-500 mr-2"></i>Formas de Pagamento</h3>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" id="pag-pix" class="w-4 h-4 text-orange-500 rounded" checked>
+                                    <i class="fas fa-qrcode text-green-600"></i>
+                                    <span class="text-sm">Pix</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" id="pag-cartao-credito" class="w-4 h-4 text-orange-500 rounded" checked>
+                                    <i class="fas fa-credit-card text-blue-600"></i>
+                                    <span class="text-sm">Cartao de Credito</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" id="pag-cartao-debito" class="w-4 h-4 text-orange-500 rounded" checked>
+                                    <i class="fas fa-credit-card text-purple-600"></i>
+                                    <span class="text-sm">Cartao de Debito</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" id="pag-dinheiro" class="w-4 h-4 text-orange-500 rounded" checked>
+                                    <i class="fas fa-money-bill-wave text-green-700"></i>
+                                    <span class="text-sm">Dinheiro</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                                    <input type="checkbox" id="pag-vale-refeicao" class="w-4 h-4 text-orange-500 rounded">
+                                    <i class="fas fa-ticket-alt text-orange-600"></i>
+                                    <span class="text-sm">Vale Refeicao</span>
+                                </label>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1 mt-2">Chave Pix (para exibir no pedido)</label>
+                                    <input type="text" id="loja-chave-pix" placeholder="email@email.com ou CPF/CNPJ" class="w-full p-2 border rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cupons e Promocoes -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4"><i class="fas fa-ticket-alt text-orange-500 mr-2"></i>Cupons de Desconto</h3>
+                        <div id="lista-cupons"></div>
+                        <button onclick="adicionarCupom()" class="mt-3 bg-orange-500 text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-orange-600">
+                            <i class="fas fa-plus mr-1"></i> Novo Cupom
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-bold text-gray-700 mb-4"><i class="fas fa-bullhorn text-orange-500 mr-2"></i>Banners Publicitarios / Ads</h3>
+                        <p class="text-xs text-gray-500 mb-3">Adicione banners promocionais que aparecem no topo do cardapio.</p>
+                        <div id="lista-banners"></div>
+                        <button onclick="adicionarBanner()" class="mt-3 bg-orange-500 text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-orange-600">
+                            <i class="fas fa-plus mr-1"></i> Novo Banner
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Produtos no Cardapio -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-lg font-bold text-gray-700 mb-4"><i class="fas fa-utensils text-orange-500 mr-2"></i>Produtos no Cardapio</h3>
+                    <p class="text-xs text-gray-500 mb-4">Defina preco, categoria, destaque e desconto de cada produto no cardapio. Apenas produtos com preco definido aparecerao.</p>
+                    <div id="cardapio-produtos-lista" class="space-y-3"></div>
+                </div>
+
+                <!-- Salvar -->
+                <div class="text-center">
+                    <button onclick="salvarCardapioConfig()" class="bg-orange-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-orange-700 transition-colors shadow-lg text-lg">
+                        <i class="fas fa-save mr-2"></i> Salvar Cardapio
+                    </button>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -1485,14 +1697,22 @@
             document.getElementById('analise-tab').classList.add('hidden');
             document.getElementById('relatorios-tab').classList.add('hidden');
             document.getElementById('configuracoes-tab').classList.add('hidden');
+            document.getElementById('cardapio-tab').classList.add('hidden');
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('active');
             });
             document.getElementById(`${tabName}-tab`).classList.remove('hidden');
-            document.querySelector(`button[onclick="changeTab('${tabName}')"]`).classList.add('active');
+            const tabBtn = document.querySelector(`button[onclick="changeTab('${tabName}')"]`);
+            if (tabBtn) tabBtn.classList.add('active');
             if (tabName === 'dashboard') {
                 atualizarDashboardSelects();
                 atualizarDashboardCards();
+            }
+            if (tabName === 'cardapio') {
+                renderCardapioProdutos();
+                renderCupons();
+                renderBanners();
+                carregarCardapioConfig();
             }
         }
 
@@ -2955,6 +3175,308 @@
             link.download = 'analise_ifood_' + new Date().toISOString().split('T')[0] + '.csv';
             link.click();
         }
+
+        // === CARDAPIO DIGITAL FUNCTIONS ===
+        let cardapioConfig = {};
+
+        async function carregarCardapioConfig() {
+            if (!window.appState.userId) return;
+            try {
+                const configRef = doc(db, `artifacts/${appId}/users/${window.appState.userId}/configuracoes/cardapio`);
+                const snap = await getDoc(configRef);
+                if (snap.exists()) {
+                    cardapioConfig = snap.data();
+                    // Preencher campos
+                    document.getElementById('loja-nome').value = cardapioConfig.nomeLoja || '';
+                    document.getElementById('loja-descricao').value = cardapioConfig.descricaoLoja || '';
+                    document.getElementById('loja-whatsapp').value = cardapioConfig.whatsapp || '';
+                    document.getElementById('loja-instagram').value = cardapioConfig.instagram || '';
+                    document.getElementById('loja-endereco').value = cardapioConfig.endereco || '';
+                    document.getElementById('loja-horario').value = cardapioConfig.horario || '';
+                    document.getElementById('loja-taxa-entrega').value = cardapioConfig.taxaEntrega || '';
+                    document.getElementById('loja-pedido-minimo').value = cardapioConfig.pedidoMinimo || '';
+                    document.getElementById('loja-tempo-entrega').value = cardapioConfig.tempoEntrega || '';
+                    document.getElementById('loja-frete-gratis').value = cardapioConfig.freteGratisAcima || '';
+                    document.getElementById('loja-chave-pix').value = cardapioConfig.chavePix || '';
+                    document.getElementById('loja-entrega-ativa').checked = cardapioConfig.entregaAtiva !== false;
+                    document.getElementById('loja-retirada-ativa').checked = cardapioConfig.retiradaAtiva !== false;
+                    document.getElementById('pag-pix').checked = cardapioConfig.pagPix !== false;
+                    document.getElementById('pag-cartao-credito').checked = cardapioConfig.pagCartaoCredito !== false;
+                    document.getElementById('pag-cartao-debito').checked = cardapioConfig.pagCartaoDebito !== false;
+                    document.getElementById('pag-dinheiro').checked = cardapioConfig.pagDinheiro !== false;
+                    document.getElementById('pag-vale-refeicao').checked = cardapioConfig.pagValeRefeicao || false;
+                    if (cardapioConfig.logoUrl) {
+                        document.getElementById('loja-logo-preview').innerHTML = `<img src="${cardapioConfig.logoUrl}" class="w-full h-full object-cover rounded-full">`;
+                    }
+                    if (cardapioConfig.bannerUrl) {
+                        document.getElementById('loja-banner-preview').innerHTML = `<img src="${cardapioConfig.bannerUrl}" class="w-full h-full object-cover rounded-lg">`;
+                    }
+                    if (cardapioConfig.corTema) setCorTema(cardapioConfig.corTema);
+                }
+            } catch (e) { console.error('Erro ao carregar cardapio config:', e); }
+        }
+
+        window.salvarCardapioConfig = async function() {
+            if (!window.appState.userId) return;
+            const data = {
+                nomeLoja: document.getElementById('loja-nome').value.trim(),
+                descricaoLoja: document.getElementById('loja-descricao').value.trim(),
+                whatsapp: document.getElementById('loja-whatsapp').value.trim(),
+                instagram: document.getElementById('loja-instagram').value.trim(),
+                endereco: document.getElementById('loja-endereco').value.trim(),
+                horario: document.getElementById('loja-horario').value.trim(),
+                taxaEntrega: parseFloat(document.getElementById('loja-taxa-entrega').value) || 0,
+                pedidoMinimo: parseFloat(document.getElementById('loja-pedido-minimo').value) || 0,
+                tempoEntrega: document.getElementById('loja-tempo-entrega').value.trim(),
+                freteGratisAcima: parseFloat(document.getElementById('loja-frete-gratis').value) || 0,
+                chavePix: document.getElementById('loja-chave-pix').value.trim(),
+                entregaAtiva: document.getElementById('loja-entrega-ativa').checked,
+                retiradaAtiva: document.getElementById('loja-retirada-ativa').checked,
+                pagPix: document.getElementById('pag-pix').checked,
+                pagCartaoCredito: document.getElementById('pag-cartao-credito').checked,
+                pagCartaoDebito: document.getElementById('pag-cartao-debito').checked,
+                pagDinheiro: document.getElementById('pag-dinheiro').checked,
+                pagValeRefeicao: document.getElementById('pag-vale-refeicao').checked,
+                logoUrl: cardapioConfig.logoUrl || '',
+                bannerUrl: cardapioConfig.bannerUrl || '',
+                corTema: cardapioConfig.corTema || '#ea580c',
+                cupons: cardapioConfig.cupons || [],
+                banners: cardapioConfig.banners || [],
+                atualizadoEm: new Date().toISOString()
+            };
+
+            // Salvar precos dos produtos no cardapio
+            const produtosCardapio = {};
+            document.querySelectorAll('.cardapio-produto-row').forEach(row => {
+                const id = row.dataset.id;
+                produtosCardapio[id] = {
+                    ativo: row.querySelector('.cp-ativo').checked,
+                    preco: parseFloat(row.querySelector('.cp-preco').value) || 0,
+                    precoPromocional: parseFloat(row.querySelector('.cp-preco-promo').value) || 0,
+                    categoria: row.querySelector('.cp-categoria').value.trim(),
+                    destaque: row.querySelector('.cp-destaque').checked
+                };
+            });
+            data.produtosCardapio = produtosCardapio;
+
+            try {
+                const configRef = doc(db, `artifacts/${appId}/users/${window.appState.userId}/configuracoes/cardapio`);
+                await setDoc(configRef, data);
+                cardapioConfig = data;
+                alert('Cardapio salvo com sucesso!');
+            } catch (e) {
+                console.error('Erro ao salvar cardapio:', e);
+                alert('Erro ao salvar: ' + e.message);
+            }
+        };
+
+        function renderCardapioProdutos() {
+            const container = document.getElementById('cardapio-produtos-lista');
+            const produtos = window.appState.produtosCache();
+            if (!produtos.length) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhum produto cadastrado. Cadastre produtos na aba "Produtos e Receitas" primeiro.</p>';
+                return;
+            }
+            const pc = cardapioConfig.produtosCardapio || {};
+            container.innerHTML = `
+                <div class="hidden md:grid grid-cols-12 gap-2 text-xs font-bold text-gray-500 uppercase pb-2 border-b">
+                    <div class="col-span-1">Ativo</div>
+                    <div class="col-span-3">Produto</div>
+                    <div class="col-span-2">Categoria</div>
+                    <div class="col-span-2">Preco (R$)</div>
+                    <div class="col-span-2">Promo (R$)</div>
+                    <div class="col-span-1">Destaque</div>
+                    <div class="col-span-1">Desconto</div>
+                </div>
+            `;
+            produtos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(p => {
+                const cfg = pc[p.id] || {};
+                const custo = calcularCustoProduto(p.id);
+                const desconto = cfg.preco && cfg.precoPromocional ? Math.round((1 - cfg.precoPromocional / cfg.preco) * 100) : 0;
+                const div = document.createElement('div');
+                div.className = 'cardapio-produto-row grid grid-cols-1 md:grid-cols-12 gap-2 items-center py-3 border-b border-gray-100 hover:bg-orange-50 transition-colors';
+                div.dataset.id = p.id;
+                div.innerHTML = `
+                    <div class="md:col-span-1 flex items-center">
+                        <label class="md:hidden text-xs text-gray-500 mr-2">Ativo:</label>
+                        <input type="checkbox" class="cp-ativo w-4 h-4 text-orange-500 rounded" ${cfg.ativo ? 'checked' : ''}>
+                    </div>
+                    <div class="md:col-span-3 flex items-center gap-2">
+                        ${p.imagemUrl ? `<img src="${p.imagemUrl}" class="w-10 h-10 rounded-lg object-cover">` : `<div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300"><i class="fas fa-utensils"></i></div>`}
+                        <div>
+                            <span class="font-medium text-sm text-gray-800">${p.nome}</span>
+                            <span class="block text-xs text-gray-400">Custo: R$ ${custo.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="md:hidden text-xs text-gray-500">Categoria:</label>
+                        <input type="text" class="cp-categoria w-full p-1.5 border rounded text-sm" placeholder="Ex: Pratos" value="${cfg.categoria || ''}">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="md:hidden text-xs text-gray-500">Preco:</label>
+                        <input type="number" class="cp-preco w-full p-1.5 border rounded text-sm" step="0.50" placeholder="0.00" value="${cfg.preco || ''}">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="md:hidden text-xs text-gray-500">Promo:</label>
+                        <input type="number" class="cp-preco-promo w-full p-1.5 border rounded text-sm" step="0.50" placeholder="Sem promo" value="${cfg.precoPromocional || ''}">
+                    </div>
+                    <div class="md:col-span-1 flex items-center">
+                        <label class="md:hidden text-xs text-gray-500 mr-2">Destaque:</label>
+                        <input type="checkbox" class="cp-destaque w-4 h-4 text-yellow-500 rounded" ${cfg.destaque ? 'checked' : ''}>
+                        <i class="fas fa-star text-yellow-400 ml-1 text-xs"></i>
+                    </div>
+                    <div class="md:col-span-1">
+                        ${desconto > 0 ? `<span class="bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full">-${desconto}%</span>` : '<span class="text-gray-300 text-xs">--</span>'}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Cupons
+        function renderCupons() {
+            const container = document.getElementById('lista-cupons');
+            const cupons = cardapioConfig.cupons || [];
+            if (!cupons.length) {
+                container.innerHTML = '<p class="text-gray-400 text-sm py-2">Nenhum cupom cadastrado.</p>';
+                return;
+            }
+            container.innerHTML = '';
+            cupons.forEach((cupom, i) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 mb-2 p-2 bg-orange-50 rounded-lg';
+                div.innerHTML = `
+                    <input type="text" value="${cupom.codigo}" onchange="cardapioConfig.cupons[${i}].codigo = this.value.toUpperCase()" class="w-1/3 p-1.5 border rounded text-sm font-mono uppercase" placeholder="CODIGO">
+                    <select onchange="cardapioConfig.cupons[${i}].tipo = this.value" class="p-1.5 border rounded text-sm">
+                        <option value="percentual" ${cupom.tipo === 'percentual' ? 'selected' : ''}>%</option>
+                        <option value="fixo" ${cupom.tipo === 'fixo' ? 'selected' : ''}>R$</option>
+                    </select>
+                    <input type="number" value="${cupom.valor}" onchange="cardapioConfig.cupons[${i}].valor = parseFloat(this.value)" class="w-20 p-1.5 border rounded text-sm" placeholder="10">
+                    <label class="flex items-center gap-1 text-xs"><input type="checkbox" ${cupom.ativo ? 'checked' : ''} onchange="cardapioConfig.cupons[${i}].ativo = this.checked" class="w-3 h-3"> Ativo</label>
+                    <button onclick="cardapioConfig.cupons.splice(${i}, 1); renderCupons();" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash text-xs"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.adicionarCupom = function() {
+            if (!cardapioConfig.cupons) cardapioConfig.cupons = [];
+            cardapioConfig.cupons.push({ codigo: '', tipo: 'percentual', valor: 10, ativo: true });
+            renderCupons();
+        };
+
+        // Banners publicitarios
+        function renderBanners() {
+            const container = document.getElementById('lista-banners');
+            const banners = cardapioConfig.banners || [];
+            if (!banners.length) {
+                container.innerHTML = '<p class="text-gray-400 text-sm py-2">Nenhum banner cadastrado.</p>';
+                return;
+            }
+            container.innerHTML = '';
+            banners.forEach((banner, i) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 mb-2 p-2 bg-orange-50 rounded-lg';
+                div.innerHTML = `
+                    <div class="w-20 h-12 rounded bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        ${banner.imagemUrl ? `<img src="${banner.imagemUrl}" class="w-full h-full object-cover">` : '<i class="fas fa-image text-gray-400"></i>'}
+                    </div>
+                    <div class="flex-1">
+                        <input type="text" value="${banner.titulo || ''}" onchange="cardapioConfig.banners[${i}].titulo = this.value" class="w-full p-1 border rounded text-sm mb-1" placeholder="Titulo do banner">
+                        <label class="bg-blue-500 text-white text-xs py-1 px-2 rounded cursor-pointer hover:bg-blue-600">
+                            <i class="fas fa-image"></i> Img
+                            <input type="file" accept="image/*" onchange="uploadBannerImg(event, ${i})" class="hidden">
+                        </label>
+                    </div>
+                    <label class="flex items-center gap-1 text-xs"><input type="checkbox" ${banner.ativo ? 'checked' : ''} onchange="cardapioConfig.banners[${i}].ativo = this.checked" class="w-3 h-3"> Ativo</label>
+                    <button onclick="cardapioConfig.banners.splice(${i}, 1); renderBanners();" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash text-xs"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.adicionarBanner = function() {
+            if (!cardapioConfig.banners) cardapioConfig.banners = [];
+            cardapioConfig.banners.push({ titulo: '', imagemUrl: '', ativo: true });
+            renderBanners();
+        };
+
+        window.uploadBannerImg = function(event, index) {
+            const file = event.target.files[0];
+            if (!file) return;
+            comprimirImagem(file, 800, 0.8, (dataUrl) => {
+                cardapioConfig.banners[index].imagemUrl = dataUrl;
+                renderBanners();
+            });
+        };
+
+        // Upload logo e banner da loja
+        window.uploadLogoLoja = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            comprimirImagem(file, 200, 0.8, (dataUrl) => {
+                cardapioConfig.logoUrl = dataUrl;
+                document.getElementById('loja-logo-preview').innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover rounded-full">`;
+            });
+        };
+
+        window.uploadBannerLoja = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            comprimirImagem(file, 800, 0.8, (dataUrl) => {
+                cardapioConfig.bannerUrl = dataUrl;
+                document.getElementById('loja-banner-preview').innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover rounded-lg">`;
+            });
+        };
+
+        window.setCorTema = function(cor) {
+            cardapioConfig.corTema = cor;
+            document.querySelectorAll('.cor-tema-btn').forEach(btn => {
+                btn.classList.toggle('border-gray-800', btn.dataset.cor === cor);
+                btn.classList.toggle('border-transparent', btn.dataset.cor !== cor);
+                btn.classList.toggle('scale-110', btn.dataset.cor === cor);
+            });
+        };
+
+        function comprimirImagem(file, maxSize, quality, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > h) { h = h * maxSize / w; w = maxSize; }
+                    else { w = w * maxSize / h; h = maxSize; }
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    callback(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Compartilhar e visualizar
+        window.previsualizarCardapio = function() {
+            const url = `${window.location.origin}${window.location.pathname.replace('index.html', '')}cardapio.html?loja=${window.appState.userId}`;
+            window.open(url, '_blank');
+        };
+
+        window.compartilharCardapio = function() {
+            const url = `${window.location.origin}${window.location.pathname.replace('index.html', '')}cardapio.html?loja=${window.appState.userId}`;
+            const linkBox = document.getElementById('cardapio-link-box');
+            document.getElementById('cardapio-link').value = url;
+            linkBox.classList.remove('hidden');
+        };
+
+        window.copiarLinkCardapio = function() {
+            const input = document.getElementById('cardapio-link');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                alert('Link copiado! Compartilhe com seus clientes.');
+            });
+        };
 
         // === DASHBOARD FUNCTIONS ===
         let dashPriceChart = null;
