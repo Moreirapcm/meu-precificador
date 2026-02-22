@@ -291,18 +291,34 @@
     <div id="app" class="container mx-auto p-4 md:p-8 hidden">
         <header class="mb-4">
             <div id="user-info" class="hidden flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-4">
-                <div class="flex items-center">
-                    <img id="user-photo" src="" alt="Foto do Utilizador" class="w-10 h-10 rounded-full mr-3">
+                <div class="flex items-center gap-3">
+                    <!-- Botao Dashboard no canto esquerdo -->
+                    <button onclick="changeTab('dashboard')" class="tab-button dashboard-btn py-2 px-4 text-white bg-green-600 hover:bg-green-700 rounded-lg font-semibold shadow-md focus:outline-none transition-colors text-sm">
+                        <i class="fas fa-chart-bar mr-1"></i> Dashboard
+                    </button>
+                    <div class="h-8 w-px bg-gray-200"></div>
+                    <img id="user-photo" src="" alt="Foto do Utilizador" class="w-10 h-10 rounded-full">
                     <div>
                         <span id="user-name" class="font-semibold text-gray-700 block"></span>
                         <span id="user-email" class="text-xs text-gray-400"></span>
                     </div>
                 </div>
-                <button onclick="logout()" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors text-sm">
-                    <i class="fas fa-sign-out-alt mr-1"></i> Sair
-                </button>
+                <div class="flex items-center gap-2">
+                    <!-- Botoes Backup -->
+                    <button onclick="exportarDados()" class="bg-blue-500 text-white py-2 px-3 rounded-lg hover:bg-blue-600 transition-colors text-sm" title="Exportar backup dos dados">
+                        <i class="fas fa-download mr-1"></i> Backup
+                    </button>
+                    <label class="bg-amber-500 text-white py-2 px-3 rounded-lg hover:bg-amber-600 transition-colors text-sm cursor-pointer" title="Importar backup">
+                        <i class="fas fa-upload mr-1"></i> Restaurar
+                        <input type="file" accept=".json" onchange="importarDados(event)" class="hidden">
+                    </label>
+                    <div class="h-8 w-px bg-gray-200"></div>
+                    <button onclick="logout()" class="bg-red-500 text-white font-bold py-2 px-3 rounded-lg hover:bg-red-600 transition-colors text-sm">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Sair
+                    </button>
+                </div>
             </div>
-    
+
             <div class="text-center">
                 <h1 class="text-4xl font-bold text-indigo-600">Precificador Show de Delícias</h1>
                 <p class="text-lg text-gray-600 mt-2">Sua ferramenta completa para uma gestão de preços inteligente e lucrativa.</p>
@@ -324,9 +340,7 @@
             <button onclick="changeTab('insumos')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-carrot mr-2"></i> Insumos
             </button>
-            <button onclick="changeTab('dashboard')" class="tab-button dashboard-btn py-4 px-6 text-white bg-green-600 hover:bg-green-700 rounded-lg mx-1 font-semibold shadow-md focus:outline-none transition-colors">
-                <i class="fas fa-chart-bar mr-2"></i> Dashboard
-            </button>
+            <!-- Dashboard movido para o header -->
             <button onclick="changeTab('analise')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-chart-line mr-2"></i> Análise Estratégica
             </button>
@@ -1155,7 +1169,157 @@
         window.recuperarSenha = recuperarSenha;
         window.alternarLoginCadastro = alternarLoginCadastro;
         window.logout = logout;
-        
+
+        // === BACKUP / EXPORTACAO ===
+        window.exportarDados = async function() {
+            if (!window.appState.userId || !window.appState.isReady) {
+                alert('Aguarde a conexao com o banco de dados.');
+                return;
+            }
+            try {
+                const backup = {
+                    versao: '1.0',
+                    dataExportacao: new Date().toISOString(),
+                    usuario: {
+                        nome: document.getElementById('user-name').textContent,
+                        email: document.getElementById('user-email').textContent
+                    },
+                    insumos: [],
+                    produtos: [],
+                    configuracoes: {}
+                };
+
+                // Exportar insumos
+                const insumosRef = getCollectionRef('insumos');
+                if (insumosRef) {
+                    const insumosSnap = await getDocs(insumosRef);
+                    insumosSnap.forEach(d => backup.insumos.push({ id: d.id, ...d.data() }));
+                }
+
+                // Exportar produtos
+                const produtosRef = getCollectionRef('produtos');
+                if (produtosRef) {
+                    const produtosSnap = await getDocs(produtosRef);
+                    produtosSnap.forEach(d => backup.produtos.push({ id: d.id, ...d.data() }));
+                }
+
+                // Exportar configuracoes
+                const configRef = getConfigDocRef();
+                if (configRef) {
+                    const configSnap = await getDoc(configRef);
+                    if (configSnap.exists()) backup.configuracoes = configSnap.data();
+                }
+
+                // Exportar perfil
+                const perfilRef = doc(db, `artifacts/${appId}/users/${window.appState.userId}/configuracoes/perfil`);
+                const perfilSnap = await getDoc(perfilRef);
+                if (perfilSnap.exists()) backup.perfil = perfilSnap.data();
+
+                const json = JSON.stringify(backup, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const link = document.createElement('a');
+                const data = new Date().toISOString().split('T')[0];
+                link.href = URL.createObjectURL(blob);
+                link.download = `backup_precificador_${data}.json`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+
+                alert(`Backup exportado com sucesso!\n\n${backup.insumos.length} insumos\n${backup.produtos.length} produtos\nConfiguracoes incluidas`);
+            } catch (error) {
+                console.error('Erro ao exportar:', error);
+                alert('Erro ao exportar dados: ' + error.message);
+            }
+        };
+
+        // === IMPORTACAO / RESTAURACAO ===
+        window.importarDados = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            event.target.value = '';
+
+            if (!window.appState.userId || !window.appState.isReady) {
+                alert('Aguarde a conexao com o banco de dados.');
+                return;
+            }
+
+            const confirmar = confirm(
+                'ATENCAO: Importar um backup ira SUBSTITUIR todos os dados atuais.\n\n' +
+                'Deseja continuar?\n\n' +
+                '(Recomendamos fazer um backup antes de importar)'
+            );
+            if (!confirmar) return;
+
+            try {
+                const texto = await file.text();
+                const backup = JSON.parse(texto);
+
+                if (!backup.versao || !backup.insumos || !backup.produtos) {
+                    alert('Arquivo de backup invalido. Verifique o formato.');
+                    return;
+                }
+
+                let importados = { insumos: 0, produtos: 0 };
+
+                // Importar insumos
+                if (backup.insumos && backup.insumos.length > 0) {
+                    // Limpar insumos atuais
+                    const insumosRef = getCollectionRef('insumos');
+                    const insumosAtuais = await getDocs(insumosRef);
+                    for (const docSnap of insumosAtuais.docs) {
+                        await deleteDoc(docSnap.ref);
+                    }
+                    // Inserir novos
+                    for (const insumo of backup.insumos) {
+                        const { id, ...dados } = insumo;
+                        if (id) {
+                            await setDoc(doc(db, `artifacts/${appId}/users/${window.appState.userId}/insumos/${id}`), dados);
+                        } else {
+                            await addDoc(insumosRef, dados);
+                        }
+                        importados.insumos++;
+                    }
+                }
+
+                // Importar produtos
+                if (backup.produtos && backup.produtos.length > 0) {
+                    const produtosRef = getCollectionRef('produtos');
+                    const produtosAtuais = await getDocs(produtosRef);
+                    for (const docSnap of produtosAtuais.docs) {
+                        await deleteDoc(docSnap.ref);
+                    }
+                    for (const produto of backup.produtos) {
+                        const { id, ...dados } = produto;
+                        if (id) {
+                            await setDoc(doc(db, `artifacts/${appId}/users/${window.appState.userId}/produtos/${id}`), dados);
+                        } else {
+                            await addDoc(produtosRef, dados);
+                        }
+                        importados.produtos++;
+                    }
+                }
+
+                // Importar configuracoes
+                if (backup.configuracoes && Object.keys(backup.configuracoes).length > 0) {
+                    const configRef = getConfigDocRef();
+                    await setDoc(configRef, backup.configuracoes);
+                }
+
+                alert(
+                    `Backup restaurado com sucesso!\n\n` +
+                    `${importados.insumos} insumos importados\n` +
+                    `${importados.produtos} produtos importados\n` +
+                    `Configuracoes restauradas\n\n` +
+                    `Backup original de: ${backup.dataExportacao || 'data desconhecida'}`
+                );
+
+                // Recarregar pagina para atualizar tudo
+                window.location.reload();
+            } catch (error) {
+                console.error('Erro ao importar:', error);
+                alert('Erro ao importar backup: ' + error.message);
+            }
+        };
+
         onAuthStateChanged(auth, user => {
             const loginContainer = document.getElementById('login-container');
             const appContainer = document.getElementById('app');
