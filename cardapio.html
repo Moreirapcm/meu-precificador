@@ -168,22 +168,53 @@
 
         const params = new URLSearchParams(window.location.search);
         const lojaId = params.get('loja');
+        const isPreview = params.get('preview') === '1';
 
         let loja = {};
         let produtos = [];
         let carrinho = [];
         let cupomAplicado = null;
 
-        if (!lojaId) {
+        if (isPreview) {
+            carregarPreview();
+        } else if (lojaId) {
+            carregarLojaFirebase();
+        } else {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('erro-container').classList.remove('hidden');
-        } else {
-            carregarLoja();
         }
 
-        async function carregarLoja() {
+        // Modo preview: le dados do localStorage (definido pelo app principal)
+        function carregarPreview() {
             try {
-                // Carregar config do cardapio
+                const dados = JSON.parse(localStorage.getItem('cardapio_preview'));
+                if (!dados || !dados.loja) {
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('erro-container').classList.remove('hidden');
+                    return;
+                }
+                loja = dados.loja;
+                const todosProdutos = dados.produtos || [];
+                const pc = loja.produtosCardapio || {};
+                produtos = todosProdutos.filter(p => pc[p.id]?.ativo && pc[p.id]?.preco > 0).map(p => ({
+                    ...p,
+                    preco: pc[p.id].preco,
+                    precoPromocional: pc[p.id].precoPromocional || 0,
+                    categoria: pc[p.id].categoria || 'Outros',
+                    destaque: pc[p.id].destaque || false
+                }));
+                if (loja.corTema) document.documentElement.style.setProperty('--cor-tema', loja.corTema);
+                renderLoja();
+            } catch (e) {
+                console.error('Erro no preview:', e);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('erro-container').classList.remove('hidden');
+            }
+        }
+
+        // Modo publico: le dados do Firebase (requer regras de leitura publica)
+        async function carregarLojaFirebase() {
+            try {
                 const configRef = doc(db, `artifacts/${appId}/users/${lojaId}/configuracoes/cardapio`);
                 const configSnap = await getDoc(configRef);
                 if (!configSnap.exists()) {
@@ -193,13 +224,11 @@
                 }
                 loja = configSnap.data();
 
-                // Carregar produtos
                 const prodRef = collection(db, `artifacts/${appId}/users/${lojaId}/produtos`);
                 const prodSnap = await getDocs(prodRef);
                 const todosProdutos = [];
                 prodSnap.forEach(d => todosProdutos.push({ id: d.id, ...d.data() }));
 
-                // Filtrar apenas ativos no cardapio
                 const pc = loja.produtosCardapio || {};
                 produtos = todosProdutos.filter(p => pc[p.id]?.ativo && pc[p.id]?.preco > 0).map(p => ({
                     ...p,
@@ -209,9 +238,7 @@
                     destaque: pc[p.id].destaque || false
                 }));
 
-                // Aplicar cor tema
                 if (loja.corTema) document.documentElement.style.setProperty('--cor-tema', loja.corTema);
-
                 renderLoja();
             } catch (e) {
                 console.error('Erro ao carregar loja:', e);
