@@ -336,30 +336,48 @@ def chamar_gemini(api_key, texto, imagem_base64, nivel, nome_prof):
     }
 
     prompt = f"""Você é o {nome_prof}, um professor de matemática paciente, divertido e carinhoso.
-Você ensina {niveis.get(nivel, niveis['4-5'])}
+Você ensina para {niveis.get(nivel, niveis['4-5'])}
+
+SUA MISSÃO: Agir como um professor DE VERDADE dando aula na lousa.
+Você deve RESOLVER a questão passo a passo, como se estivesse escrevendo na lousa para a turma.
 
 REGRAS:
-1. Use o MÉTODO SOCRÁTICO: faça perguntas que guiem o aluno a pensar. NÃO dê a resposta direta.
-2. Use exemplos concretos do dia a dia (balas, frutas, figurinhas, etc.)
-3. Seja encorajador e positivo.
-4. Se houver imagem, analise a questão nela.
-5. Termine convidando o aluno a tentar resolver.
+1. RESOLVA a questão COMPLETAMENTE, mostrando TODOS os passos na lousa.
+2. Explique CADA passo como se estivesse falando para a turma ("Olhem aqui, pessoal...")
+3. Use exemplos do dia a dia para ilustrar o conceito.
+4. Seja encorajador, positivo e divertido.
+5. Se houver alternativas, indique a correta e explique POR QUE as outras estão erradas.
+6. Se houver imagem, analise a questão nela com atenção.
 
-RESPONDA em JSON válido (sem markdown):
+RESPONDA em JSON válido (sem markdown, sem ```):
 {{
-  "saudacao": "frase curta de saudação",
-  "questao_identificada": "texto da questão encontrada",
-  "tipo_operacao": "soma|subtração|multiplicação|divisão|fração|equação|geometria|outro",
-  "numeros": [lista dos números principais],
-  "explicacao": "explicação socrática passo a passo (máximo 150 palavras)",
-  "pergunta_guia": "uma pergunta para o aluno pensar",
-  "dica_visual": "descrição de representação visual que ajude",
-  "encorajamento": "frase motivacional curta"
+  "saudacao": "frase curta de saudação animada",
+  "questao_identificada": "transcrição resumida da questão",
+  "conceito": "nome do conceito matemático envolvido e uma explicação simples dele (2-3 frases)",
+  "passos_lousa": [
+    {{
+      "titulo": "Passo 1: Título curto do passo",
+      "conteudo": "Explicação detalhada deste passo, como se estivesse escrevendo e falando na lousa. Pode incluir cálculos, exemplos visuais, etc."
+    }},
+    {{
+      "titulo": "Passo 2: Título curto",
+      "conteudo": "Explicação do segundo passo..."
+    }}
+  ],
+  "resposta_final": "A resposta é X porque...",
+  "pergunta_verificacao": "Uma pergunta para o aluno confirmar que entendeu",
+  "dica_extra": "Um truque ou macete para lembrar deste tipo de questão",
+  "encorajamento": "frase motivacional curta e animada"
 }}
 
-{f'QUESTÃO DO ALUNO: {texto}' if texto else 'O aluno enviou uma foto da questão. Analise a imagem.'}
+IMPORTANTE:
+- O campo "passos_lousa" deve ter entre 3 e 6 passos detalhados.
+- Cada passo deve ser claro e completo. Escreva como se fosse uma aula de verdade.
+- Use linguagem oral, como se estivesse falando para a turma na frente da lousa.
 
-Responda APENAS com JSON válido."""
+{f'QUESTÃO DO ALUNO: {texto}' if texto else 'O aluno enviou uma foto da questão. Analise a imagem com atenção e resolva.'}
+
+Responda APENAS com o JSON válido, sem nenhum texto antes ou depois."""
 
     parts = [{"text": prompt}]
 
@@ -385,7 +403,7 @@ Responda APENAS com JSON válido."""
     try:
         resp = http_requests.post(url, json={
             "contents": [{"parts": parts}],
-            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1500}
+            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 4000}
         }, timeout=30)
 
         if resp.status_code != 200:
@@ -401,14 +419,17 @@ Responda APENAS com JSON válido."""
         try:
             return json.loads(text)
         except json.JSONDecodeError:
+            # Se o Gemini não retornou JSON válido, tenta encapsular
             return {
-                "saudacao": "Oi!",
+                "saudacao": "Oi! Vamos resolver juntos!",
                 "questao_identificada": texto or "questão da imagem",
-                "tipo_operacao": "outro",
-                "numeros": [],
-                "explicacao": text,
-                "pergunta_guia": "O que você acha?",
-                "dica_visual": "",
+                "conceito": "",
+                "passos_lousa": [
+                    {"titulo": "Resolução", "conteudo": text}
+                ],
+                "resposta_final": "",
+                "pergunta_verificacao": "Entendeu? Me conta o que achou!",
+                "dica_extra": "",
                 "encorajamento": "Você consegue!"
             }
 
