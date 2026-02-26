@@ -399,6 +399,29 @@
                         <h3 class="text-xl font-semibold mb-2 text-gray-700">✨ Análise de Preço com IA</h3>
                         <div id="analise-ia-content" class="p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-600"></div>
                     </div>
+                    <!-- Análise de Mercado com Search Grounding -->
+                    <div id="analise-mercado-container" class="mt-6">
+                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-t-lg">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                                <div>
+                                    <h3 class="text-xl font-bold text-white"><i class="fas fa-search-dollar mr-2"></i>Análise de Mercado Inteligente</h3>
+                                    <p class="text-purple-200 text-sm mt-1">Pesquisa em tempo real com Google Search Grounding - preços de concorrentes, CMV e SEO para iFood</p>
+                                </div>
+                                <button id="btn-analise-mercado" onclick="analisarMercadoComIA(this)" class="bg-white text-purple-700 font-bold py-2 px-6 rounded-lg hover:bg-purple-50 transition-colors shadow-md text-sm whitespace-nowrap">
+                                    <i class="fas fa-globe mr-2"></i> Analisar Mercado em Manaus
+                                </button>
+                            </div>
+                        </div>
+                        <div id="analise-mercado-content" class="hidden border border-t-0 border-purple-200 rounded-b-lg">
+                            <div id="analise-mercado-resultado" class="p-6 bg-white"></div>
+                            <div id="analise-mercado-fontes" class="hidden px-6 pb-4">
+                                <details class="text-sm">
+                                    <summary class="cursor-pointer text-purple-600 font-medium hover:text-purple-800"><i class="fas fa-link mr-1"></i>Fontes consultadas (Google Search)</summary>
+                                    <div id="analise-mercado-fontes-lista" class="mt-2 space-y-1 text-gray-500 text-xs"></div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
                     <div id="simulador-promocao" class="mt-8 pt-6 border-t border-gray-200">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">3. Simulador de Promoções iFood</h2>
 
@@ -934,11 +957,20 @@
                         <i class="fas fa-exclamation-triangle mr-1"></i>
                         <strong>IA desativada.</strong> Configure sua chave da API Gemini abaixo para ativar as funcionalidades de IA (análise de preços, sugestões, consultoria).
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div>
                             <label for="gemini-api-key" class="block text-sm font-medium text-gray-700 mb-1">Chave da API Gemini (Google AI Studio)</label>
                             <input type="password" id="gemini-api-key" placeholder="Cole sua chave aqui: AIzaSy..." class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
                             <p class="text-xs text-gray-500 mt-1">Obtenha em: <a href="https://aistudio.google.com/apikey" target="_blank" class="text-indigo-600 underline">aistudio.google.com/apikey</a> (gratuito)</p>
+                        </div>
+                        <div>
+                            <label for="gemini-model-select" class="block text-sm font-medium text-gray-700 mb-1">Modelo para Análise de Mercado</label>
+                            <select id="gemini-model-select" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Rápido)</option>
+                                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detalhado)</option>
+                                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview (Avançado)</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Modelo usado na Análise de Mercado com Search Grounding</p>
                         </div>
                         <div>
                             <button onclick="testarConexaoIA()" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
@@ -1707,7 +1739,7 @@
             }
             resultSpan.innerHTML = '<span class="text-gray-500"><span class="spinner"></span>Testando...</span>';
             try {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1731,7 +1763,7 @@
             if (!apiKey) {
                 throw new Error("Assistente de IA não configurado. Vá em Configurações e insira sua chave da API Gemini (gratuita em aistudio.google.com/apikey).");
             }
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ role: "user", parts: [{ text: prompt }] }]
             };
@@ -1761,6 +1793,47 @@
                 }
             } catch (error) {
                 console.error("Falha ao chamar a API Gemini:", error);
+                throw error;
+            }
+        }
+
+        async function callGeminiWithSearch(prompt, systemInstruction) {
+            const apiKey = getGeminiApiKey();
+            if (!apiKey) {
+                throw new Error("Assistente de IA não configurado. Vá em Configurações e insira sua chave da API Gemini.");
+            }
+            const model = (window.appState.configCache && window.appState.configCache()?.geminiModel) || 'gemini-2.5-flash';
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                tools: [{ google_search: {} }]
+            };
+            if (systemInstruction) {
+                payload.system_instruction = { parts: [{ text: systemInstruction }] };
+            }
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => ({ error: { message: response.statusText } }));
+                    console.error("Erro na API Gemini (Search):", response.status, errorBody);
+                    throw new Error(errorBody.error?.message || `Erro ${response.status} na API.`);
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates[0]?.content?.parts) {
+                    const textParts = result.candidates[0].content.parts.filter(p => p.text).map(p => p.text);
+                    const groundingMeta = result.candidates[0].groundingMetadata;
+                    return { text: textParts.join('\n'), grounding: groundingMeta || null };
+                }
+                if (result.candidates?.[0]?.finishReason === 'SAFETY') {
+                    throw new Error("Resposta bloqueada por segurança. Tente reformular.");
+                }
+                throw new Error("A IA retornou uma resposta vazia.");
+            } catch (error) {
+                console.error("Falha ao chamar Gemini com Search:", error);
                 throw error;
             }
         }
@@ -1994,6 +2067,11 @@
                 const savedKey = config.geminiApiKey || localStorage.getItem('geminiApiKey') || '';
                 if (savedKey) geminiKeyInput.value = savedKey;
             }
+            // Carregar modelo Gemini selecionado
+            const modelSelect = document.getElementById('gemini-model-select');
+            if (modelSelect && config.geminiModel) {
+                modelSelect.value = config.geminiModel;
+            }
             atualizarStatusIA();
         }
 
@@ -2196,6 +2274,146 @@
                 button.innerHTML = `✨ Analisar Preço`;
             }
         }
+
+        window.analisarMercadoComIA = async function(button) {
+            if (!ultimoCalculo || !ultimoCalculo.produtoId) {
+                alert("Calcule o preço de um produto primeiro antes de analisar o mercado.");
+                return;
+            }
+            const produtos = window.appState.produtosCache();
+            const insumos = window.appState.insumosCache();
+            const config = window.appState.configCache();
+            const produto = produtos.find(p => p.id === ultimoCalculo.produtoId);
+            if (!produto) { alert("Produto não encontrado."); return; }
+
+            const custoProduto = calcularCustoProduto(produto.id);
+            const receitaDetalhada = (produto.receita || []).map(item => {
+                const ins = insumos.find(i => i.id === item.insumoId);
+                if (!ins) return null;
+                const custoUnit = calcularCustoInsumo(item.insumoId, parseFloat(item.quantidade), item.unidade);
+                return `${ins.nome}: ${item.quantidade}${item.unidade} (custo: R$${custoUnit.toFixed(2)})`;
+            }).filter(Boolean).join('\n   - ');
+
+            const canaisInfo = Object.entries(ultimoCalculo.canais || {}).map(([nome, dados]) =>
+                `${nome}: Preço R$${dados.precoFinal.toFixed(2)}, Taxas ${(dados.taxasPercentual * 100).toFixed(1)}%`
+            ).join('\n   - ');
+
+            const faturamento = parseFloat(config.faturamentoMedioMensal) || 0;
+            const totalCustosOp = (config.custosOperacionais || []).reduce((s, c) => s + (parseFloat(c.valor) || 0), 0);
+            const margemInput = parseFloat(document.getElementById('margem-lucro-input')?.value) || 30;
+
+            const canalPrincipal = (config.canaisVenda || []).find(c => c.nome?.toLowerCase().includes('ifood'));
+            const taxaIfood = canalPrincipal ? `Comissão: ${(parseFloat(canalPrincipal.taxaComissao) * 100).toFixed(1)}%, Transação: ${(parseFloat(canalPrincipal.taxaTransacao) * 100).toFixed(1)}%` : 'Não configurado';
+
+            const systemInstruction = `Atue como: Analista de Mercado Sênior e Especialista em Pricing Estratégico, com foco no mercado de Manaus/AM e plataformas de delivery (iFood).
+
+Sua Missão:
+1. Pesquisa em Tempo Real (Grounding): Utilize a busca do Google para encontrar o preço médio de mercado do produto especificamente em Manaus. Procure em grandes redes (DB, Assaí, Atacadão) e nos principais players do iFood na região.
+2. Análise de Insumos: Pesquise o custo atual dos insumos (considerando os pesos informados) nos atacados de Manaus para calcular o CMV (Custo de Mercadoria Vendida) base.
+3. SEO e Copywriting: Crie um Título de alta conversão (usando palavras-chave mais buscadas no iFood Manaus) e uma Descrição persuasiva que destaque o conceito de "Qualidade de Primeira".
+4. Cálculo Financeiro: Com base nos parâmetros fornecidos (Faturamento, Despesas Fixas, Lucro Desejado, Taxas da Loja), aplique a fórmula de Markup para sugerir o preço de venda ideal.
+
+Diretrizes de Resposta (Output):
+- Resumo de Mercado: Apresente uma tabela comparativa com os preços dos 3 principais concorrentes encontrados em Manaus.
+- Análise de Preço Atual: Compare o preço do usuário com a média encontrada e diga se está perdendo margem ou competitividade.
+- Otimização de Anúncio: Título sugerido (Focado em SEO local) e Descrição (Enfatizando o padrão 'Tudo de Primeira').
+- Sugestão de Preço Técnico: Cálculo detalhado considerando CMV + Taxas + Custo Fixo + Margem de Lucro. Veredito final com o preço recomendado para o iFood.
+
+IMPORTANTE: Formate a resposta em Markdown. Use tabelas, negrito, e seções claras. Seja detalhado mas objetivo.`;
+
+            const userPrompt = `Analise o seguinte produto do meu restaurante em Manaus/AM:
+
+**Produto:** ${produto.nome}
+**Descrição atual:** ${produto.descricao || 'Sem descrição'}
+
+**Insumos/Pesos (Ficha Técnica):**
+   - ${receitaDetalhada || 'Sem receita cadastrada'}
+
+**CMV (Custo dos Insumos):** R$ ${custoProduto.toFixed(2)}
+
+**Preços calculados por canal:**
+   - ${canaisInfo || 'Nenhum canal configurado'}
+
+**Configurações da Loja:**
+   - Faturamento Médio Mensal: R$ ${faturamento.toFixed(2)}
+   - Custos Fixos Mensais: R$ ${totalCustosOp.toFixed(2)}
+   - Margem de Lucro Desejada: ${margemInput}%
+   - Taxas iFood: ${taxaIfood}
+
+Faça a análise completa de mercado conforme suas instruções.`;
+
+            button.disabled = true;
+            button.innerHTML = `<span class="spinner"></span> Pesquisando mercado...`;
+            const contentDiv = document.getElementById('analise-mercado-content');
+            const resultDiv = document.getElementById('analise-mercado-resultado');
+            const fontesDiv = document.getElementById('analise-mercado-fontes');
+            const fontesLista = document.getElementById('analise-mercado-fontes-lista');
+            contentDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `
+                <div class="flex flex-col items-center justify-center p-8 text-center">
+                    <span class="spinner mb-3" style="width:40px;height:40px;border-width:4px;"></span>
+                    <p class="text-purple-700 font-semibold text-lg">Pesquisando preços em Manaus...</p>
+                    <p class="text-gray-500 text-sm mt-1">A IA está consultando o Google em tempo real para encontrar concorrentes e preços atuais.</p>
+                </div>`;
+            fontesDiv.classList.add('hidden');
+
+            try {
+                const resultado = await callGeminiWithSearch(userPrompt, systemInstruction);
+                let html = resultado.text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-gray-800 mt-4 mb-2">$1</h3>')
+                    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-purple-800 mt-5 mb-3 pb-2 border-b border-purple-200">$1</h2>')
+                    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-purple-900 mt-5 mb-3">$1</h1>')
+                    .replace(/^\* (.*$)/gm, '<li class="ml-4 mb-1">$1</li>')
+                    .replace(/^- (.*$)/gm, '<li class="ml-4 mb-1">$1</li>')
+                    .replace(/(<li.*<\/li>\n?)+/g, '<ul class="list-disc mb-3">$&</ul>')
+                    .replace(/\n\n/g, '<br><br>')
+                    .replace(/\|(.+)\|/g, function(match) {
+                        const cells = match.split('|').filter(c => c.trim());
+                        if (cells.every(c => c.trim().match(/^[-:]+$/))) return '<tr class="border-separator"></tr>';
+                        const tag = match.includes('---') ? 'th' : 'td';
+                        const cellClass = tag === 'th' ? 'bg-purple-50 font-semibold text-purple-800 py-2 px-3 text-sm border border-purple-200' : 'py-2 px-3 text-sm border border-gray-200';
+                        return '<tr>' + cells.map(c => `<${tag} class="${cellClass}">${c.trim()}</${tag}>`).join('') + '</tr>';
+                    });
+                html = html.replace(/<tr class="border-separator"><\/tr>/g, '');
+                html = html.replace(/(<tr>.*<\/tr>\s*)+/g, '<div class="overflow-x-auto my-3"><table class="min-w-full border-collapse rounded-lg overflow-hidden">$&</table></div>');
+
+                resultDiv.innerHTML = `<div class="prose max-w-none text-gray-700 leading-relaxed">${html}</div>`;
+
+                if (resultado.grounding) {
+                    const chunks = resultado.grounding.groundingChunks || resultado.grounding.searchEntryPoint?.renderedContent ? [] : [];
+                    const supports = resultado.grounding.groundingSupports || [];
+                    const searchQueries = resultado.grounding.webSearchQueries || [];
+                    let fontesHtml = '';
+                    if (searchQueries.length > 0) {
+                        fontesHtml += '<p class="font-medium text-gray-600 mb-1">Buscas realizadas:</p>';
+                        fontesHtml += searchQueries.map(q => `<span class="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full mr-1 mb-1">${q}</span>`).join('');
+                    }
+                    const groundingChunks = resultado.grounding.groundingChunks || [];
+                    if (groundingChunks.length > 0) {
+                        fontesHtml += '<p class="font-medium text-gray-600 mt-2 mb-1">Sites consultados:</p>';
+                        fontesHtml += groundingChunks.filter(c => c.web).map(c =>
+                            `<a href="${c.web.uri}" target="_blank" class="block text-indigo-600 hover:text-indigo-800 text-xs underline">${c.web.title || c.web.uri}</a>`
+                        ).join('');
+                    }
+                    if (fontesHtml) {
+                        fontesLista.innerHTML = fontesHtml;
+                        fontesDiv.classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+                        <p class="text-red-700 font-semibold"><i class="fas fa-exclamation-circle mr-1"></i> Erro na análise de mercado</p>
+                        <p class="text-red-600 text-sm mt-1">${error.message}</p>
+                        <p class="text-gray-500 text-xs mt-2">Verifique se sua chave API tem acesso ao modelo selecionado e ao Google Search. Tente selecionar "Gemini 2.0 Flash" nas Configurações.</p>
+                    </div>`;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = `<i class="fas fa-globe mr-2"></i> Analisar Mercado em Manaus`;
+            }
+        }
+
         window.verificarPrecoComIA = async function(button) {
             const form = button.closest('form');
             const nomeInsumo = form.nome.value;
@@ -2618,7 +2836,7 @@
                 const prompt = `Gere uma foto profissional e apetitosa de um prato chamado "${nomeProduto}"${descricao ? '. Descricao: ' + descricao : ''}. A foto deve ser estilo food photography profissional, com iluminacao natural, fundo clean, prato bem apresentado e atrativo para cardapio de restaurante. Vista de cima em angulo de 45 graus.`;
 
                 // Usar Gemini com Imagen 3
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2769,11 +2987,15 @@
                 const docRef = getConfigDocRef();
                 const config = window.appState.configCache();
                 config.faturamentoMedioMensal = parseFloat(document.getElementById('faturamento-mensal').value) || 0;
-                // Salvar chave Gemini
+                // Salvar chave Gemini e modelo
                 const geminiKey = document.getElementById('gemini-api-key')?.value?.trim();
                 if (geminiKey) {
                     config.geminiApiKey = geminiKey;
                     localStorage.setItem('geminiApiKey', geminiKey);
+                }
+                const geminiModel = document.getElementById('gemini-model-select')?.value;
+                if (geminiModel) {
+                    config.geminiModel = geminiModel;
                 }
                 await setDoc(docRef, config);
                 atualizarStatusIA();
