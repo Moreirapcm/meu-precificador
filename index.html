@@ -2151,7 +2151,6 @@
                 return;
             }
             const precoVendaBase = custoProduto / denominadorBase;
-            const lucroPorPrato = precoVendaBase * margemLucro;
             const resumoContainer = document.getElementById('resumo-produto');
             resumoContainer.innerHTML = `
                 <h3 class="text-xl font-bold mb-2 text-indigo-800">${produto.nome}</h3>
@@ -2159,7 +2158,7 @@
                     <div><p class="text-sm text-gray-500">Custo dos Insumos</p><p class="font-bold text-lg text-gray-800">R$ ${custoProduto.toFixed(2)}</p></div>
                     <div><p class="text-sm text-gray-500">Custo Operacional</p><p class="font-bold text-lg text-gray-800">${(custoOpPercentual * 100).toFixed(2)}%</p></div>
                     <div><p class="text-sm text-gray-500">Margem de Lucro</p><p class="font-bold text-lg text-gray-800">${(margemLucro * 100).toFixed(2)}%</p></div>
-                    <div><p class="text-sm text-gray-500">Preço Base (Líquido)</p><p class="font-bold text-lg text-green-600">R$ ${precoVendaBase.toFixed(2)}</p></div>
+                    <div><p class="text-sm text-gray-500">Preço Base (Balcão)</p><p class="font-bold text-lg text-green-600">R$ ${precoVendaBase.toFixed(2)}</p></div>
                 </div>
             `;
             const tabelaContainer = document.getElementById('tabela-precos');
@@ -2171,6 +2170,7 @@
                         <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Canal de Venda</th>
                         <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxas Totais</th>
                         <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço de Venda Final</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Você Recebe</th>
                         <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lucro (R$)</th>
                         <th class="py-3 px-6 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Análise IA</th>
                     </tr>
@@ -2181,33 +2181,58 @@
             ultimoCalculo = {
                 produtoId: produto.id,
                 produtoNome: produto.nome,
+                custoProduto: custoProduto,
+                custoOpPercentual: custoOpPercentual,
+                margemLucro: margemLucro,
                 canais: {}
             };
             (config.canaisVenda || []).forEach(canal => {
                 const taxaComissao = parseFloat(canal.taxaComissao);
                 const taxaTransacao = parseFloat(canal.taxaTransacao);
                 const taxasTotais = taxaComissao + taxaTransacao;
-                const denominadorCanal = 1 - taxasTotais;
-                const precoFinal = denominadorCanal > 0 ? precoVendaBase / denominadorCanal : Infinity;
+
+                // Fórmula de markup divisor: inclui taxas do canal no denominador
+                const denominadorCanal = 1 - taxasTotais - custoOpPercentual - margemLucro;
+                const inviavel = denominadorCanal <= 0;
+                const precoFinal = inviavel ? 0 : custoProduto / denominadorCanal;
+                const recebidoCanal = precoFinal * (1 - taxasTotais);
+                const custoOpPorPrato = precoFinal * custoOpPercentual;
+                const lucroCanal = precoFinal * margemLucro;
+
                 ultimoCalculo.canais[canal.nome] = {
                     precoFinal: precoFinal,
                     taxasPercentual: taxasTotais,
                     taxaComissao: taxaComissao,
                     taxaTransacao: taxaTransacao,
-                    liquidoOriginal: precoFinal * (1 - taxasTotais)
+                    liquidoOriginal: recebidoCanal,
+                    lucro: lucroCanal,
+                    custoOpPorPrato: custoOpPorPrato,
+                    inviavel: inviavel
                 };
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="py-4 px-6 whitespace-nowrap font-medium text-gray-900">${canal.nome}</td>
-                    <td class="py-4 px-6 whitespace-nowrap text-gray-500">${(taxasTotais * 100).toFixed(2)}%</td>
-                    <td class="py-4 px-6 whitespace-nowrap font-bold text-xl text-indigo-600">R$ ${precoFinal.toFixed(2)}</td>
-                    <td class="py-4 px-6 whitespace-nowrap font-bold text-green-600">R$ ${lucroPorPrato.toFixed(2)}</td>
-                    <td class="py-4 px-6 whitespace-nowrap text-center">
-                        <button onclick="analisarPrecoComIA('${produto.id}', '${canal.nome}', ${precoFinal}, this)" class="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-purple-600 transition-colors">
-                            ✨ Analisar Preço
-                        </button>
-                    </td>
-                `;
+                if (inviavel) {
+                    tr.innerHTML = `
+                        <td class="py-4 px-6 whitespace-nowrap font-medium text-gray-900">${canal.nome}</td>
+                        <td class="py-4 px-6 whitespace-nowrap text-gray-500">${(taxasTotais * 100).toFixed(2)}%</td>
+                        <td class="py-4 px-6 text-red-600 font-bold" colspan="3">
+                            Inviável (Taxas ${(taxasTotais*100).toFixed(1)}% + Custo Op. ${(custoOpPercentual*100).toFixed(1)}% + Margem ${(margemLucro*100).toFixed(1)}% &ge; 100%)
+                        </td>
+                        <td></td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="py-4 px-6 whitespace-nowrap font-medium text-gray-900">${canal.nome}</td>
+                        <td class="py-4 px-6 whitespace-nowrap text-gray-500">${(taxasTotais * 100).toFixed(2)}%</td>
+                        <td class="py-4 px-6 whitespace-nowrap font-bold text-xl text-indigo-600">R$ ${precoFinal.toFixed(2)}</td>
+                        <td class="py-4 px-6 whitespace-nowrap text-blue-600 font-semibold">R$ ${recebidoCanal.toFixed(2)}</td>
+                        <td class="py-4 px-6 whitespace-nowrap font-bold text-green-600">R$ ${lucroCanal.toFixed(2)}</td>
+                        <td class="py-4 px-6 whitespace-nowrap text-center">
+                            <button onclick="analisarPrecoComIA('${produto.id}', '${canal.nome}', ${precoFinal}, this)" class="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-purple-600 transition-colors">
+                                ✨ Analisar Preço
+                            </button>
+                        </td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
             tabelaContainer.innerHTML = '';
@@ -3069,13 +3094,16 @@ Faça a análise completa de mercado conforme suas instruções.`;
                     const liquidoOriginal = canal.liquidoOriginal;
                     const impactoLucro = recebidoRestaurante - liquidoOriginal;
 
-                    // Margem sobre o custo dos insumos
-                    const margemSobreCusto = recebidoRestaurante - custoProduto;
-                    const margemPercentual = recebidoRestaurante > 0 ? (margemSobreCusto / recebidoRestaurante) * 100 : 0;
+                    // Custo operacional por prato (do cálculo principal)
+                    const custoOpPorPrato = canal.custoOpPorPrato || 0;
+
+                    // Lucro real = recebido - custo insumos - custo operacional
+                    const lucroOriginal = liquidoOriginal - custoProduto - custoOpPorPrato;
+                    const lucroPromo = recebidoRestaurante - custoProduto - custoOpPorPrato;
+                    const margemSobreCusto = lucroPromo;
+                    const margemPercentual = recebidoRestaurante > 0 ? (lucroPromo / recebidoRestaurante) * 100 : 0;
 
                     // Aumento de vendas necessário para compensar
-                    const lucroOriginal = liquidoOriginal - custoProduto;
-                    const lucroPromo = recebidoRestaurante - custoProduto;
                     const aumentoNecessario = lucroPromo > 0 ? ((lucroOriginal / lucroPromo) - 1) * 100 : Infinity;
 
                     const impactoClasse = impactoLucro < 0 ? 'text-red-600' : 'text-green-600';
@@ -3112,7 +3140,8 @@ Faça a análise completa de mercado conforme suas instruções.`;
                                 ${custoBancadoRestaurante > 0 ? `<p class="text-orange-500">Seu subsídio: <span class="font-semibold float-right">- R$ ${custoBancadoRestaurante.toFixed(2)}</span></p>` : ''}
                                 <p class="border-t pt-1 font-bold">Você recebe líquido: <span class="float-right text-blue-600">R$ ${recebidoRestaurante.toFixed(2)}</span></p>
                                 <p>Custo dos insumos: <span class="float-right">R$ ${custoProduto.toFixed(2)}</span></p>
-                                <p class="font-bold ${impactoClasse}">Lucro por unidade: <span class="float-right">R$ ${margemSobreCusto.toFixed(2)} (${margemPercentual.toFixed(1)}%)</span></p>
+                                ${custoOpPorPrato > 0 ? `<p>Custo operacional: <span class="float-right">R$ ${custoOpPorPrato.toFixed(2)}</span></p>` : ''}
+                                <p class="font-bold ${impactoClasse}">Lucro por unidade: <span class="float-right">R$ ${lucroPromo.toFixed(2)} (${margemPercentual.toFixed(1)}%)</span></p>
                                 <p class="${impactoClasse} border-t pt-1">Impacto vs. sem promoção: <span class="font-bold float-right">R$ ${impactoLucro.toFixed(2)}</span></p>
                                 ${aumentoNecessario !== Infinity && aumentoNecessario > 0 ? `<p class="text-orange-600 text-xs mt-1"><i class="fas fa-arrow-up mr-1"></i>Precisa vender <strong>${aumentoNecessario.toFixed(0)}% mais</strong> para compensar o desconto</p>` : ''}
                             </div>
@@ -4101,7 +4130,7 @@ ${p.observacoes ? `<div><strong>OBS:</strong> ${p.observacoes}</div><div class="
             produtosParaAnalise.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(produto => {
                 const custo = calcularCustoProduto(produto.id);
                 const precoBase = custo / denominadorBase;
-                const lucroUnit = precoBase * margemInput;
+                const lucroBase = precoBase * margemInput;
                 chartLabels.push(produto.nome.length > 20 ? produto.nome.substring(0, 20) + '...' : produto.nome);
 
                 const margemReal = custo > 0 ? ((precoBase - custo) / precoBase * 100) : 0;
@@ -4114,17 +4143,17 @@ ${p.observacoes ? `<div><strong>OBS:</strong> ${p.observacoes}</div><div class="
 
                 canais.forEach((canal, idx) => {
                     const taxas = parseFloat(canal.taxaComissao) + parseFloat(canal.taxaTransacao);
-                    const denom = 1 - taxas;
-                    const precoFinal = denom > 0 ? precoBase / denom : 0;
+                    const denomCanal = 1 - taxas - custoOpPerc - margemInput;
+                    const precoFinal = denomCanal > 0 ? custo / denomCanal : 0;
                     chartDatasets[idx].data.push(precoFinal.toFixed(2));
                     tabelaHtml += `<td class="py-2 px-3 text-right font-semibold text-indigo-600">R$ ${precoFinal.toFixed(2)}</td>`;
                 });
 
-                totalLucroEstimado += lucroUnit;
-                const statusColor = custo === 0 ? 'text-gray-400' : lucroUnit > 0 ? 'text-green-600' : 'text-red-600';
-                const statusIcon = custo === 0 ? 'fa-question' : lucroUnit > 0 ? 'fa-check-circle' : 'fa-times-circle';
+                totalLucroEstimado += lucroBase;
+                const statusColor = custo === 0 ? 'text-gray-400' : lucroBase > 0 ? 'text-green-600' : 'text-red-600';
+                const statusIcon = custo === 0 ? 'fa-question' : lucroBase > 0 ? 'fa-check-circle' : 'fa-times-circle';
 
-                tabelaHtml += `<td class="py-2 px-3 text-right font-bold text-green-600">R$ ${lucroUnit.toFixed(2)}</td>
+                tabelaHtml += `<td class="py-2 px-3 text-right font-bold text-green-600">R$ ${lucroBase.toFixed(2)}</td>
                     <td class="py-2 px-3 text-center ${statusColor}"><i class="fas ${statusIcon}"></i></td></tr>`;
             });
 
@@ -4226,10 +4255,14 @@ ${p.observacoes ? `<div><strong>OBS:</strong> ${p.observacoes}</div><div class="
             // iFood specific insight
             const canalIfood = canais.find(c => c.nome.toLowerCase().includes('ifood'));
             if (canalIfood) {
-                const taxaIfood = ((parseFloat(canalIfood.taxaComissao) + parseFloat(canalIfood.taxaTransacao)) * 100).toFixed(1);
+                const taxasIfoodVal = parseFloat(canalIfood.taxaComissao) + parseFloat(canalIfood.taxaTransacao);
+                const taxaIfood = (taxasIfoodVal * 100).toFixed(1);
+                const denomBase = 1 - custoOpPerc - margemInput;
+                const denomIfood = 1 - taxasIfoodVal - custoOpPerc - margemInput;
+                const diffPerc = denomIfood > 0 && denomBase > 0 ? ((denomBase / denomIfood - 1) * 100).toFixed(0) : '---';
                 insightsHtml += `<div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
                     <p class="text-sm font-semibold text-orange-800"><i class="fas fa-motorcycle mr-1"></i> Taxas iFood: ${taxaIfood}%</p>
-                    <p class="text-xs text-orange-600">Com margem de ${(margemInput * 100).toFixed(0)}%, seu preço no iFood é ~${((1 / (1 - parseFloat(canalIfood.taxaComissao) - parseFloat(canalIfood.taxaTransacao)) - 1) * 100).toFixed(0)}% maior que o preço base.</p>
+                    <p class="text-xs text-orange-600">Com margem de ${(margemInput * 100).toFixed(0)}%, seu preço no iFood é ~${diffPerc}% maior que o preço de balcão.</p>
                 </div>`;
             }
 
@@ -4274,25 +4307,31 @@ ${p.observacoes ? `<div><strong>OBS:</strong> ${p.observacoes}</div><div class="
 
             const taxaTransacao = 0.032; // taxa de pagamento online iFood (3,2%)
             const taxaTotal = comissao + taxaTransacao;
-            const precoBase = custoProduto / denominadorBase;
-            const precoFinal = precoBase / (1 - taxaTotal);
+
+            // Fórmula de markup divisor: inclui taxas do canal no denominador
+            const denominadorCanal = 1 - taxaTotal - custoOpPerc - margemInput;
+            if (denominadorCanal <= 0) {
+                alert(`Inviável: Taxas (${(taxaTotal*100).toFixed(1)}%) + Custo Op. (${(custoOpPerc*100).toFixed(1)}%) + Margem (${(margemInput*100).toFixed(1)}%) >= 100%`);
+                return;
+            }
+            const precoFinal = custoProduto / denominadorCanal;
             const descontoValor = precoFinal * descontoPerc;
             const precoPromo = precoFinal - descontoValor;
 
-            // Comissão sobre preço ORIGINAL (padrão iFood)
+            // Decomposição do preço
             const comissaoValor = precoFinal * taxaTotal;
-            const liquidoOriginal = precoFinal - (precoFinal * taxaTotal);
-            const liquidoPromo = precoPromo - comissaoValor; // comissão sobre preço original!
-            const lucroOriginal = liquidoOriginal - custoProduto;
-            const lucroPromo = liquidoPromo - custoProduto;
+            const custoOpPorPrato = precoFinal * custoOpPerc;
+            const liquidoOriginal = precoFinal * (1 - taxaTotal);
+            const liquidoPromo = precoPromo - comissaoValor; // comissão sobre preço original no iFood
+            const lucroOriginal = liquidoOriginal - custoProduto - custoOpPorPrato;
+            const lucroPromo = liquidoPromo - custoProduto - custoOpPorPrato;
 
             const isPreju = lucroPromo < 0;
             const aumentoNecessario = lucroPromo > 0 ? ((lucroOriginal / lucroPromo) - 1) * 100 : Infinity;
 
-            // Preço mínimo para não ter prejuízo
-            const precoMinimo = (custoProduto + comissaoValor) / 1; // preço mínimo é custo + comissão
-            const descontoMaximo = precoFinal - (custoProduto / (1 - taxaTotal));
-            const descontoMaximoPerc = (descontoMaximo / precoFinal) * 100;
+            // Desconto máximo = lucro original (quando lucro promo chega a zero)
+            const descontoMaximo = Math.max(0, lucroOriginal);
+            const descontoMaximoPerc = precoFinal > 0 ? (descontoMaximo / precoFinal) * 100 : 0;
 
             let html = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -4301,6 +4340,7 @@ ${p.observacoes ? `<div><strong>OBS:</strong> ${p.observacoes}</div><div class="
                     <div class="space-y-1 text-sm">
                         <p>Produto: <span class="font-semibold float-right">${produto.nome}</span></p>
                         <p>Custo insumos: <span class="float-right">R$ ${custoProduto.toFixed(2)}</span></p>
+                        <p>Custo operacional (${(custoOpPerc * 100).toFixed(1)}%): <span class="float-right">R$ ${custoOpPorPrato.toFixed(2)}</span></p>
                         <p>Preço no iFood: <span class="font-semibold float-right">R$ ${precoFinal.toFixed(2)}</span></p>
                         <p>Comissão (${(taxaTotal * 100).toFixed(1)}%): <span class="text-red-500 float-right">- R$ ${comissaoValor.toFixed(2)}</span></p>
                         <p class="border-t pt-1 font-bold">Recebido: <span class="text-blue-600 float-right">R$ ${liquidoOriginal.toFixed(2)}</span></p>
@@ -4417,10 +4457,9 @@ ${p.observacoes ? `<div><strong>OBS:</strong> ${p.observacoes}</div><div class="
                 const custo = calcularCustoProduto(p.id);
                 const taxas = parseFloat(canalObj.taxaComissao) + parseFloat(canalObj.taxaTransacao);
                 const margem = 0.35; // margem padrão para análise
-                const denomBase = 1 - custoOpPerc - margem;
-                const precoBase = denomBase > 0 ? custo / denomBase : 0;
-                const precoFinal = (1 - taxas) > 0 ? precoBase / (1 - taxas) : 0;
-                const lucroUnit = precoBase * margem;
+                const denomCanal = 1 - taxas - custoOpPerc - margem;
+                const precoFinal = denomCanal > 0 ? custo / denomCanal : 0;
+                const lucroUnit = precoFinal * margem;
                 const lucroTotal = lucroUnit * qtdVendida;
 
                 totalVendas += qtdVendida;
