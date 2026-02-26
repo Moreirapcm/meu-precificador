@@ -2075,6 +2075,34 @@
             atualizarStatusIA();
         }
 
+        function converterUnidade(quantidade, unidadeOrigem, unidadeDestino) {
+            if (unidadeOrigem === unidadeDestino) return quantidade;
+            const conversoes = {
+                'g_kg': 0.001,
+                'kg_g': 1000,
+                'ml_L': 0.001,
+                'L_ml': 1000,
+            };
+            const chave = `${unidadeOrigem}_${unidadeDestino}`;
+            const fator = conversoes[chave];
+            if (fator !== undefined) {
+                return quantidade * fator;
+            }
+            return null;
+        }
+
+        function unidadesCompativeis(unidade) {
+            const grupos = {
+                peso: ['g', 'kg'],
+                volume: ['ml', 'L'],
+                unitario: ['un']
+            };
+            for (const grupo of Object.values(grupos)) {
+                if (grupo.includes(unidade)) return grupo;
+            }
+            return [unidade];
+        }
+
         function calcularCustoInsumo(insumoId, quantidade, unidade) {
             const insumos = window.appState.insumosCache();
             const insumo = insumos.find(i => i.id === insumoId);
@@ -2090,18 +2118,13 @@
             if (insumo.indiceCoccao && insumo.indiceCoccao > 0 && insumo.indiceCoccao < 1) {
                 custoRealTotal = custoRealTotal / insumo.indiceCoccao;
             }
-            let custoPorUnidadeBase = custoRealTotal / qtdCompra;
-            let quantidadeConvertida = quantidade;
-            if (unidadeCompra === 'kg' && unidade === 'g') {
-                quantidadeConvertida = quantidade / 1000;
-            } else if (unidadeCompra === 'L' && unidade === 'ml') {
-                quantidadeConvertida = quantidade / 1000;
-            } else if (unidadeCompra === 'g' && unidade === 'kg') {
-                quantidadeConvertida = quantidade * 1000;
-            } else if (unidadeCompra === 'ml' && unidade === 'L') {
-                quantidadeConvertida = quantidade * 1000;
+            // Converter a quantidade da receita para a mesma unidade de compra
+            const qtdNaUnidadeCompra = converterUnidade(quantidade, unidade, unidadeCompra);
+            if (qtdNaUnidadeCompra === null) {
+                console.warn(`Conversão incompatível: receita usa "${unidade}" mas insumo "${insumo.nome}" é comprado em "${unidadeCompra}". Usando quantidade sem conversão.`);
+                return (custoRealTotal / qtdCompra) * quantidade;
             }
-            return custoPorUnidadeBase * quantidadeConvertida;
+            return (custoRealTotal / qtdCompra) * qtdNaUnidadeCompra;
         }
 
         function calcularCustoProduto(produtoId) {
@@ -2575,7 +2598,12 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 const insumosOptions = insumos.sort((a,b) => a.nome.localeCompare(b.nome))
                                                 .map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`)
                                                 .join('');
-                const unidades = ['g', 'kg', 'ml', 'L', 'un'];
+                const insumoSelecionado = insumos.find(i => i.id === item.insumoId);
+                const todasUnidades = ['g', 'kg', 'ml', 'L', 'un'];
+                const unidades = insumoSelecionado ? unidadesCompativeis(insumoSelecionado.unidadeCompra || 'un') : todasUnidades;
+                if (insumoSelecionado && !unidades.includes(item.unidade)) {
+                    item.unidade = unidades[0];
+                }
                 const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === item.unidade ? 'selected' : ''}>${u}</option>`).join('');
                 itemDiv.innerHTML = `
                     <select class="w-1/2 p-2 border border-gray-300 rounded-md" onchange="updateReceitaItem(${index}, 'insumoId', this.value)">
@@ -2601,6 +2629,9 @@ Faça a análise completa de mercado conforme suas instruções.`;
         }
         window.updateReceitaItem = function(index, field, value) {
             window.tempReceita[index][field] = value;
+            if (field === 'insumoId') {
+                renderReceitaItems();
+            }
         }
         window.abrirModalInsumo = function(id = null) {
             const insumos = window.appState.insumosCache();
