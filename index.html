@@ -340,6 +340,9 @@
             <button onclick="changeTab('insumos')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-carrot mr-2"></i> Insumos
             </button>
+            <button onclick="changeTab('embalagens')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
+                <i class="fas fa-box mr-2"></i> Embalagens
+            </button>
             <!-- Dashboard movido para o header -->
             <button onclick="changeTab('analise')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-chart-line mr-2"></i> Análise Estratégica
@@ -614,6 +617,71 @@
                 </div>
             </div>
             
+            <!-- EMBALAGENS TAB -->
+            <div id="embalagens-tab" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-semibold text-gray-700"><i class="fas fa-box text-indigo-500 mr-2"></i>Gestão de Embalagens</h2>
+                            <p class="text-sm text-gray-500 mt-1">Cadastre as embalagens usadas nos seus produtos. O custo será somado automaticamente ao custo de insumos.</p>
+                        </div>
+                        <button id="btn-nova-embalagem" onclick="abrirModalEmbalagem()" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors" disabled>
+                            <i class="fas fa-plus mr-2"></i> Nova Embalagem
+                        </button>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" id="filtro-embalagens" onkeyup="filtrarEmbalagens()" placeholder="Buscar por nome da embalagem..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+
+                    <div id="lista-embalagens" class="overflow-x-auto"></div>
+                </div>
+
+                <!-- Dicas sobre embalagens -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <button onclick="document.getElementById('embalagens-dicas-content').classList.toggle('hidden')" class="flex items-center justify-between w-full text-left">
+                        <h2 class="text-lg font-semibold text-gray-700"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Dicas: Embalagens e Custos</h2>
+                        <i class="fas fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <div id="embalagens-dicas-content" class="hidden mt-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <h4 class="font-bold text-blue-800 mb-2"><i class="fas fa-box-open mr-1"></i> Tipos Comuns</h4>
+                                <ul class="space-y-1 text-blue-700">
+                                    <li>Marmita de alumínio</li>
+                                    <li>Embalagem de isopor</li>
+                                    <li>Pote plástico com tampa</li>
+                                    <li>Saco kraft / papel</li>
+                                    <li>Copo descartável</li>
+                                    <li>Sacola delivery</li>
+                                </ul>
+                            </div>
+                            <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <h4 class="font-bold text-green-800 mb-2"><i class="fas fa-tags mr-1"></i> Não Esqueça</h4>
+                                <ul class="space-y-1 text-green-700">
+                                    <li>Tampa / filme PVC</li>
+                                    <li>Talheres descartáveis</li>
+                                    <li>Guardanapo</li>
+                                    <li>Etiqueta / adesivo</li>
+                                    <li>Fita adesiva</li>
+                                    <li>Molheira / sachê</li>
+                                </ul>
+                            </div>
+                            <div class="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                <h4 class="font-bold text-orange-800 mb-2"><i class="fas fa-calculator mr-1"></i> Como Calcular</h4>
+                                <p class="text-orange-700">Divida o preço do pacote pela quantidade de unidades para obter o <strong>valor unitário</strong>.</p>
+                                <p class="text-orange-700 mt-2"><strong>Ex:</strong> Pacote com 100 marmitas por R$ 45,00 = R$ 0,45 por unidade.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- DASHBOARD TAB -->
             <div id="dashboard-tab" class="hidden space-y-6">
                 <!-- Summary Cards -->
@@ -1285,12 +1353,14 @@
             getConfigDocRef,
             insumosCache: () => insumosCache,
             produtosCache: () => produtosCache,
+            embalagensCache: () => embalagensCache,
             configCache: () => configCache,
             doc, setDoc, getDoc, getDocs, collection, onSnapshot, addDoc, updateDoc, deleteDoc
         };
 
         let insumosCache = [];
         let produtosCache = [];
+        let embalagensCache = [];
         let configCache = {};
         
         function getCollectionRef(collectionName) {
@@ -1318,6 +1388,13 @@
                 filtrarProdutos();
                 filtrarSimuladorSelect();
                 if(typeof renderRegistroVendas === 'function') renderRegistroVendas();
+            });
+
+            const embalagensRef = getCollectionRef('embalagens');
+            if (embalagensRef) onSnapshot(embalagensRef, snapshot => {
+                embalagensCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                filtrarEmbalagens();
+                filtrarProdutos();
             });
 
             const configRef = getConfigDocRef();
@@ -1494,7 +1571,7 @@
             }
             try {
                 const backup = {
-                    versao: '1.0',
+                    versao: '1.1',
                     dataExportacao: new Date().toISOString(),
                     usuario: {
                         nome: document.getElementById('user-name').textContent,
@@ -1502,6 +1579,7 @@
                     },
                     insumos: [],
                     produtos: [],
+                    embalagens: [],
                     configuracoes: {}
                 };
 
@@ -1517,6 +1595,13 @@
                 if (produtosRef) {
                     const produtosSnap = await getDocs(produtosRef);
                     produtosSnap.forEach(d => backup.produtos.push({ id: d.id, ...d.data() }));
+                }
+
+                // Exportar embalagens
+                const embalagensRef = getCollectionRef('embalagens');
+                if (embalagensRef) {
+                    const embalagensSnap = await getDocs(embalagensRef);
+                    embalagensSnap.forEach(d => backup.embalagens.push({ id: d.id, ...d.data() }));
                 }
 
                 // Exportar configuracoes
@@ -1540,7 +1625,7 @@
                 link.click();
                 URL.revokeObjectURL(link.href);
 
-                alert(`Backup exportado com sucesso!\n\n${backup.insumos.length} insumos\n${backup.produtos.length} produtos\nConfiguracoes incluidas`);
+                alert(`Backup exportado com sucesso!\n\n${backup.insumos.length} insumos\n${backup.produtos.length} produtos\n${backup.embalagens.length} embalagens\nConfiguracoes incluidas`);
             } catch (error) {
                 console.error('Erro ao exportar:', error);
                 alert('Erro ao exportar dados: ' + error.message);
@@ -1574,7 +1659,7 @@
                     return;
                 }
 
-                let importados = { insumos: 0, produtos: 0 };
+                let importados = { insumos: 0, produtos: 0, embalagens: 0 };
 
                 // Importar insumos
                 if (backup.insumos && backup.insumos.length > 0) {
@@ -1614,6 +1699,24 @@
                     }
                 }
 
+                // Importar embalagens
+                if (backup.embalagens && backup.embalagens.length > 0) {
+                    const embalagensRef = getCollectionRef('embalagens');
+                    const embalagensAtuais = await getDocs(embalagensRef);
+                    for (const docSnap of embalagensAtuais.docs) {
+                        await deleteDoc(docSnap.ref);
+                    }
+                    for (const embalagem of backup.embalagens) {
+                        const { id, ...dados } = embalagem;
+                        if (id) {
+                            await setDoc(doc(db, `artifacts/${appId}/users/${window.appState.userId}/embalagens/${id}`), dados);
+                        } else {
+                            await addDoc(embalagensRef, dados);
+                        }
+                        importados.embalagens++;
+                    }
+                }
+
                 // Importar configuracoes
                 if (backup.configuracoes && Object.keys(backup.configuracoes).length > 0) {
                     const configRef = getConfigDocRef();
@@ -1624,6 +1727,7 @@
                     `Backup restaurado com sucesso!\n\n` +
                     `${importados.insumos} insumos importados\n` +
                     `${importados.produtos} produtos importados\n` +
+                    `${importados.embalagens} embalagens importadas\n` +
                     `Configuracoes restauradas\n\n` +
                     `Backup original de: ${backup.dataExportacao || 'data desconhecida'}`
                 );
@@ -1671,6 +1775,7 @@
 
                 document.getElementById('btn-novo-insumo').disabled = false;
                 document.getElementById('btn-novo-produto').disabled = false;
+                document.getElementById('btn-nova-embalagem').disabled = false;
                 document.getElementById('btn-salvar-config').disabled = false;
                 
                 initializeAppState();
@@ -1701,6 +1806,14 @@
             const todosProdutos = window.appState.produtosCache();
             const produtosFiltrados = todosProdutos.filter(produto => produto.nome.toLowerCase().includes(filtro));
             renderProdutos(produtosFiltrados);
+        }
+
+        function filtrarEmbalagens() {
+            const filtroEl = document.getElementById('filtro-embalagens');
+            const filtro = filtroEl ? filtroEl.value.toLowerCase() : '';
+            const todasEmbalagens = window.appState.embalagensCache();
+            const embalagensFiltradas = todasEmbalagens.filter(e => e.nome.toLowerCase().includes(filtro));
+            renderEmbalagens(embalagensFiltradas);
         }
 
         function filtrarSimuladorSelect() {
@@ -1844,6 +1957,7 @@
             document.getElementById('simulador-tab').classList.add('hidden');
             document.getElementById('produtos-tab').classList.add('hidden');
             document.getElementById('insumos-tab').classList.add('hidden');
+            document.getElementById('embalagens-tab').classList.add('hidden');
             document.getElementById('dashboard-tab').classList.add('hidden');
             document.getElementById('analise-tab').classList.add('hidden');
             document.getElementById('relatorios-tab').classList.add('hidden');
@@ -1868,6 +1982,9 @@
             }
             if (tabName === 'pedidos') {
                 carregarPedidos();
+            }
+            if (tabName === 'embalagens') {
+                filtrarEmbalagens();
             }
         }
 
@@ -1999,7 +2116,9 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo de Insumos</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Insumos</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Embalagens</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Total</th>
                         <th class="py-3 px-6 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                     </tr>
                 </thead>
@@ -2007,7 +2126,9 @@
             `;
             const tbody = table.querySelector('tbody');
             lista.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(produto => {
-                const custo = calcularCustoProduto(produto.id);
+                const custoTotal = calcularCustoProduto(produto.id);
+                const custoEmbalagens = calcularCustoEmbalagensProduto(produto.id);
+                const custoInsumos = custoTotal - custoEmbalagens;
                 const fotoHtml = produto.imagemUrl
                     ? `<img src="${produto.imagemUrl}" class="w-12 h-12 rounded-lg object-cover shadow-sm">`
                     : `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300"><i class="fas fa-utensils text-lg"></i></div>`;
@@ -2019,7 +2140,9 @@
                             <span class="font-medium text-gray-900">${produto.nome}</span>
                         </div>
                     </td>
-                    <td class="py-3 px-6 whitespace-nowrap text-gray-700">R$ ${custo.toFixed(2)}</td>
+                    <td class="py-3 px-6 whitespace-nowrap text-gray-700">R$ ${custoInsumos.toFixed(2)}</td>
+                    <td class="py-3 px-6 whitespace-nowrap text-gray-700">${custoEmbalagens > 0 ? 'R$ ' + custoEmbalagens.toFixed(2) : '<span class="text-gray-400">-</span>'}</td>
+                    <td class="py-3 px-6 whitespace-nowrap font-semibold text-gray-800">R$ ${custoTotal.toFixed(2)}</td>
                     <td class="py-3 px-6 whitespace-nowrap text-right text-sm font-medium">
                         <button onclick="abrirModalProduto('${produto.id}')" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
                         <button onclick="deletarItem('produtos', '${produto.id}', 'produto')" class="text-red-600 hover:text-red-900">Excluir</button>
@@ -2131,9 +2254,11 @@
             const produtos = window.appState.produtosCache();
             const produto = produtos.find(p => p.id === produtoId);
             if (!produto || !produto.receita) return 0;
-            return produto.receita.reduce((total, item) => {
+            const custoInsumos = produto.receita.reduce((total, item) => {
                 return total + calcularCustoInsumo(item.insumoId, parseFloat(item.quantidade), item.unidade);
             }, 0);
+            const custoEmbalagens = calcularCustoEmbalagensProduto(produtoId);
+            return custoInsumos + custoEmbalagens;
         }
 
         function calcularTotaisConfig() {
@@ -2161,6 +2286,8 @@
             const produtos = window.appState.produtosCache();
             const produto = produtos.find(p => p.id === produtoId);
             const custoProduto = calcularCustoProduto(produtoId);
+            const custoEmbalagens = calcularCustoEmbalagensProduto(produtoId);
+            const custoInsumos = custoProduto - custoEmbalagens;
             const totalCustosOp = (config.custosOperacionais || []).reduce((sum, c) => sum + parseFloat(c.valor), 0);
             const faturamento = parseFloat(config.faturamentoMedioMensal);
             if (!faturamento || faturamento <= 0) {
@@ -2175,10 +2302,15 @@
             }
             const precoVendaBase = custoProduto / denominadorBase;
             const resumoContainer = document.getElementById('resumo-produto');
+            const embalagemInfo = custoEmbalagens > 0 ? `
+                    <div><p class="text-sm text-gray-500">Custo Insumos</p><p class="font-bold text-lg text-gray-800">R$ ${custoInsumos.toFixed(2)}</p></div>
+                    <div><p class="text-sm text-gray-500">Custo Embalagens</p><p class="font-bold text-lg text-indigo-600">R$ ${custoEmbalagens.toFixed(2)}</p></div>
+                    <div><p class="text-sm text-gray-500">Custo Total</p><p class="font-bold text-lg text-gray-800">R$ ${custoProduto.toFixed(2)}</p></div>` : `
+                    <div><p class="text-sm text-gray-500">Custo dos Insumos</p><p class="font-bold text-lg text-gray-800">R$ ${custoProduto.toFixed(2)}</p></div>`;
             resumoContainer.innerHTML = `
                 <h3 class="text-xl font-bold mb-2 text-indigo-800">${produto.nome}</h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div><p class="text-sm text-gray-500">Custo dos Insumos</p><p class="font-bold text-lg text-gray-800">R$ ${custoProduto.toFixed(2)}</p></div>
+                <div class="grid grid-cols-2 md:grid-cols-${custoEmbalagens > 0 ? '6' : '4'} gap-4 text-center">
+                    ${embalagemInfo}
                     <div><p class="text-sm text-gray-500">Custo Operacional</p><p class="font-bold text-lg text-gray-800">${(custoOpPercentual * 100).toFixed(2)}%</p></div>
                     <div><p class="text-sm text-gray-500">Margem de Lucro</p><p class="font-bold text-lg text-gray-800">${(margemLucro * 100).toFixed(2)}%</p></div>
                     <div><p class="text-sm text-gray-500">Preço Base (Balcão)</p><p class="font-bold text-lg text-green-600">R$ ${precoVendaBase.toFixed(2)}</p></div>
@@ -2633,6 +2765,112 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 renderReceitaItems();
             }
         }
+
+        // === EMBALAGENS NO MODAL DE PRODUTO ===
+        function renderEmbalagensProduto() {
+            const container = document.getElementById('embalagens-produto-container');
+            if (!container) return;
+            const embalagens = window.appState.embalagensCache();
+            if (!embalagens.length) {
+                container.innerHTML = `<p class="text-sm text-gray-400 italic">Nenhuma embalagem cadastrada. <a href="javascript:changeTab('embalagens')" class="text-indigo-500 underline">Cadastre embalagens primeiro</a>.</p>`;
+                atualizarCustoTotalPreview();
+                return;
+            }
+            container.innerHTML = '';
+            embalagens.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(embalagem => {
+                const existente = (window.tempEmbalagens || []).find(e => e.embalagemId === embalagem.id);
+                const isChecked = existente && existente.quantidade > 0;
+                const quantidade = existente ? existente.quantidade : 1;
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 mb-2 p-2 rounded-lg border ' + (isChecked ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 bg-white');
+                div.innerHTML = `
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleEmbalagemProduto('${embalagem.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded">
+                    <div class="flex-1">
+                        <span class="text-sm font-medium text-gray-800">${embalagem.nome}</span>
+                        <span class="text-xs text-gray-500 ml-2">R$ ${parseFloat(embalagem.valorUnitario).toFixed(2)}/un</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <label class="text-xs text-gray-500">Qtd:</label>
+                        <input type="number" min="1" step="1" value="${quantidade}" ${!isChecked ? 'disabled' : ''}
+                            onchange="updateEmbalagemQtd('${embalagem.id}', this.value)"
+                            class="w-16 p-1 text-sm border border-gray-300 rounded-md text-center ${!isChecked ? 'bg-gray-100 opacity-50' : ''}">
+                    </div>
+                    <span class="text-xs font-semibold ${isChecked ? 'text-indigo-600' : 'text-gray-400'}" id="emb-subtotal-${embalagem.id}">
+                        R$ ${isChecked ? (parseFloat(embalagem.valorUnitario) * quantidade).toFixed(2) : '0,00'}
+                    </span>
+                `;
+                container.appendChild(div);
+            });
+            atualizarCustoTotalPreview();
+        }
+
+        window.toggleEmbalagemProduto = function(embalagemId, checked) {
+            if (!window.tempEmbalagens) window.tempEmbalagens = [];
+            if (checked) {
+                const existing = window.tempEmbalagens.find(e => e.embalagemId === embalagemId);
+                if (!existing) {
+                    window.tempEmbalagens.push({ embalagemId: embalagemId, quantidade: 1 });
+                } else {
+                    existing.quantidade = existing.quantidade || 1;
+                }
+            } else {
+                window.tempEmbalagens = window.tempEmbalagens.filter(e => e.embalagemId !== embalagemId);
+            }
+            renderEmbalagensProduto();
+        }
+
+        window.updateEmbalagemQtd = function(embalagemId, value) {
+            if (!window.tempEmbalagens) return;
+            const item = window.tempEmbalagens.find(e => e.embalagemId === embalagemId);
+            if (item) {
+                item.quantidade = parseInt(value) || 1;
+                renderEmbalagensProduto();
+            }
+        }
+
+        function calcularCustoEmbalagensProduto(produtoId) {
+            const produtos = window.appState.produtosCache();
+            const produto = produtos.find(p => p.id === produtoId);
+            if (!produto || !produto.embalagens) return 0;
+            const embalagens = window.appState.embalagensCache();
+            return produto.embalagens.reduce((total, item) => {
+                const embalagem = embalagens.find(e => e.id === item.embalagemId);
+                if (!embalagem) return total;
+                return total + (parseFloat(embalagem.valorUnitario) || 0) * (parseInt(item.quantidade) || 0);
+            }, 0);
+        }
+
+        function atualizarCustoTotalPreview() {
+            const container = document.getElementById('custo-total-preview');
+            if (!container) return;
+            // Calcular custo de insumos do tempReceita
+            let custoInsumos = 0;
+            (window.tempReceita || []).forEach(item => {
+                if (item.insumoId && item.quantidade > 0) {
+                    custoInsumos += calcularCustoInsumo(item.insumoId, parseFloat(item.quantidade), item.unidade);
+                }
+            });
+            // Calcular custo de embalagens do tempEmbalagens
+            let custoEmbalagens = 0;
+            const embalagens = window.appState.embalagensCache();
+            (window.tempEmbalagens || []).forEach(item => {
+                const emb = embalagens.find(e => e.id === item.embalagemId);
+                if (emb && item.quantidade > 0) {
+                    custoEmbalagens += parseFloat(emb.valorUnitario) * parseInt(item.quantidade);
+                }
+            });
+            const custoTotal = custoInsumos + custoEmbalagens;
+            container.innerHTML = `
+                <div class="flex justify-between items-center text-sm">
+                    <div class="flex gap-4">
+                        <span class="text-gray-600"><i class="fas fa-carrot text-green-500 mr-1"></i> Insumos: <strong>R$ ${custoInsumos.toFixed(2)}</strong></span>
+                        <span class="text-gray-600"><i class="fas fa-box text-indigo-500 mr-1"></i> Embalagens: <strong>R$ ${custoEmbalagens.toFixed(2)}</strong></span>
+                    </div>
+                    <span class="text-lg font-bold text-gray-800">Total: R$ ${custoTotal.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
         window.abrirModalInsumo = function(id = null) {
             const insumos = window.appState.insumosCache();
             const insumo = id ? insumos.find(i => i.id === id) : {};
@@ -2713,8 +2951,9 @@ Faça a análise completa de mercado conforme suas instruções.`;
         }
         window.abrirModalProduto = function(id = null) {
             const produtos = window.appState.produtosCache();
-            const produto = id ? produtos.find(p => p.id === id) : { receita: [], descricao: '', imagemUrl: '' };
+            const produto = id ? produtos.find(p => p.id === id) : { receita: [], descricao: '', imagemUrl: '', embalagens: [] };
             window.tempReceita = JSON.parse(JSON.stringify(produto.receita || []));
+            window.tempEmbalagens = JSON.parse(JSON.stringify(produto.embalagens || []));
             window.tempImagemUrl = produto.imagemUrl || '';
             const modalContent = document.getElementById('modal-content');
             modalContent.innerHTML = `
@@ -2763,12 +3002,19 @@ Faça a análise completa de mercado conforme suas instruções.`;
                         <div id="receita-container"></div>
                         <button type="button" onclick="adicionarReceitaItem()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Adicionar ingrediente</button>
                     </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2"><i class="fas fa-box text-indigo-500 mr-1"></i> Embalagens do Produto</h3>
+                        <p class="text-xs text-gray-500 mb-2">Marque as embalagens usadas neste produto e informe a quantidade de cada uma.</p>
+                        <div id="embalagens-produto-container"></div>
+                    </div>
+                    <div id="custo-total-preview" class="p-3 bg-gray-50 border border-gray-200 rounded-lg"></div>
                     <div class="flex justify-end gap-4 pt-4">
                         <button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button><button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button>
                     </div>
                 </form>
             `;
             renderReceitaItems();
+            renderEmbalagensProduto();
             const _mb = document.getElementById('modal-backdrop');
             _mb.classList.remove('hidden');
             _mb.style.display = 'flex';
@@ -2830,6 +3076,110 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 alert("Ocorreu um erro ao salvar o insumo. Verifique sua conexão e os dados inseridos.");
             }
         }
+        // === EMBALAGENS - CRUD ===
+        function renderEmbalagens(lista = window.appState.embalagensCache()) {
+            const container = document.getElementById('lista-embalagens');
+            if (!container) return;
+            if (!lista.length) {
+                container.innerHTML = `<p class="text-center text-gray-500 py-4">Nenhuma embalagem cadastrada. Clique em "Nova Embalagem" para começar.</p>`;
+                return;
+            }
+            const table = document.createElement('table');
+            table.className = 'min-w-full bg-white';
+            table.innerHTML = `
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Embalagem</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Unitário</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                        <th class="py-3 px-6 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200"></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+            lista.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(embalagem => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-3 px-6 whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500"><i class="fas fa-box"></i></div>
+                            <span class="font-medium text-gray-900">${embalagem.nome}</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-6 whitespace-nowrap text-gray-700 font-semibold">R$ ${parseFloat(embalagem.valorUnitario).toFixed(2)}</td>
+                    <td class="py-3 px-6 text-gray-500 text-sm">${embalagem.descricao || '-'}</td>
+                    <td class="py-3 px-6 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="abrirModalEmbalagem('${embalagem.id}')" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
+                        <button onclick="deletarItem('embalagens', '${embalagem.id}', 'embalagem')" class="text-red-600 hover:text-red-900">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            container.innerHTML = '';
+            container.appendChild(table);
+        }
+
+        window.abrirModalEmbalagem = function(id = null) {
+            const embalagens = window.appState.embalagensCache();
+            const embalagem = id ? embalagens.find(e => e.id === id) : {};
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-6"><i class="fas fa-box text-indigo-500 mr-2"></i>${id ? 'Editar' : 'Nova'} Embalagem</h2>
+                <form id="form-embalagem" onsubmit="salvarEmbalagem(event, '${id || ''}')" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Nome da Embalagem</label>
+                        <input type="text" name="nome" value="${embalagem.nome || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: Marmita de alumínio 500ml">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Valor Unitário (R$)</label>
+                            <input type="number" step="0.01" name="valorUnitario" value="${embalagem.valorUnitario || ''}" required min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 0.45">
+                            <p class="text-xs text-gray-500 mt-1">Preço por unidade da embalagem</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Descrição (opcional)</label>
+                            <input type="text" name="descricao" value="${embalagem.descricao || ''}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: Pacote c/ 100 un - R$45,00">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-4 pt-4">
+                        <button type="button" onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancelar</button>
+                        <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Salvar</button>
+                    </div>
+                </form>
+            `;
+            const _mb = document.getElementById('modal-backdrop');
+            _mb.classList.remove('hidden');
+            _mb.style.display = 'flex';
+        }
+
+        window.salvarEmbalagem = async function(event, id) {
+            event.preventDefault();
+            if (!window.appState.isReady) {
+                alert("A aplicação ainda está a ligar-se à base de dados. Por favor, aguarde um momento.");
+                return;
+            }
+            const form = document.getElementById('form-embalagem');
+            const data = {
+                nome: form.nome.value,
+                valorUnitario: parseFloat(form.valorUnitario.value),
+                descricao: form.descricao.value || ''
+            };
+            try {
+                const { getCollectionRef, addDoc, updateDoc, doc } = window.appState;
+                const collectionRef = getCollectionRef('embalagens');
+                if (id) {
+                    await updateDoc(doc(collectionRef, id), data);
+                } else {
+                    await addDoc(collectionRef, data);
+                }
+                fecharModal();
+            } catch (e) {
+                console.error("Erro ao salvar embalagem: ", e);
+                alert("Ocorreu um erro ao salvar a embalagem.");
+            }
+        }
+
         // === FOTO DO PRODUTO ===
         window.uploadFotoProduto = function(event) {
             const file = event.target.files[0];
@@ -2976,7 +3326,8 @@ Faça a análise completa de mercado conforme suas instruções.`;
                     insumoId: item.insumoId,
                     quantidade: parseFloat(item.quantidade) || 0,
                     unidade: item.unidade
-                })).filter(item => item.insumoId && item.quantidade > 0)
+                })).filter(item => item.insumoId && item.quantidade > 0),
+                embalagens: (window.tempEmbalagens || []).filter(e => e.embalagemId && e.quantidade > 0)
             };
             try {
                 const { getCollectionRef, addDoc, updateDoc, doc } = window.appState;
