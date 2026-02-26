@@ -966,9 +966,9 @@
                         <div>
                             <label for="gemini-model-select" class="block text-sm font-medium text-gray-700 mb-1">Modelo para Análise de Mercado</label>
                             <select id="gemini-model-select" class="w-full p-2 border border-gray-300 rounded-md shadow-sm">
-                                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Rápido)</option>
-                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Detalhado)</option>
-                                <option value="gemini-2.0-pro-exp-02-05">Gemini 2.0 Pro Exp (Avançado)</option>
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Rápido)</option>
+                                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Detalhado)</option>
+                                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview (Avançado)</option>
                             </select>
                             <p class="text-xs text-gray-500 mt-1">Modelo usado na Análise de Mercado com Search Grounding</p>
                         </div>
@@ -1739,7 +1739,7 @@
             }
             resultSpan.innerHTML = '<span class="text-gray-500"><span class="spinner"></span>Testando...</span>';
             try {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1763,7 +1763,7 @@
             if (!apiKey) {
                 throw new Error("Assistente de IA não configurado. Vá em Configurações e insira sua chave da API Gemini (gratuita em aistudio.google.com/apikey).");
             }
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ role: "user", parts: [{ text: prompt }] }]
             };
@@ -1802,7 +1802,7 @@
             if (!apiKey) {
                 throw new Error("Assistente de IA não configurado. Vá em Configurações e insira sua chave da API Gemini.");
             }
-            const model = (window.appState.configCache && window.appState.configCache()?.geminiModel) || 'gemini-2.0-flash';
+            const model = (window.appState.configCache && window.appState.configCache()?.geminiModel) || 'gemini-2.5-flash';
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -2836,7 +2836,7 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 const prompt = `Gere uma foto profissional e apetitosa de um prato chamado "${nomeProduto}"${descricao ? '. Descricao: ' + descricao : ''}. A foto deve ser estilo food photography profissional, com iluminacao natural, fundo clean, prato bem apresentado e atrativo para cardapio de restaurante. Vista de cima em angulo de 45 graus.`;
 
                 // Usar Gemini com Imagen 3
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
