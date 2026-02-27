@@ -688,11 +688,20 @@
                     </div>
 
                     <div class="mb-4">
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-search text-gray-400"></i>
+                        <div class="flex gap-3">
+                            <div class="relative flex-1">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" id="filtro-insumos" onkeyup="filtrarInsumos()" placeholder="Buscar por nome do insumo..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
                             </div>
-                            <input type="text" id="filtro-insumos" onkeyup="filtrarInsumos()" placeholder="Buscar por nome do insumo..." class="block w-full pl-10 p-2 border border-gray-300 rounded-md">
+                            <select id="filtro-categoria-insumos" onchange="filtrarInsumos()" class="p-2 border border-gray-300 rounded-md text-sm">
+                                <option value="">Todas as categorias</option>
+                                <option value="proteina">Proteína</option>
+                                <option value="carboidrato">Carboidrato</option>
+                                <option value="salada">Salada</option>
+                                <option value="outros">Outros</option>
+                            </select>
                         </div>
                     </div>
 
@@ -1879,8 +1888,13 @@
         // FUNÇÕES DE FILTRO
         function filtrarInsumos() {
             const filtro = document.getElementById('filtro-insumos').value.toLowerCase();
+            const catFiltro = document.getElementById('filtro-categoria-insumos')?.value || '';
             const todosInsumos = window.appState.insumosCache();
-            const insumosFiltrados = todosInsumos.filter(insumo => insumo.nome.toLowerCase().includes(filtro));
+            const insumosFiltrados = todosInsumos.filter(insumo => {
+                const matchNome = insumo.nome.toLowerCase().includes(filtro);
+                const matchCat = !catFiltro || (insumo.categoria || 'outros') === catFiltro;
+                return matchNome && matchCat;
+            });
             renderInsumos(insumosFiltrados);
         }
 
