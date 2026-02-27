@@ -3328,7 +3328,7 @@ Faça a análise completa de mercado conforme suas instruções.`;
         function renderMontador() {
             const container = document.getElementById('montador-componentes');
             if (!container) return;
-            const categorias = getCategoriasInsumo().filter(c => c.id !== 'outros');
+            const categorias = getCategoriasInsumo();
 
             let html = '';
             categorias.forEach(cat => {
@@ -3472,7 +3472,7 @@ Faça a análise completa de mercado conforme suas instruções.`;
             if (!resumoContainer || !canaisContainer) return;
 
             // Calcular custos de cada categoria dinamicamente
-            const categorias = getCategoriasInsumo().filter(c => c.id !== 'outros');
+            const categorias = getCategoriasInsumo();
             const custosPorCategoria = {};
             let custoEmbalagens = 0;
 
@@ -3976,7 +3976,9 @@ Faça a análise completa de mercado conforme suas instruções.`;
 
             // Custo bancado pelo restaurante = desconto total - o que o iFood paga
             const custoBancadoRestaurante = desconto - subsidio;
-            const custoProduto = calcularCustoProduto(ultimoCalculo.produtoId);
+            const custoInsumosProduto = calcularCustoProduto(ultimoCalculo.produtoId);
+            const custoEmbalagensProduto = calcularCustoEmbalagensProduto(ultimoCalculo.produtoId);
+            const custoProduto = custoInsumosProduto + custoEmbalagensProduto;
 
             let htmlResult = `<h4 class="font-semibold text-lg mb-3">Resultado da Simulação de Promoção para "${ultimoCalculo.produtoNome}"</h4>`;
 
@@ -4109,8 +4111,12 @@ Faça a análise completa de mercado conforme suas instruções.`;
             htmlResult += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
             for (const canalNome in ultimoCalculo.canais) {
                 const canal = ultimoCalculo.canais[canalNome];
-                const novoPrecoBase = canal.liquidoOriginal + custoFreteAbsorvido;
-                const novoPrecoFinal = novoPrecoBase / (1 - canal.taxasPercentual);
+                // Para embutir o frete, precisamos que o novo custo de insumos inclua o frete absorvido
+                // Fórmula: custoInsumos + freteAbsorvido dividido pelo denominador (1 - taxas - custoOp% - margem) + embalagens
+                const denominadorCanal = 1 - canal.taxasPercentual - ultimoCalculo.custoOpPercentual - ultimoCalculo.margemLucro;
+                const novoPrecoFinal = denominadorCanal > 0
+                    ? ((ultimoCalculo.custoInsumos + custoFreteAbsorvido) / denominadorCanal) + ultimoCalculo.custoEmbalagens
+                    : 0;
                 const dadosFrete = {
                     nomeProduto: ultimoCalculo.produtoNome,
                     precoOriginal: canal.precoFinal,
