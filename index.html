@@ -290,7 +290,7 @@
 
     <div id="app" class="container mx-auto p-4 md:p-8 hidden" style="display:none;">
         <header class="mb-4">
-            <div id="user-info" class="hidden flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-4">
+            <div id="user-info" class="hidden flex flex-wrap justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-4 gap-2">
                 <div class="flex items-center gap-3">
                     <!-- Botao Dashboard no canto esquerdo -->
                     <button onclick="changeTab('dashboard')" class="tab-button dashboard-btn py-2 px-4 text-white bg-green-600 hover:bg-green-700 rounded-lg font-semibold shadow-md focus:outline-none transition-colors text-sm">
@@ -303,7 +303,7 @@
                         <span id="user-email" class="text-xs text-gray-400"></span>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <!-- Botoes Backup -->
                     <button onclick="exportarDados()" class="bg-blue-500 text-white py-2 px-3 rounded-lg hover:bg-blue-600 transition-colors text-sm" title="Exportar backup dos dados">
                         <i class="fas fa-download mr-1"></i> Backup
@@ -2140,8 +2140,8 @@
                         <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
                         <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço Compra</th>
                         <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Desperdício</th>
-                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">FC</th>
-                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Real</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">FC / Cocção</th>
+                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Real (c/ FC + Cocção)</th>
                         <th class="py-3 px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                     </tr>
                 </thead>
@@ -2152,9 +2152,13 @@
                 const despPerc = parseFloat(insumo.percentualDesperdicio) || 0;
                 const rendimento = 1 - despPerc;
                 const fc = rendimento > 0 ? (1 / rendimento) : 0;
-                const custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
+                let custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
+                // Aplicar índice de cocção
+                const ic = insumo.indiceCoccao;
+                if (ic && ic > 0 && ic < 1) custoReal = custoReal / ic;
                 const unidadeCompra = insumo.unidadeCompra || 'un';
                 const custoPorUnidade = parseFloat(insumo.qtdCompra) > 0 ? custoReal / parseFloat(insumo.qtdCompra) : 0;
+                const temCoccao = ic && ic > 0 && ic < 1;
                 // Cor do badge de desperdício
                 const despClass = despPerc > 0.40 ? 'bg-red-100 text-red-800' : despPerc > 0.20 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
                 const fcClass = fc > 1.5 ? 'text-red-600 font-bold' : fc > 1.2 ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold';
@@ -2176,10 +2180,12 @@
                     </td>
                     <td class="py-3 px-4 whitespace-nowrap text-center">
                         <span class="${fcClass}">${fc.toFixed(2)}</span>
+                        ${temCoccao ? `<div class="text-xs text-orange-500 mt-0.5"><i class="fas fa-fire"></i> ${(ic * 100).toFixed(0)}%</div>` : ''}
                     </td>
                     <td class="py-3 px-4 whitespace-nowrap">
                         <div class="font-bold text-indigo-600">R$ ${custoReal.toFixed(2)} / ${insumo.qtdCompra} ${unidadeCompra}</div>
                         <div class="text-xs text-gray-500">R$ ${custoPorUnidade.toFixed(4)} / ${unidadeCompra}</div>
+                        ${temCoccao ? `<div class="text-xs text-orange-500"><i class="fas fa-fire mr-1"></i>c/ cocção</div>` : ''}
                     </td>
                     <td class="py-3 px-4 whitespace-nowrap text-right text-sm font-medium">
                         <button onclick="abrirModalInsumo('${insumo.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fas fa-edit"></i></button>
@@ -2385,8 +2391,9 @@
                 alert(`Erro: A soma do Custo Operacional (${(custoOpPercentual * 100).toFixed(2)}%) e da Margem de Lucro (${(margemLucro * 100).toFixed(2)}%) não pode ser maior ou igual a 100%.`);
                 return;
             }
-            // Markup apenas sobre insumos; embalagem é repasse direto
-            const precoVendaBase = (custoInsumos / denominadorBase) + custoEmbalagens;
+            // Embalagem incluída no custo total para garantir margem real
+            const custoTotal = custoInsumos + custoEmbalagens;
+            const precoVendaBase = custoTotal / denominadorBase;
             const custoProduto = custoInsumos + custoEmbalagens;
             const resumoContainer = document.getElementById('resumo-produto');
             const embalagemInfo = custoEmbalagens > 0 ? `
@@ -2401,7 +2408,7 @@
                     <div><p class="text-sm text-gray-500">Margem de Lucro</p><p class="font-bold text-lg text-gray-800">${(margemLucro * 100).toFixed(2)}%</p></div>
                     <div><p class="text-sm text-gray-500">Preço Base (Balcão)</p><p class="font-bold text-lg text-green-600">R$ ${precoVendaBase.toFixed(2)}</p></div>
                 </div>
-                ${custoEmbalagens > 0 ? '<p class="text-xs text-gray-400 mt-2 text-center"><i class="fas fa-info-circle mr-1"></i>Embalagem somada como repasse direto, sem markup.</p>' : ''}
+                ${custoEmbalagens > 0 ? '<p class="text-xs text-gray-400 mt-2 text-center"><i class="fas fa-info-circle mr-1"></i>Embalagem incluída no custo total para garantir a margem de lucro desejada.</p>' : ''}
             `;
             const tabelaContainer = document.getElementById('tabela-precos');
             const table = document.createElement('table');
@@ -2435,13 +2442,12 @@
                 const taxaTransacao = parseFloat(canal.taxaTransacao);
                 const taxasTotais = taxaComissao + taxaTransacao;
 
-                // Markup divisor apenas sobre insumos; embalagem é repasse direto
                 const denominadorCanal = 1 - taxasTotais - custoOpPercentual - margemLucro;
                 const inviavel = denominadorCanal <= 0;
-                const precoFinal = inviavel ? 0 : (custoInsumos / denominadorCanal) + custoEmbalagens;
+                const precoFinal = inviavel ? 0 : custoTotal / denominadorCanal;
                 const recebidoCanal = precoFinal * (1 - taxasTotais);
                 const custoOpPorPrato = precoFinal * custoOpPercentual;
-                const lucroCanal = recebidoCanal - custoInsumos - custoEmbalagens - custoOpPorPrato;
+                const lucroCanal = recebidoCanal - custoTotal - custoOpPorPrato;
 
                 ultimoCalculo.canais[canal.nome] = {
                     precoFinal: precoFinal,
@@ -3322,7 +3328,7 @@ Faça a análise completa de mercado conforme suas instruções.`;
         function renderMontador() {
             const container = document.getElementById('montador-componentes');
             if (!container) return;
-            const categorias = getCategoriasInsumo().filter(c => c.id !== 'outros');
+            const categorias = getCategoriasInsumo();
 
             let html = '';
             categorias.forEach(cat => {
@@ -3466,7 +3472,7 @@ Faça a análise completa de mercado conforme suas instruções.`;
             if (!resumoContainer || !canaisContainer) return;
 
             // Calcular custos de cada categoria dinamicamente
-            const categorias = getCategoriasInsumo().filter(c => c.id !== 'outros');
+            const categorias = getCategoriasInsumo();
             const custosPorCategoria = {};
             let custoEmbalagens = 0;
 
@@ -3536,9 +3542,9 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 if (denom <= 0) {
                     canaisHtml += `<div class="flex justify-between items-center p-2 bg-red-50 rounded-lg"><span class="text-sm font-medium text-gray-700">${canal.nome}</span><span class="text-xs text-red-600 font-semibold">Inviável</span></div>`;
                 } else {
-                    const preco = (custoInsumos / denom) + custoEmbalagens;
+                    const preco = custoTotal / denom;
                     const recebido = preco * (1 - taxas);
-                    const lucro = recebido - custoInsumos - custoEmbalagens - (preco * custoOpPerc);
+                    const lucro = recebido - custoTotal - (preco * custoOpPerc);
                     canaisHtml += `
                         <div class="p-3 bg-gray-50 rounded-lg">
                             <div class="flex justify-between items-center">
@@ -3970,7 +3976,9 @@ Faça a análise completa de mercado conforme suas instruções.`;
 
             // Custo bancado pelo restaurante = desconto total - o que o iFood paga
             const custoBancadoRestaurante = desconto - subsidio;
-            const custoProduto = calcularCustoProduto(ultimoCalculo.produtoId);
+            const custoInsumosProduto = calcularCustoProduto(ultimoCalculo.produtoId);
+            const custoEmbalagensProduto = calcularCustoEmbalagensProduto(ultimoCalculo.produtoId);
+            const custoProduto = custoInsumosProduto + custoEmbalagensProduto;
 
             let htmlResult = `<h4 class="font-semibold text-lg mb-3">Resultado da Simulação de Promoção para "${ultimoCalculo.produtoNome}"</h4>`;
 
@@ -4103,8 +4111,11 @@ Faça a análise completa de mercado conforme suas instruções.`;
             htmlResult += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
             for (const canalNome in ultimoCalculo.canais) {
                 const canal = ultimoCalculo.canais[canalNome];
-                const novoPrecoBase = canal.liquidoOriginal + custoFreteAbsorvido;
-                const novoPrecoFinal = novoPrecoBase / (1 - canal.taxasPercentual);
+                // Fórmula: (custoTotal + freteAbsorvido) / (1 - taxas - custoOp% - margem)
+                const denominadorCanal = 1 - canal.taxasPercentual - ultimoCalculo.custoOpPercentual - ultimoCalculo.margemLucro;
+                const novoPrecoFinal = denominadorCanal > 0
+                    ? (ultimoCalculo.custoProduto + custoFreteAbsorvido) / denominadorCanal
+                    : 0;
                 const dadosFrete = {
                     nomeProduto: ultimoCalculo.produtoNome,
                     precoOriginal: canal.precoFinal,
