@@ -563,34 +563,9 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Coluna esquerda: Seleção de componentes -->
-                    <div class="lg:col-span-2 space-y-4">
-                        <!-- Proteínas -->
-                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-red-400">
-                            <h3 class="text-lg font-semibold text-red-700 mb-3"><i class="fas fa-drumstick-bite mr-2"></i>Proteína</h3>
-                            <div id="montador-proteinas" class="space-y-2"></div>
-                            <button type="button" onclick="adicionarComponenteMontador('proteina')" class="mt-2 text-sm text-red-600 hover:text-red-800 font-medium">+ Adicionar proteína</button>
-                        </div>
-
-                        <!-- Carboidratos -->
-                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-yellow-400">
-                            <h3 class="text-lg font-semibold text-yellow-700 mb-3"><i class="fas fa-bread-slice mr-2"></i>Carboidratos</h3>
-                            <div id="montador-carboidratos" class="space-y-2"></div>
-                            <button type="button" onclick="adicionarComponenteMontador('carboidrato')" class="mt-2 text-sm text-yellow-600 hover:text-yellow-800 font-medium">+ Adicionar carboidrato</button>
-                        </div>
-
-                        <!-- Salada -->
-                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-green-400">
-                            <h3 class="text-lg font-semibold text-green-700 mb-3"><i class="fas fa-leaf mr-2"></i>Salada</h3>
-                            <div id="montador-saladas" class="space-y-2"></div>
-                            <button type="button" onclick="adicionarComponenteMontador('salada')" class="mt-2 text-sm text-green-600 hover:text-green-800 font-medium">+ Adicionar salada</button>
-                        </div>
-
-                        <!-- Embalagens -->
-                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-indigo-400">
-                            <h3 class="text-lg font-semibold text-indigo-700 mb-3"><i class="fas fa-box mr-2"></i>Embalagens</h3>
-                            <div id="montador-embalagens" class="space-y-2"></div>
-                        </div>
+                    <!-- Coluna esquerda: Seleção de componentes (dinâmico) -->
+                    <div id="montador-componentes" class="lg:col-span-2 space-y-4">
+                        <!-- Gerado dinamicamente por renderMontador() -->
                     </div>
 
                     <!-- Coluna direita: Resultado -->
@@ -682,9 +657,14 @@
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-700">Gestão de Insumos</h2>
-                        <button id="btn-novo-insumo" onclick="abrirModalInsumo()" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors" disabled>
-                            <i class="fas fa-plus mr-2"></i> Novo Insumo
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="abrirGerenciarCategorias()" class="bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors">
+                                <i class="fas fa-tags mr-2"></i> Categorias
+                            </button>
+                            <button id="btn-novo-insumo" onclick="abrirModalInsumo()" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors" disabled>
+                                <i class="fas fa-plus mr-2"></i> Novo Insumo
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-4">
@@ -697,10 +677,6 @@
                             </div>
                             <select id="filtro-categoria-insumos" onchange="filtrarInsumos()" class="p-2 border border-gray-300 rounded-md text-sm">
                                 <option value="">Todas as categorias</option>
-                                <option value="proteina">Proteína</option>
-                                <option value="carboidrato">Carboidrato</option>
-                                <option value="salada">Salada</option>
-                                <option value="outros">Outros</option>
                             </select>
                         </div>
                     </div>
@@ -1886,7 +1862,15 @@
 
     <script>
         // FUNÇÕES DE FILTRO
+        function atualizarSelectCategorias() {
+            const select = document.getElementById('filtro-categoria-insumos');
+            if (!select) return;
+            const valorAtual = select.value;
+            const cats = getCategoriasInsumo();
+            select.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c => `<option value="${c.id}" ${c.id === valorAtual ? 'selected' : ''}>${c.nome}</option>`).join('');
+        }
         function filtrarInsumos() {
+            atualizarSelectCategorias();
             const filtro = document.getElementById('filtro-insumos').value.toLowerCase();
             const catFiltro = document.getElementById('filtro-categoria-insumos')?.value || '';
             const todosInsumos = window.appState.insumosCache();
@@ -2176,13 +2160,12 @@
                 const fcClass = fc > 1.5 ? 'text-red-600 font-bold' : fc > 1.2 ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold';
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-gray-50';
-                const catBadges = { proteina: 'bg-red-100 text-red-700', carboidrato: 'bg-yellow-100 text-yellow-700', salada: 'bg-green-100 text-green-700', outros: 'bg-gray-100 text-gray-600' };
-                const catLabels = { proteina: 'Proteína', carboidrato: 'Carboidrato', salada: 'Salada', outros: 'Outros' };
                 const cat = insumo.categoria || 'outros';
+                const catInfo = getCategoriaById(cat);
                 tr.innerHTML = `
                     <td class="py-3 px-4 whitespace-nowrap">
                         <div class="font-medium text-gray-900">${insumo.nome}</div>
-                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium ${catBadges[cat]}">${catLabels[cat]}</span>
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-${catInfo.cor}-100 text-${catInfo.cor}-700"><i class="fas fa-${catInfo.icone} mr-1"></i>${catInfo.nome}</span>
                     </td>
                     <td class="py-3 px-4 whitespace-nowrap">
                         <div class="text-gray-700">R$ ${parseFloat(insumo.precoCompra).toFixed(2)}</div>
@@ -2983,9 +2966,8 @@ Faça a análise completa de mercado conforme suas instruções.`;
             const modalContent = document.getElementById('modal-content');
             const unidades = ['kg', 'g', 'L', 'ml', 'un'];
             const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === (insumo.unidadeCompra || 'kg') ? 'selected' : ''}>${u}</option>`).join('');
-            const categorias = ['proteina', 'carboidrato', 'salada', 'outros'];
-            const categoriasLabels = { proteina: 'Proteína', carboidrato: 'Carboidrato', salada: 'Salada', outros: 'Outros' };
-            const categoriasOptions = categorias.map(c => `<option value="${c}" ${c === (insumo.categoria || 'outros') ? 'selected' : ''}>${categoriasLabels[c]}</option>`).join('');
+            const categorias = getCategoriasInsumo();
+            const categoriasOptions = categorias.map(c => `<option value="${c.id}" ${c.id === (insumo.categoria || 'outros') ? 'selected' : ''}>${c.nome}</option>`).join('');
             const despVal = (insumo.percentualDesperdicio || 0) * 100;
             const fcVal = despVal < 100 ? (1 / (1 - despVal / 100)).toFixed(2) : '0.00';
             const indiceCoccao = insumo.indiceCoccao !== undefined ? (insumo.indiceCoccao * 100).toFixed(0) : '';
@@ -3003,8 +2985,8 @@ Faça a análise completa de mercado conforme suas instruções.`;
                         <div id="preco-ia-resultado" class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md hidden"></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div><label class="block text-sm font-medium text-gray-700">Preço de Compra (R$)</label><input type="number" step="0.01" name="precoCompra" value="${insumo.precoCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
-                        <div><label class="block text-sm font-medium text-gray-700">Qtd. Compra</label><input type="number" step="0.001" name="qtdCompra" value="${insumo.qtdCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Preço de Compra (R$)</label><input type="number" step="0.01" name="precoCompra" value="${insumo.precoCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md" oninput="atualizarFCPreview()"></div>
+                        <div><label class="block text-sm font-medium text-gray-700">Qtd. Compra</label><input type="number" step="0.001" name="qtdCompra" value="${insumo.qtdCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md" oninput="atualizarFCPreview()"></div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Unidade de Compra</label>
                             <select name="unidadeCompra" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
@@ -3047,15 +3029,16 @@ Faça a análise completa de mercado conforme suas instruções.`;
                                 <label class="block text-sm font-medium text-gray-700">Rendimento após cocção (%)
                                     <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Quanto sobra após cozinhar. Ex: 1kg de carne assada vira 600g = 60%. Deixe vazio para ignorar.</span></span>
                                 </label>
-                                <input type="number" name="indiceCoccao" value="${indiceCoccao}" min="1" max="100" placeholder="Ex: 70 (opcional)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                                <input type="number" name="indiceCoccao" value="${indiceCoccao}" min="1" max="100" placeholder="Ex: 70 (opcional)" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" oninput="atualizarFCPreview()">
                                 <p class="text-xs text-gray-500 mt-1">Carnes gordurosas: 40-50% | Carnes magras: 60-70% | Legumes: 80-90%</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Custo Real Estimado</label>
                                 <div id="custo-real-preview" class="mt-1 p-2 bg-white border border-gray-300 rounded-md text-lg font-bold text-green-600">
-                                    R$ ${(parseFloat(insumo.precoCompra || 0) / (1 - (insumo.percentualDesperdicio || 0))).toFixed(2)}
+                                    R$ ${(() => { const p = parseFloat(insumo.precoCompra || 0); const r = 1 - (insumo.percentualDesperdicio || 0); let c = r > 0 ? p / r : p; const ic = insumo.indiceCoccao; if (ic && ic > 0 && ic < 1) c = c / ic; return c.toFixed(2); })()}
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">Preço com FC aplicado (e cocção, se informada).</p>
+                                <p class="text-xs text-gray-500 mt-1">Preço com FC + cocção aplicados. Este é o custo real do insumo.</p>
+                                <div id="custo-coccao-detalhe" class="text-xs text-orange-600 mt-1 ${indiceCoccao ? '' : 'hidden'}"></div>
                             </div>
                         </div>
                     </div>
@@ -3153,9 +3136,23 @@ Faça a análise completa de mercado conforme suas instruções.`;
             }
             const custoPreview = document.getElementById('custo-real-preview');
             if (custoPreview && preco > 0) {
-                let custoReal = rendimento > 0 ? preco / rendimento : preco;
-                if (ic > 0 && ic < 100) custoReal = custoReal / (ic / 100);
+                let custoComFC = rendimento > 0 ? preco / rendimento : preco;
+                let custoReal = custoComFC;
+                if (ic > 0 && ic < 100) custoReal = custoComFC / (ic / 100);
                 custoPreview.textContent = `R$ ${custoReal.toFixed(2)}`;
+                custoPreview.className = 'mt-1 p-2 bg-white border border-gray-300 rounded-md text-lg font-bold ' +
+                    (custoReal > preco * 2 ? 'text-red-600' : 'text-green-600');
+            }
+            const detalhe = document.getElementById('custo-coccao-detalhe');
+            if (detalhe) {
+                if (ic > 0 && ic < 100 && preco > 0) {
+                    const custoSemCoccao = rendimento > 0 ? preco / rendimento : preco;
+                    const custoComCoccao = custoSemCoccao / (ic / 100);
+                    detalhe.classList.remove('hidden');
+                    detalhe.innerHTML = `<i class="fas fa-fire mr-1"></i>Sem cocção: R$ ${custoSemCoccao.toFixed(2)} → Com cocção (${ic}%): <strong>R$ ${custoComCoccao.toFixed(2)}</strong> (+R$ ${(custoComCoccao - custoSemCoccao).toFixed(2)})`;
+                } else {
+                    detalhe.classList.add('hidden');
+                }
             }
         }
 
@@ -3194,58 +3191,201 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 alert("Ocorreu um erro ao salvar o insumo. Verifique sua conexão e os dados inseridos.");
             }
         }
+        // === CATEGORIAS DE INSUMOS ===
+        const categoriasDefault = [
+            { id: 'proteina', nome: 'Proteína', cor: 'red', icone: 'drumstick-bite' },
+            { id: 'carboidrato', nome: 'Carboidrato', cor: 'yellow', icone: 'bread-slice' },
+            { id: 'salada', nome: 'Salada', cor: 'green', icone: 'leaf' },
+            { id: 'outros', nome: 'Outros', cor: 'gray', icone: 'ellipsis-h' }
+        ];
+
+        function getCategoriasInsumo() {
+            const config = window.appState.configCache();
+            return config.categoriasInsumo || categoriasDefault;
+        }
+
+        function getCategoriaById(catId) {
+            const categorias = getCategoriasInsumo();
+            return categorias.find(c => c.id === catId) || { id: catId, nome: catId, cor: 'gray', icone: 'tag' };
+        }
+
+        const coresDisponiveis = ['red', 'blue', 'green', 'yellow', 'purple', 'pink', 'indigo', 'teal', 'orange', 'cyan'];
+        const iconesDisponiveis = [
+            { id: 'drumstick-bite', label: 'Carne' }, { id: 'bread-slice', label: 'Pão' },
+            { id: 'leaf', label: 'Folha' }, { id: 'fish', label: 'Peixe' },
+            { id: 'cheese', label: 'Queijo' }, { id: 'pepper-hot', label: 'Pimenta' },
+            { id: 'carrot', label: 'Cenoura' }, { id: 'egg', label: 'Ovo' },
+            { id: 'ice-cream', label: 'Sorvete' }, { id: 'cookie', label: 'Cookie' },
+            { id: 'glass-water', label: 'Bebida' }, { id: 'tag', label: 'Tag' }
+        ];
+
+        window.abrirGerenciarCategorias = function() {
+            const modalContent = document.getElementById('modal-content');
+            const categorias = getCategoriasInsumo();
+            const renderLista = () => {
+                const cats = getCategoriasInsumo();
+                let html = '';
+                cats.forEach((cat, i) => {
+                    const isDefault = ['proteina', 'carboidrato', 'salada', 'outros'].includes(cat.id);
+                    html += `
+                        <div class="flex items-center gap-3 p-3 bg-${cat.cor}-50 border border-${cat.cor}-200 rounded-lg">
+                            <i class="fas fa-${cat.icone} text-${cat.cor}-600 text-lg w-6 text-center"></i>
+                            <span class="flex-1 font-medium text-gray-800">${cat.nome}</span>
+                            <span class="text-xs text-gray-400">${cat.id}</span>
+                            ${!isDefault ? `<button onclick="removerCategoria('${cat.id}')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>` : '<span class="text-xs text-gray-400 italic">padrão</span>'}
+                        </div>
+                    `;
+                });
+                return html;
+            };
+            modalContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-6"><i class="fas fa-tags text-indigo-500 mr-2"></i>Gerenciar Categorias</h2>
+                <div id="lista-categorias-modal" class="space-y-2 mb-6">
+                    ${renderLista()}
+                </div>
+                <div class="border-t border-gray-200 pt-4">
+                    <h3 class="text-sm font-bold text-gray-700 mb-3">Adicionar Nova Categoria</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Nome</label>
+                            <input type="text" id="nova-cat-nome" placeholder="Ex: Molho, Guarnição..." class="block w-full p-2 border border-gray-300 rounded-md text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Cor</label>
+                            <select id="nova-cat-cor" class="block w-full p-2 border border-gray-300 rounded-md text-sm">
+                                ${coresDisponiveis.map(c => `<option value="${c}">${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Ícone</label>
+                            <select id="nova-cat-icone" class="block w-full p-2 border border-gray-300 rounded-md text-sm">
+                                ${iconesDisponiveis.map(ic => `<option value="${ic.id}">${ic.label}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="adicionarCategoria()" class="mt-3 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors text-sm">
+                        <i class="fas fa-plus mr-1"></i> Adicionar
+                    </button>
+                </div>
+                <div class="flex justify-end pt-4 mt-4 border-t border-gray-200">
+                    <button onclick="fecharModal()" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Fechar</button>
+                </div>
+            `;
+            const _mb = document.getElementById('modal-backdrop');
+            _mb.classList.remove('hidden');
+            _mb.style.display = 'flex';
+        }
+
+        window.adicionarCategoria = async function() {
+            const nome = document.getElementById('nova-cat-nome').value.trim();
+            if (!nome) { alert('Informe o nome da categoria.'); return; }
+            const cor = document.getElementById('nova-cat-cor').value;
+            const icone = document.getElementById('nova-cat-icone').value;
+            const id = nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_');
+
+            const categorias = getCategoriasInsumo();
+            if (categorias.find(c => c.id === id)) { alert('Já existe uma categoria com esse nome.'); return; }
+
+            categorias.push({ id, nome, cor, icone });
+
+            try {
+                const { getCollectionRef, doc, updateDoc, setDoc } = window.appState;
+                const configRef = doc(getCollectionRef('configuracoes'), 'geral');
+                await setDoc(configRef, { categoriasInsumo: categorias }, { merge: true });
+                abrirGerenciarCategorias(); // Reabrir para atualizar
+            } catch (e) {
+                console.error('Erro ao salvar categoria:', e);
+                alert('Erro ao salvar categoria.');
+            }
+        }
+
+        window.removerCategoria = async function(catId) {
+            if (!confirm('Remover esta categoria? Insumos com ela ficarão como "Outros".')) return;
+            const categorias = getCategoriasInsumo().filter(c => c.id !== catId);
+            try {
+                const { getCollectionRef, doc, setDoc } = window.appState;
+                const configRef = doc(getCollectionRef('configuracoes'), 'geral');
+                await setDoc(configRef, { categoriasInsumo: categorias }, { merge: true });
+                abrirGerenciarCategorias();
+            } catch (e) {
+                console.error('Erro ao remover categoria:', e);
+                alert('Erro ao remover.');
+            }
+        }
+
         // === MONTADOR DE MARMITA ===
         window.montadorState = {
-            proteinas: [],
-            carboidratos: [],
-            saladas: [],
+            categorias: {},  // { categoriaId: [{ insumoId, peso, unidade }] }
             embalagens: []
         };
 
         function renderMontador() {
-            renderMontadorComponentes('proteina', 'montador-proteinas');
-            renderMontadorComponentes('carboidrato', 'montador-carboidratos');
-            renderMontadorComponentes('salada', 'montador-saladas');
+            const container = document.getElementById('montador-componentes');
+            if (!container) return;
+            const categorias = getCategoriasInsumo().filter(c => c.id !== 'outros');
+
+            let html = '';
+            categorias.forEach(cat => {
+                html += `
+                    <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-${cat.cor}-400">
+                        <h3 class="text-lg font-semibold text-${cat.cor}-700 mb-3"><i class="fas fa-${cat.icone} mr-2"></i>${cat.nome}</h3>
+                        <div id="montador-cat-${cat.id}" class="space-y-2"></div>
+                        <button type="button" onclick="adicionarComponenteMontador('${cat.id}')" class="mt-2 text-sm text-${cat.cor}-600 hover:text-${cat.cor}-800 font-medium">+ Adicionar ${cat.nome.toLowerCase()}</button>
+                    </div>
+                `;
+            });
+            html += `
+                <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-indigo-400">
+                    <h3 class="text-lg font-semibold text-indigo-700 mb-3"><i class="fas fa-box mr-2"></i>Embalagens</h3>
+                    <div id="montador-embalagens" class="space-y-2"></div>
+                </div>
+            `;
+            container.innerHTML = html;
+
+            // Renderizar itens de cada categoria
+            categorias.forEach(cat => {
+                renderMontadorComponentes(cat.id, `montador-cat-${cat.id}`);
+            });
             renderMontadorEmbalagens();
             calcularMontador();
         }
 
-        function renderMontadorComponentes(categoria, containerId) {
+        function renderMontadorComponentes(categoriaId, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
-            const stateKey = categoria === 'proteina' ? 'proteinas' : categoria === 'carboidrato' ? 'carboidratos' : 'saladas';
-            const items = window.montadorState[stateKey];
-            const insumos = window.appState.insumosCache().filter(i => (i.categoria || 'outros') === categoria).sort((a,b) => a.nome.localeCompare(b.nome));
+            const items = window.montadorState.categorias[categoriaId] || [];
+            const insumos = window.appState.insumosCache().filter(i => (i.categoria || 'outros') === categoriaId).sort((a,b) => a.nome.localeCompare(b.nome));
 
             if (!items.length) {
                 container.innerHTML = `<p class="text-sm text-gray-400 italic">Nenhum item adicionado.</p>`;
+                if (!insumos.length) {
+                    container.innerHTML += `<p class="text-xs text-orange-500 mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>Nenhum insumo com esta categoria. Edite seus insumos e atribua a categoria.</p>`;
+                }
                 return;
             }
 
             container.innerHTML = '';
             items.forEach((item, index) => {
                 const options = insumos.map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`).join('');
-                const insumoSel = insumos.find(i => i.id === item.insumoId);
-                const unidadeCompra = insumoSel ? insumoSel.unidadeCompra : 'g';
                 const custoItem = item.insumoId ? calcularCustoInsumo(item.insumoId, parseFloat(item.peso) || 0, item.unidade || 'g') : 0;
 
                 const div = document.createElement('div');
                 div.className = 'flex items-center gap-2 p-2 bg-gray-50 rounded-lg';
                 div.innerHTML = `
-                    <select onchange="updateMontadorItem('${stateKey}', ${index}, 'insumoId', this.value)" class="flex-1 p-2 border border-gray-300 rounded-md text-sm">
+                    <select onchange="updateMontadorItem('${categoriaId}', ${index}, 'insumoId', this.value)" class="flex-1 p-2 border border-gray-300 rounded-md text-sm">
                         <option value="">Selecione...</option>
                         ${options}
                     </select>
-                    <input type="number" step="1" min="1" value="${item.peso || ''}" onchange="updateMontadorItem('${stateKey}', ${index}, 'peso', this.value)" class="w-20 p-2 border border-gray-300 rounded-md text-sm text-center" placeholder="Peso">
+                    <input type="number" step="1" min="1" value="${item.peso || ''}" onchange="updateMontadorItem('${categoriaId}', ${index}, 'peso', this.value)" class="w-20 p-2 border border-gray-300 rounded-md text-sm text-center" placeholder="Peso">
                     <span class="text-xs text-gray-500 w-6">${item.unidade || 'g'}</span>
                     <span class="text-xs font-semibold text-gray-700 w-20 text-right">R$ ${custoItem.toFixed(2)}</span>
-                    <button onclick="removerMontadorItem('${stateKey}', ${index})" class="text-red-400 hover:text-red-600 p-1"><i class="fas fa-times"></i></button>
+                    <button onclick="removerMontadorItem('${categoriaId}', ${index})" class="text-red-400 hover:text-red-600 p-1"><i class="fas fa-times"></i></button>
                 `;
                 container.appendChild(div);
             });
 
             if (!insumos.length) {
-                container.innerHTML += `<p class="text-xs text-orange-500 mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>Nenhum insumo com categoria "${categoria}" cadastrado. Edite seus insumos e atribua a categoria.</p>`;
+                container.innerHTML += `<p class="text-xs text-orange-500 mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>Nenhum insumo com esta categoria. Edite seus insumos e atribua a categoria.</p>`;
             }
         }
 
@@ -3275,31 +3415,30 @@ Faça a análise completa de mercado conforme suas instruções.`;
             });
         }
 
-        window.adicionarComponenteMontador = function(categoria) {
-            const stateKey = categoria === 'proteina' ? 'proteinas' : categoria === 'carboidrato' ? 'carboidratos' : 'saladas';
-            const unidadePadrao = categoria === 'salada' ? 'g' : 'g';
-            window.montadorState[stateKey].push({ insumoId: '', peso: '', unidade: unidadePadrao });
+        window.adicionarComponenteMontador = function(categoriaId) {
+            if (!window.montadorState.categorias[categoriaId]) window.montadorState.categorias[categoriaId] = [];
+            window.montadorState.categorias[categoriaId].push({ insumoId: '', peso: '', unidade: 'g' });
             renderMontador();
         }
 
-        window.updateMontadorItem = function(stateKey, index, field, value) {
-            window.montadorState[stateKey][index][field] = value;
+        window.updateMontadorItem = function(categoriaId, index, field, value) {
+            if (!window.montadorState.categorias[categoriaId]) return;
+            window.montadorState.categorias[categoriaId][index][field] = value;
             if (field === 'insumoId') {
-                // Atualizar unidade baseada no insumo selecionado
                 const insumo = window.appState.insumosCache().find(i => i.id === value);
                 if (insumo) {
                     const uc = insumo.unidadeCompra;
-                    // Usar a menor unidade compatível para porções
-                    if (uc === 'kg') window.montadorState[stateKey][index].unidade = 'g';
-                    else if (uc === 'L') window.montadorState[stateKey][index].unidade = 'ml';
-                    else window.montadorState[stateKey][index].unidade = uc;
+                    if (uc === 'kg') window.montadorState.categorias[categoriaId][index].unidade = 'g';
+                    else if (uc === 'L') window.montadorState.categorias[categoriaId][index].unidade = 'ml';
+                    else window.montadorState.categorias[categoriaId][index].unidade = uc;
                 }
             }
             renderMontador();
         }
 
-        window.removerMontadorItem = function(stateKey, index) {
-            window.montadorState[stateKey].splice(index, 1);
+        window.removerMontadorItem = function(categoriaId, index) {
+            if (!window.montadorState.categorias[categoriaId]) return;
+            window.montadorState.categorias[categoriaId].splice(index, 1);
             renderMontador();
         }
 
@@ -3326,17 +3465,16 @@ Faça a análise completa de mercado conforme suas instruções.`;
             const canaisContainer = document.getElementById('montador-canais');
             if (!resumoContainer || !canaisContainer) return;
 
-            // Calcular custos de cada categoria
-            let custoProteinas = 0, custoCarboidratos = 0, custoSaladas = 0, custoEmbalagens = 0;
+            // Calcular custos de cada categoria dinamicamente
+            const categorias = getCategoriasInsumo().filter(c => c.id !== 'outros');
+            const custosPorCategoria = {};
+            let custoEmbalagens = 0;
 
-            window.montadorState.proteinas.forEach(item => {
-                if (item.insumoId && item.peso > 0) custoProteinas += calcularCustoInsumo(item.insumoId, parseFloat(item.peso), item.unidade || 'g');
-            });
-            window.montadorState.carboidratos.forEach(item => {
-                if (item.insumoId && item.peso > 0) custoCarboidratos += calcularCustoInsumo(item.insumoId, parseFloat(item.peso), item.unidade || 'g');
-            });
-            window.montadorState.saladas.forEach(item => {
-                if (item.insumoId && item.peso > 0) custoSaladas += calcularCustoInsumo(item.insumoId, parseFloat(item.peso), item.unidade || 'g');
+            categorias.forEach(cat => {
+                custosPorCategoria[cat.id] = 0;
+                (window.montadorState.categorias[cat.id] || []).forEach(item => {
+                    if (item.insumoId && item.peso > 0) custosPorCategoria[cat.id] += calcularCustoInsumo(item.insumoId, parseFloat(item.peso), item.unidade || 'g');
+                });
             });
 
             const embalagensCache = window.appState.embalagensCache();
@@ -3345,7 +3483,7 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 if (emb) custoEmbalagens += parseFloat(emb.valorUnitario) * (parseInt(item.quantidade) || 1);
             });
 
-            const custoInsumos = custoProteinas + custoCarboidratos + custoSaladas;
+            const custoInsumos = Object.values(custosPorCategoria).reduce((s, v) => s + v, 0);
             const custoTotal = custoInsumos + custoEmbalagens;
 
             if (custoTotal === 0) {
@@ -3354,11 +3492,17 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 return;
             }
 
+            let linhasCategorias = '';
+            categorias.forEach(cat => {
+                const custo = custosPorCategoria[cat.id] || 0;
+                if (custo > 0) {
+                    linhasCategorias += `<div class="flex justify-between"><span class="text-${cat.cor}-600"><i class="fas fa-${cat.icone} mr-1"></i>${cat.nome}</span><span class="font-semibold">R$ ${custo.toFixed(2)}</span></div>`;
+                }
+            });
+
             resumoContainer.innerHTML = `
                 <div class="space-y-1 text-sm">
-                    ${custoProteinas > 0 ? `<div class="flex justify-between"><span class="text-red-600"><i class="fas fa-drumstick-bite mr-1"></i>Proteínas</span><span class="font-semibold">R$ ${custoProteinas.toFixed(2)}</span></div>` : ''}
-                    ${custoCarboidratos > 0 ? `<div class="flex justify-between"><span class="text-yellow-600"><i class="fas fa-bread-slice mr-1"></i>Carboidratos</span><span class="font-semibold">R$ ${custoCarboidratos.toFixed(2)}</span></div>` : ''}
-                    ${custoSaladas > 0 ? `<div class="flex justify-between"><span class="text-green-600"><i class="fas fa-leaf mr-1"></i>Saladas</span><span class="font-semibold">R$ ${custoSaladas.toFixed(2)}</span></div>` : ''}
+                    ${linhasCategorias}
                     <div class="border-t border-gray-200 pt-1 flex justify-between"><span class="text-gray-600 font-medium">Subtotal Insumos</span><span class="font-bold">R$ ${custoInsumos.toFixed(2)}</span></div>
                     ${custoEmbalagens > 0 ? `<div class="flex justify-between"><span class="text-indigo-600"><i class="fas fa-box mr-1"></i>Embalagens (repasse)</span><span class="font-semibold">R$ ${custoEmbalagens.toFixed(2)}</span></div>` : ''}
                     <div class="border-t-2 border-gray-300 pt-2 flex justify-between text-base"><span class="font-bold text-gray-800">Custo Total</span><span class="font-bold text-gray-800">R$ ${custoTotal.toFixed(2)}</span></div>
@@ -3414,7 +3558,7 @@ Faça a análise completa de mercado conforme suas instruções.`;
         }
 
         window.limparMontador = function() {
-            window.montadorState = { proteinas: [], carboidratos: [], saladas: [], embalagens: [] };
+            window.montadorState = { categorias: {}, embalagens: [] };
             renderMontador();
         }
 
@@ -3426,8 +3570,8 @@ Faça a análise completa de mercado conforme suas instruções.`;
 
             // Montar a receita a partir dos componentes
             const receita = [];
-            ['proteinas', 'carboidratos', 'saladas'].forEach(key => {
-                window.montadorState[key].forEach(item => {
+            Object.values(window.montadorState.categorias).forEach(items => {
+                items.forEach(item => {
                     if (item.insumoId && item.peso > 0) {
                         receita.push({ insumoId: item.insumoId, quantidade: parseFloat(item.peso), unidade: item.unidade || 'g' });
                     }
@@ -3443,8 +3587,9 @@ Faça a análise completa de mercado conforme suas instruções.`;
 
             // Montar nome sugerido
             const insumos = window.appState.insumosCache();
-            const proteina = window.montadorState.proteinas.find(p => p.insumoId);
-            const nomeProt = proteina ? insumos.find(i => i.id === proteina.insumoId)?.nome || '' : '';
+            const protItems = window.montadorState.categorias['proteina'] || [];
+            const primeiraProteina = protItems.find(p => p.insumoId);
+            const nomeProt = primeiraProteina ? insumos.find(i => i.id === primeiraProteina.insumoId)?.nome || '' : '';
             const nomeSugerido = nomeProt ? `Marmita - ${nomeProt}` : 'Marmita';
 
             const nome = prompt("Nome do produto:", nomeSugerido);
