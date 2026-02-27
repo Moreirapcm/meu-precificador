@@ -2140,8 +2140,8 @@
                         <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
                         <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço Compra</th>
                         <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Desperdício</th>
-                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">FC</th>
-                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Real</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">FC / Cocção</th>
+                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Real (c/ FC + Cocção)</th>
                         <th class="py-3 px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                     </tr>
                 </thead>
@@ -2152,9 +2152,13 @@
                 const despPerc = parseFloat(insumo.percentualDesperdicio) || 0;
                 const rendimento = 1 - despPerc;
                 const fc = rendimento > 0 ? (1 / rendimento) : 0;
-                const custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
+                let custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
+                // Aplicar índice de cocção
+                const ic = insumo.indiceCoccao;
+                if (ic && ic > 0 && ic < 1) custoReal = custoReal / ic;
                 const unidadeCompra = insumo.unidadeCompra || 'un';
                 const custoPorUnidade = parseFloat(insumo.qtdCompra) > 0 ? custoReal / parseFloat(insumo.qtdCompra) : 0;
+                const temCoccao = ic && ic > 0 && ic < 1;
                 // Cor do badge de desperdício
                 const despClass = despPerc > 0.40 ? 'bg-red-100 text-red-800' : despPerc > 0.20 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
                 const fcClass = fc > 1.5 ? 'text-red-600 font-bold' : fc > 1.2 ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold';
@@ -2176,10 +2180,12 @@
                     </td>
                     <td class="py-3 px-4 whitespace-nowrap text-center">
                         <span class="${fcClass}">${fc.toFixed(2)}</span>
+                        ${temCoccao ? `<div class="text-xs text-orange-500 mt-0.5"><i class="fas fa-fire"></i> ${(ic * 100).toFixed(0)}%</div>` : ''}
                     </td>
                     <td class="py-3 px-4 whitespace-nowrap">
                         <div class="font-bold text-indigo-600">R$ ${custoReal.toFixed(2)} / ${insumo.qtdCompra} ${unidadeCompra}</div>
                         <div class="text-xs text-gray-500">R$ ${custoPorUnidade.toFixed(4)} / ${unidadeCompra}</div>
+                        ${temCoccao ? `<div class="text-xs text-orange-500"><i class="fas fa-fire mr-1"></i>c/ cocção</div>` : ''}
                     </td>
                     <td class="py-3 px-4 whitespace-nowrap text-right text-sm font-medium">
                         <button onclick="abrirModalInsumo('${insumo.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3"><i class="fas fa-edit"></i></button>
