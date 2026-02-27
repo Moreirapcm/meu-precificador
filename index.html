@@ -2391,8 +2391,9 @@
                 alert(`Erro: A soma do Custo Operacional (${(custoOpPercentual * 100).toFixed(2)}%) e da Margem de Lucro (${(margemLucro * 100).toFixed(2)}%) não pode ser maior ou igual a 100%.`);
                 return;
             }
-            // Markup apenas sobre insumos; embalagem é repasse direto
-            const precoVendaBase = (custoInsumos / denominadorBase) + custoEmbalagens;
+            // Embalagem incluída no custo total para garantir margem real
+            const custoTotal = custoInsumos + custoEmbalagens;
+            const precoVendaBase = custoTotal / denominadorBase;
             const custoProduto = custoInsumos + custoEmbalagens;
             const resumoContainer = document.getElementById('resumo-produto');
             const embalagemInfo = custoEmbalagens > 0 ? `
@@ -2407,7 +2408,7 @@
                     <div><p class="text-sm text-gray-500">Margem de Lucro</p><p class="font-bold text-lg text-gray-800">${(margemLucro * 100).toFixed(2)}%</p></div>
                     <div><p class="text-sm text-gray-500">Preço Base (Balcão)</p><p class="font-bold text-lg text-green-600">R$ ${precoVendaBase.toFixed(2)}</p></div>
                 </div>
-                ${custoEmbalagens > 0 ? '<p class="text-xs text-gray-400 mt-2 text-center"><i class="fas fa-info-circle mr-1"></i>Embalagem somada como repasse direto, sem markup.</p>' : ''}
+                ${custoEmbalagens > 0 ? '<p class="text-xs text-gray-400 mt-2 text-center"><i class="fas fa-info-circle mr-1"></i>Embalagem incluída no custo total para garantir a margem de lucro desejada.</p>' : ''}
             `;
             const tabelaContainer = document.getElementById('tabela-precos');
             const table = document.createElement('table');
@@ -2441,13 +2442,12 @@
                 const taxaTransacao = parseFloat(canal.taxaTransacao);
                 const taxasTotais = taxaComissao + taxaTransacao;
 
-                // Markup divisor apenas sobre insumos; embalagem é repasse direto
                 const denominadorCanal = 1 - taxasTotais - custoOpPercentual - margemLucro;
                 const inviavel = denominadorCanal <= 0;
-                const precoFinal = inviavel ? 0 : (custoInsumos / denominadorCanal) + custoEmbalagens;
+                const precoFinal = inviavel ? 0 : custoTotal / denominadorCanal;
                 const recebidoCanal = precoFinal * (1 - taxasTotais);
                 const custoOpPorPrato = precoFinal * custoOpPercentual;
-                const lucroCanal = recebidoCanal - custoInsumos - custoEmbalagens - custoOpPorPrato;
+                const lucroCanal = recebidoCanal - custoTotal - custoOpPorPrato;
 
                 ultimoCalculo.canais[canal.nome] = {
                     precoFinal: precoFinal,
@@ -3542,9 +3542,9 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 if (denom <= 0) {
                     canaisHtml += `<div class="flex justify-between items-center p-2 bg-red-50 rounded-lg"><span class="text-sm font-medium text-gray-700">${canal.nome}</span><span class="text-xs text-red-600 font-semibold">Inviável</span></div>`;
                 } else {
-                    const preco = (custoInsumos / denom) + custoEmbalagens;
+                    const preco = custoTotal / denom;
                     const recebido = preco * (1 - taxas);
-                    const lucro = recebido - custoInsumos - custoEmbalagens - (preco * custoOpPerc);
+                    const lucro = recebido - custoTotal - (preco * custoOpPerc);
                     canaisHtml += `
                         <div class="p-3 bg-gray-50 rounded-lg">
                             <div class="flex justify-between items-center">
@@ -4111,11 +4111,10 @@ Faça a análise completa de mercado conforme suas instruções.`;
             htmlResult += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
             for (const canalNome in ultimoCalculo.canais) {
                 const canal = ultimoCalculo.canais[canalNome];
-                // Para embutir o frete, precisamos que o novo custo de insumos inclua o frete absorvido
-                // Fórmula: custoInsumos + freteAbsorvido dividido pelo denominador (1 - taxas - custoOp% - margem) + embalagens
+                // Fórmula: (custoTotal + freteAbsorvido) / (1 - taxas - custoOp% - margem)
                 const denominadorCanal = 1 - canal.taxasPercentual - ultimoCalculo.custoOpPercentual - ultimoCalculo.margemLucro;
                 const novoPrecoFinal = denominadorCanal > 0
-                    ? ((ultimoCalculo.custoInsumos + custoFreteAbsorvido) / denominadorCanal) + ultimoCalculo.custoEmbalagens
+                    ? (ultimoCalculo.custoProduto + custoFreteAbsorvido) / denominadorCanal
                     : 0;
                 const dadosFrete = {
                     nomeProduto: ultimoCalculo.produtoNome,
