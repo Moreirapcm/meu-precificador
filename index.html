@@ -308,7 +308,7 @@
                     <button onclick="exportarDados()" class="bg-blue-500 text-white py-2 px-3 rounded-lg hover:bg-blue-600 transition-colors text-sm" title="Exportar backup dos dados">
                         <i class="fas fa-download mr-1"></i> Backup
                     </button>
-                    <label class="bg-amber-500 text-white py-2 px-3 rounded-lg hover:bg-amber-600 transition-colors text-sm cursor-pointer" title="Importar backup">
+                    <label class="bg-yellow-600 text-white py-2 px-3 rounded-lg hover:bg-yellow-700 transition-colors text-sm cursor-pointer" title="Importar backup">
                         <i class="fas fa-upload mr-1"></i> Restaurar
                         <input type="file" accept=".json" onchange="importarDados(event)" class="hidden">
                     </label>
@@ -2205,15 +2205,14 @@
                 return;
             }
             const table = document.createElement('table');
-            table.className = 'min-w-full bg-white';
+            table.className = 'w-full bg-white table-fixed';
             table.innerHTML = `
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Insumos</th>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Embalagens</th>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Custo Total</th>
-                        <th class="py-3 px-6 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:40%">Produto</th>
+                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:20%">Custos</th>
+                        <th class="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:15%">Total</th>
+                        <th class="py-3 px-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style="width:25%">Ações</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200"></tbody>
@@ -2224,22 +2223,25 @@
                 const custoEmbalagens = calcularCustoEmbalagensProduto(produto.id);
                 const custoTotal = custoInsumos + custoEmbalagens;
                 const fotoHtml = produto.imagemUrl
-                    ? `<img src="${produto.imagemUrl}" class="w-12 h-12 rounded-lg object-cover shadow-sm">`
-                    : `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300"><i class="fas fa-utensils text-lg"></i></div>`;
+                    ? `<img src="${produto.imagemUrl}" class="w-10 h-10 rounded-lg object-cover shadow-sm">`
+                    : `<div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300"><i class="fas fa-utensils"></i></div>`;
                 const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
                 tr.innerHTML = `
-                    <td class="py-3 px-6 whitespace-nowrap">
-                        <div class="flex items-center gap-3">
+                    <td class="py-3 px-3">
+                        <div class="flex items-center gap-2">
                             ${fotoHtml}
-                            <span class="font-medium text-gray-900">${produto.nome}</span>
+                            <span class="font-medium text-gray-900 truncate">${produto.nome}</span>
                         </div>
                     </td>
-                    <td class="py-3 px-6 whitespace-nowrap text-gray-700">R$ ${custoInsumos.toFixed(2)}</td>
-                    <td class="py-3 px-6 whitespace-nowrap text-gray-700">${custoEmbalagens > 0 ? 'R$ ' + custoEmbalagens.toFixed(2) : '<span class="text-gray-400">-</span>'}</td>
-                    <td class="py-3 px-6 whitespace-nowrap font-semibold text-gray-800">R$ ${custoTotal.toFixed(2)}</td>
-                    <td class="py-3 px-6 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="abrirModalProduto('${produto.id}')" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
-                        <button onclick="deletarItem('produtos', '${produto.id}', 'produto')" class="text-red-600 hover:text-red-900">Excluir</button>
+                    <td class="py-3 px-3">
+                        <div class="text-sm text-gray-700">Insumos: R$ ${custoInsumos.toFixed(2)}</div>
+                        ${custoEmbalagens > 0 ? `<div class="text-xs text-gray-500">Embal.: R$ ${custoEmbalagens.toFixed(2)}</div>` : ''}
+                    </td>
+                    <td class="py-3 px-3 font-bold text-indigo-600">R$ ${custoTotal.toFixed(2)}</td>
+                    <td class="py-3 px-3 text-right">
+                        <button onclick="abrirModalProduto('${produto.id}')" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-semibold py-1 px-3 rounded-md text-sm mr-1"><i class="fas fa-edit mr-1"></i>Editar</button>
+                        <button onclick="deletarItem('produtos', '${produto.id}', 'produto')" class="bg-red-100 text-red-700 hover:bg-red-200 font-semibold py-1 px-3 rounded-md text-sm"><i class="fas fa-trash mr-1"></i>Excluir</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
