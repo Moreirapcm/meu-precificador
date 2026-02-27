@@ -334,6 +334,9 @@
             <button onclick="changeTab('simulador')" class="tab-button active py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-calculator mr-2"></i> Simulador de Preços
             </button>
+            <button onclick="changeTab('montador')" class="tab-button py-4 px-6 text-white bg-yellow-500 hover:bg-yellow-600 rounded-lg mx-1 font-semibold shadow-md focus:outline-none transition-colors">
+                <i class="fas fa-drumstick-bite mr-2"></i> Montador de Marmita
+            </button>
             <button onclick="changeTab('produtos')" class="tab-button py-4 px-6 text-gray-500 hover:text-indigo-600 focus:outline-none">
                 <i class="fas fa-utensils mr-2"></i> Produtos e Receitas
             </button>
@@ -545,6 +548,86 @@
                     </div>
 
                     <div id="lista-produtos" class="overflow-x-auto"></div>
+                </div>
+            </div>
+
+            <!-- MONTADOR DE MARMITA TAB -->
+            <div id="montador-tab" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-2">
+                        <div>
+                            <h2 class="text-2xl font-semibold text-gray-700"><i class="fas fa-drumstick-bite text-yellow-500 mr-2"></i>Montador de Marmita</h2>
+                            <p class="text-sm text-gray-500 mt-1">Monte a marmita selecionando os componentes e veja o preço de venda em tempo real.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Coluna esquerda: Seleção de componentes -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <!-- Proteínas -->
+                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-red-400">
+                            <h3 class="text-lg font-semibold text-red-700 mb-3"><i class="fas fa-drumstick-bite mr-2"></i>Proteína</h3>
+                            <div id="montador-proteinas" class="space-y-2"></div>
+                            <button type="button" onclick="adicionarComponenteMontador('proteina')" class="mt-2 text-sm text-red-600 hover:text-red-800 font-medium">+ Adicionar proteína</button>
+                        </div>
+
+                        <!-- Carboidratos -->
+                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-yellow-400">
+                            <h3 class="text-lg font-semibold text-yellow-700 mb-3"><i class="fas fa-bread-slice mr-2"></i>Carboidratos</h3>
+                            <div id="montador-carboidratos" class="space-y-2"></div>
+                            <button type="button" onclick="adicionarComponenteMontador('carboidrato')" class="mt-2 text-sm text-yellow-600 hover:text-yellow-800 font-medium">+ Adicionar carboidrato</button>
+                        </div>
+
+                        <!-- Salada -->
+                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-green-400">
+                            <h3 class="text-lg font-semibold text-green-700 mb-3"><i class="fas fa-leaf mr-2"></i>Salada</h3>
+                            <div id="montador-saladas" class="space-y-2"></div>
+                            <button type="button" onclick="adicionarComponenteMontador('salada')" class="mt-2 text-sm text-green-600 hover:text-green-800 font-medium">+ Adicionar salada</button>
+                        </div>
+
+                        <!-- Embalagens -->
+                        <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-indigo-400">
+                            <h3 class="text-lg font-semibold text-indigo-700 mb-3"><i class="fas fa-box mr-2"></i>Embalagens</h3>
+                            <div id="montador-embalagens" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna direita: Resultado -->
+                    <div class="space-y-4">
+                        <!-- Margem de Lucro -->
+                        <div class="bg-white p-5 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3"><i class="fas fa-percentage mr-2"></i>Margem de Lucro</h3>
+                            <input type="number" id="montador-margem" value="30" min="1" max="99" oninput="calcularMontador()" class="block w-full p-3 border border-gray-300 rounded-lg text-center text-xl font-bold text-indigo-600" placeholder="30">
+                            <p class="text-xs text-gray-500 mt-1 text-center">Percentual de lucro desejado</p>
+                        </div>
+
+                        <!-- Resumo de Custos -->
+                        <div class="bg-white p-5 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3"><i class="fas fa-receipt mr-2"></i>Resumo de Custos</h3>
+                            <div id="montador-resumo" class="space-y-2">
+                                <p class="text-center text-gray-400 text-sm">Selecione os componentes para ver o resumo</p>
+                            </div>
+                        </div>
+
+                        <!-- Preços por Canal -->
+                        <div class="bg-white p-5 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3"><i class="fas fa-store mr-2"></i>Preço de Venda por Canal</h3>
+                            <div id="montador-canais" class="space-y-2">
+                                <p class="text-center text-gray-400 text-sm">-</p>
+                            </div>
+                        </div>
+
+                        <!-- Ações -->
+                        <div class="flex flex-col gap-2">
+                            <button onclick="salvarMontadorComoProduto()" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow-md">
+                                <i class="fas fa-save mr-2"></i> Salvar como Produto
+                            </button>
+                            <button onclick="limparMontador()" class="w-full bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">
+                                <i class="fas fa-broom mr-2"></i> Limpar Tudo
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1955,6 +2038,7 @@
 
         function changeTab(tabName) {
             document.getElementById('simulador-tab').classList.add('hidden');
+            document.getElementById('montador-tab').classList.add('hidden');
             document.getElementById('produtos-tab').classList.add('hidden');
             document.getElementById('insumos-tab').classList.add('hidden');
             document.getElementById('embalagens-tab').classList.add('hidden');
@@ -1985,6 +2069,9 @@
             }
             if (tabName === 'embalagens') {
                 filtrarEmbalagens();
+            }
+            if (tabName === 'montador') {
+                renderMontador();
             }
         }
 
@@ -2075,9 +2162,13 @@
                 const fcClass = fc > 1.5 ? 'text-red-600 font-bold' : fc > 1.2 ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold';
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-gray-50';
+                const catBadges = { proteina: 'bg-red-100 text-red-700', carboidrato: 'bg-yellow-100 text-yellow-700', salada: 'bg-green-100 text-green-700', outros: 'bg-gray-100 text-gray-600' };
+                const catLabels = { proteina: 'Proteína', carboidrato: 'Carboidrato', salada: 'Salada', outros: 'Outros' };
+                const cat = insumo.categoria || 'outros';
                 tr.innerHTML = `
                     <td class="py-3 px-4 whitespace-nowrap">
                         <div class="font-medium text-gray-900">${insumo.nome}</div>
+                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium ${catBadges[cat]}">${catLabels[cat]}</span>
                     </td>
                     <td class="py-3 px-4 whitespace-nowrap">
                         <div class="text-gray-700">R$ ${parseFloat(insumo.precoCompra).toFixed(2)}</div>
@@ -2878,6 +2969,9 @@ Faça a análise completa de mercado conforme suas instruções.`;
             const modalContent = document.getElementById('modal-content');
             const unidades = ['kg', 'g', 'L', 'ml', 'un'];
             const unidadesOptions = unidades.map(u => `<option value="${u}" ${u === (insumo.unidadeCompra || 'kg') ? 'selected' : ''}>${u}</option>`).join('');
+            const categorias = ['proteina', 'carboidrato', 'salada', 'outros'];
+            const categoriasLabels = { proteina: 'Proteína', carboidrato: 'Carboidrato', salada: 'Salada', outros: 'Outros' };
+            const categoriasOptions = categorias.map(c => `<option value="${c}" ${c === (insumo.categoria || 'outros') ? 'selected' : ''}>${categoriasLabels[c]}</option>`).join('');
             const despVal = (insumo.percentualDesperdicio || 0) * 100;
             const fcVal = despVal < 100 ? (1 / (1 - despVal / 100)).toFixed(2) : '0.00';
             const indiceCoccao = insumo.indiceCoccao !== undefined ? (insumo.indiceCoccao * 100).toFixed(0) : '';
@@ -2894,13 +2988,21 @@ Faça a análise completa de mercado conforme suas instruções.`;
                         <input type="text" name="nome" value="${insumo.nome || ''}" required class="block w-full p-2 border border-gray-300 rounded-md">
                         <div id="preco-ia-resultado" class="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md hidden"></div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div><label class="block text-sm font-medium text-gray-700">Preço de Compra (R$)</label><input type="number" step="0.01" name="precoCompra" value="${insumo.precoCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
                         <div><label class="block text-sm font-medium text-gray-700">Qtd. Compra</label><input type="number" step="0.001" name="qtdCompra" value="${insumo.qtdCompra || ''}" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md"></div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Unidade de Compra</label>
                             <select name="unidadeCompra" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
                                 ${unidadesOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Categoria
+                                <span class="tooltip"><i class="fas fa-info-circle text-gray-400"></i><span class="tooltiptext">Usado no Montador de Marmita para agrupar por tipo.</span></span>
+                            </label>
+                            <select name="categoria" class="mt-1 block w-full p-2 border border-gray-300 rounded-md">
+                                ${categoriasOptions}
                             </select>
                         </div>
                     </div>
@@ -3056,7 +3158,8 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 precoCompra: parseFloat(form.precoCompra.value),
                 qtdCompra: parseFloat(form.qtdCompra.value),
                 unidadeCompra: form.unidadeCompra.value,
-                percentualDesperdicio: parseFloat(form.percentualDesperdicio.value) / 100
+                percentualDesperdicio: parseFloat(form.percentualDesperdicio.value) / 100,
+                categoria: form.categoria.value || 'outros'
             };
             if (!isNaN(indiceCoccaoVal) && indiceCoccaoVal > 0) {
                 data.indiceCoccao = indiceCoccaoVal / 100;
@@ -3077,6 +3180,281 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 alert("Ocorreu um erro ao salvar o insumo. Verifique sua conexão e os dados inseridos.");
             }
         }
+        // === MONTADOR DE MARMITA ===
+        window.montadorState = {
+            proteinas: [],
+            carboidratos: [],
+            saladas: [],
+            embalagens: []
+        };
+
+        function renderMontador() {
+            renderMontadorComponentes('proteina', 'montador-proteinas');
+            renderMontadorComponentes('carboidrato', 'montador-carboidratos');
+            renderMontadorComponentes('salada', 'montador-saladas');
+            renderMontadorEmbalagens();
+            calcularMontador();
+        }
+
+        function renderMontadorComponentes(categoria, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const stateKey = categoria === 'proteina' ? 'proteinas' : categoria === 'carboidrato' ? 'carboidratos' : 'saladas';
+            const items = window.montadorState[stateKey];
+            const insumos = window.appState.insumosCache().filter(i => (i.categoria || 'outros') === categoria).sort((a,b) => a.nome.localeCompare(b.nome));
+
+            if (!items.length) {
+                container.innerHTML = `<p class="text-sm text-gray-400 italic">Nenhum item adicionado.</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            items.forEach((item, index) => {
+                const options = insumos.map(i => `<option value="${i.id}" ${i.id === item.insumoId ? 'selected' : ''}>${i.nome}</option>`).join('');
+                const insumoSel = insumos.find(i => i.id === item.insumoId);
+                const unidadeCompra = insumoSel ? insumoSel.unidadeCompra : 'g';
+                const custoItem = item.insumoId ? calcularCustoInsumo(item.insumoId, parseFloat(item.peso) || 0, item.unidade || 'g') : 0;
+
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 p-2 bg-gray-50 rounded-lg';
+                div.innerHTML = `
+                    <select onchange="updateMontadorItem('${stateKey}', ${index}, 'insumoId', this.value)" class="flex-1 p-2 border border-gray-300 rounded-md text-sm">
+                        <option value="">Selecione...</option>
+                        ${options}
+                    </select>
+                    <input type="number" step="1" min="1" value="${item.peso || ''}" onchange="updateMontadorItem('${stateKey}', ${index}, 'peso', this.value)" class="w-20 p-2 border border-gray-300 rounded-md text-sm text-center" placeholder="Peso">
+                    <span class="text-xs text-gray-500 w-6">${item.unidade || 'g'}</span>
+                    <span class="text-xs font-semibold text-gray-700 w-20 text-right">R$ ${custoItem.toFixed(2)}</span>
+                    <button onclick="removerMontadorItem('${stateKey}', ${index})" class="text-red-400 hover:text-red-600 p-1"><i class="fas fa-times"></i></button>
+                `;
+                container.appendChild(div);
+            });
+
+            if (!insumos.length) {
+                container.innerHTML += `<p class="text-xs text-orange-500 mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>Nenhum insumo com categoria "${categoria}" cadastrado. Edite seus insumos e atribua a categoria.</p>`;
+            }
+        }
+
+        function renderMontadorEmbalagens() {
+            const container = document.getElementById('montador-embalagens');
+            if (!container) return;
+            const embalagens = window.appState.embalagensCache();
+            if (!embalagens.length) {
+                container.innerHTML = `<p class="text-sm text-gray-400 italic">Nenhuma embalagem cadastrada.</p>`;
+                return;
+            }
+            container.innerHTML = '';
+            embalagens.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(emb => {
+                const existente = window.montadorState.embalagens.find(e => e.embalagemId === emb.id);
+                const isChecked = existente && existente.quantidade > 0;
+                const qtd = existente ? existente.quantidade : 1;
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 p-2 rounded-lg border ' + (isChecked ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 bg-white');
+                div.innerHTML = `
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleMontadorEmbalagem('${emb.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded">
+                    <span class="flex-1 text-sm font-medium text-gray-800">${emb.nome}</span>
+                    <span class="text-xs text-gray-500">R$ ${parseFloat(emb.valorUnitario).toFixed(2)}/un</span>
+                    <input type="number" min="1" step="1" value="${qtd}" ${!isChecked ? 'disabled' : ''} onchange="updateMontadorEmbalagemQtd('${emb.id}', this.value)" class="w-14 p-1 text-sm border border-gray-300 rounded-md text-center ${!isChecked ? 'bg-gray-100 opacity-50' : ''}">
+                    <span class="text-xs font-semibold ${isChecked ? 'text-indigo-600' : 'text-gray-400'} w-16 text-right">R$ ${isChecked ? (parseFloat(emb.valorUnitario) * qtd).toFixed(2) : '0,00'}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.adicionarComponenteMontador = function(categoria) {
+            const stateKey = categoria === 'proteina' ? 'proteinas' : categoria === 'carboidrato' ? 'carboidratos' : 'saladas';
+            const unidadePadrao = categoria === 'salada' ? 'g' : 'g';
+            window.montadorState[stateKey].push({ insumoId: '', peso: '', unidade: unidadePadrao });
+            renderMontador();
+        }
+
+        window.updateMontadorItem = function(stateKey, index, field, value) {
+            window.montadorState[stateKey][index][field] = value;
+            if (field === 'insumoId') {
+                // Atualizar unidade baseada no insumo selecionado
+                const insumo = window.appState.insumosCache().find(i => i.id === value);
+                if (insumo) {
+                    const uc = insumo.unidadeCompra;
+                    // Usar a menor unidade compatível para porções
+                    if (uc === 'kg') window.montadorState[stateKey][index].unidade = 'g';
+                    else if (uc === 'L') window.montadorState[stateKey][index].unidade = 'ml';
+                    else window.montadorState[stateKey][index].unidade = uc;
+                }
+            }
+            renderMontador();
+        }
+
+        window.removerMontadorItem = function(stateKey, index) {
+            window.montadorState[stateKey].splice(index, 1);
+            renderMontador();
+        }
+
+        window.toggleMontadorEmbalagem = function(embalagemId, checked) {
+            if (checked) {
+                const existing = window.montadorState.embalagens.find(e => e.embalagemId === embalagemId);
+                if (!existing) {
+                    window.montadorState.embalagens.push({ embalagemId, quantidade: 1 });
+                }
+            } else {
+                window.montadorState.embalagens = window.montadorState.embalagens.filter(e => e.embalagemId !== embalagemId);
+            }
+            renderMontador();
+        }
+
+        window.updateMontadorEmbalagemQtd = function(embalagemId, value) {
+            const item = window.montadorState.embalagens.find(e => e.embalagemId === embalagemId);
+            if (item) item.quantidade = parseInt(value) || 1;
+            renderMontador();
+        }
+
+        window.calcularMontador = function() {
+            const resumoContainer = document.getElementById('montador-resumo');
+            const canaisContainer = document.getElementById('montador-canais');
+            if (!resumoContainer || !canaisContainer) return;
+
+            // Calcular custos de cada categoria
+            let custoProteinas = 0, custoCarboidratos = 0, custoSaladas = 0, custoEmbalagens = 0;
+
+            window.montadorState.proteinas.forEach(item => {
+                if (item.insumoId && item.peso > 0) custoProteinas += calcularCustoInsumo(item.insumoId, parseFloat(item.peso), item.unidade || 'g');
+            });
+            window.montadorState.carboidratos.forEach(item => {
+                if (item.insumoId && item.peso > 0) custoCarboidratos += calcularCustoInsumo(item.insumoId, parseFloat(item.peso), item.unidade || 'g');
+            });
+            window.montadorState.saladas.forEach(item => {
+                if (item.insumoId && item.peso > 0) custoSaladas += calcularCustoInsumo(item.insumoId, parseFloat(item.peso), item.unidade || 'g');
+            });
+
+            const embalagensCache = window.appState.embalagensCache();
+            window.montadorState.embalagens.forEach(item => {
+                const emb = embalagensCache.find(e => e.id === item.embalagemId);
+                if (emb) custoEmbalagens += parseFloat(emb.valorUnitario) * (parseInt(item.quantidade) || 1);
+            });
+
+            const custoInsumos = custoProteinas + custoCarboidratos + custoSaladas;
+            const custoTotal = custoInsumos + custoEmbalagens;
+
+            if (custoTotal === 0) {
+                resumoContainer.innerHTML = `<p class="text-center text-gray-400 text-sm">Selecione os componentes para ver o resumo</p>`;
+                canaisContainer.innerHTML = `<p class="text-center text-gray-400 text-sm">-</p>`;
+                return;
+            }
+
+            resumoContainer.innerHTML = `
+                <div class="space-y-1 text-sm">
+                    ${custoProteinas > 0 ? `<div class="flex justify-between"><span class="text-red-600"><i class="fas fa-drumstick-bite mr-1"></i>Proteínas</span><span class="font-semibold">R$ ${custoProteinas.toFixed(2)}</span></div>` : ''}
+                    ${custoCarboidratos > 0 ? `<div class="flex justify-between"><span class="text-yellow-600"><i class="fas fa-bread-slice mr-1"></i>Carboidratos</span><span class="font-semibold">R$ ${custoCarboidratos.toFixed(2)}</span></div>` : ''}
+                    ${custoSaladas > 0 ? `<div class="flex justify-between"><span class="text-green-600"><i class="fas fa-leaf mr-1"></i>Saladas</span><span class="font-semibold">R$ ${custoSaladas.toFixed(2)}</span></div>` : ''}
+                    <div class="border-t border-gray-200 pt-1 flex justify-between"><span class="text-gray-600 font-medium">Subtotal Insumos</span><span class="font-bold">R$ ${custoInsumos.toFixed(2)}</span></div>
+                    ${custoEmbalagens > 0 ? `<div class="flex justify-between"><span class="text-indigo-600"><i class="fas fa-box mr-1"></i>Embalagens (repasse)</span><span class="font-semibold">R$ ${custoEmbalagens.toFixed(2)}</span></div>` : ''}
+                    <div class="border-t-2 border-gray-300 pt-2 flex justify-between text-base"><span class="font-bold text-gray-800">Custo Total</span><span class="font-bold text-gray-800">R$ ${custoTotal.toFixed(2)}</span></div>
+                </div>
+            `;
+
+            // Calcular preço por canal
+            const config = window.appState.configCache();
+            const margemRaw = parseFloat(document.getElementById('montador-margem')?.value) || 30;
+            const margem = margemRaw / 100;
+            const totalCustosOp = (config.custosOperacionais || []).reduce((sum, c) => sum + (parseFloat(c.valor) || 0), 0);
+            const faturamento = parseFloat(config.faturamentoMedioMensal) || 0;
+
+            if (!faturamento || faturamento <= 0) {
+                canaisContainer.innerHTML = `<p class="text-center text-orange-500 text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>Configure o Faturamento Mensal em Configurações.</p>`;
+                return;
+            }
+
+            const custoOpPerc = totalCustosOp / faturamento;
+            const canais = config.canaisVenda || [];
+
+            if (!canais.length) {
+                canaisContainer.innerHTML = `<p class="text-center text-orange-500 text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>Configure os Canais de Venda em Configurações.</p>`;
+                return;
+            }
+
+            let canaisHtml = '';
+            canais.forEach(canal => {
+                const taxas = parseFloat(canal.taxaComissao) + parseFloat(canal.taxaTransacao);
+                const denom = 1 - taxas - custoOpPerc - margem;
+                if (denom <= 0) {
+                    canaisHtml += `<div class="flex justify-between items-center p-2 bg-red-50 rounded-lg"><span class="text-sm font-medium text-gray-700">${canal.nome}</span><span class="text-xs text-red-600 font-semibold">Inviável</span></div>`;
+                } else {
+                    const preco = (custoInsumos / denom) + custoEmbalagens;
+                    const recebido = preco * (1 - taxas);
+                    const lucro = recebido - custoInsumos - custoEmbalagens - (preco * custoOpPerc);
+                    canaisHtml += `
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-700">${canal.nome}</span>
+                                <span class="text-xl font-bold text-indigo-600">R$ ${preco.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Taxas: ${(taxas * 100).toFixed(1)}%</span>
+                                <span>Recebe: R$ ${recebido.toFixed(2)}</span>
+                                <span class="text-green-600 font-semibold">Lucro: R$ ${lucro.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            canaisContainer.innerHTML = canaisHtml;
+        }
+
+        window.limparMontador = function() {
+            window.montadorState = { proteinas: [], carboidratos: [], saladas: [], embalagens: [] };
+            renderMontador();
+        }
+
+        window.salvarMontadorComoProduto = async function() {
+            if (!window.appState.isReady) {
+                alert("Aguarde a conexão com o banco de dados.");
+                return;
+            }
+
+            // Montar a receita a partir dos componentes
+            const receita = [];
+            ['proteinas', 'carboidratos', 'saladas'].forEach(key => {
+                window.montadorState[key].forEach(item => {
+                    if (item.insumoId && item.peso > 0) {
+                        receita.push({ insumoId: item.insumoId, quantidade: parseFloat(item.peso), unidade: item.unidade || 'g' });
+                    }
+                });
+            });
+
+            if (!receita.length) {
+                alert("Adicione pelo menos um ingrediente antes de salvar.");
+                return;
+            }
+
+            const embalagens = window.montadorState.embalagens.filter(e => e.embalagemId && e.quantidade > 0);
+
+            // Montar nome sugerido
+            const insumos = window.appState.insumosCache();
+            const proteina = window.montadorState.proteinas.find(p => p.insumoId);
+            const nomeProt = proteina ? insumos.find(i => i.id === proteina.insumoId)?.nome || '' : '';
+            const nomeSugerido = nomeProt ? `Marmita - ${nomeProt}` : 'Marmita';
+
+            const nome = prompt("Nome do produto:", nomeSugerido);
+            if (!nome) return;
+
+            const data = {
+                nome: nome,
+                descricao: '',
+                imagemUrl: '',
+                receita: receita,
+                embalagens: embalagens
+            };
+
+            try {
+                const { getCollectionRef, addDoc } = window.appState;
+                const collectionRef = getCollectionRef('produtos');
+                await addDoc(collectionRef, data);
+                alert(`Produto "${nome}" salvo com sucesso!`);
+            } catch (e) {
+                console.error("Erro ao salvar produto:", e);
+                alert("Erro ao salvar o produto.");
+            }
+        }
+
         // === EMBALAGENS - CRUD ===
         function renderEmbalagens(lista = window.appState.embalagensCache()) {
             const container = document.getElementById('lista-embalagens');
