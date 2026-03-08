@@ -2393,9 +2393,9 @@
                 alert(`Erro: A soma do Custo Operacional (${(custoOpPercentual * 100).toFixed(2)}%) e da Margem de Lucro (${(margemLucro * 100).toFixed(2)}%) não pode ser maior ou igual a 100%.`);
                 return;
             }
-            // Embalagem incluída no custo total para garantir margem real
+            // Embalagem é repasse direto ao cliente, não entra na base de cálculo da margem
             const custoTotal = custoInsumos + custoEmbalagens;
-            const precoVendaBase = custoTotal / denominadorBase;
+            const precoVendaBase = (custoInsumos / denominadorBase) + custoEmbalagens;
             const custoProduto = custoInsumos + custoEmbalagens;
             const resumoContainer = document.getElementById('resumo-produto');
             const embalagemInfo = custoEmbalagens > 0 ? `
@@ -2410,7 +2410,7 @@
                     <div><p class="text-sm text-gray-500">Margem de Lucro</p><p class="font-bold text-lg text-gray-800">${(margemLucro * 100).toFixed(2)}%</p></div>
                     <div><p class="text-sm text-gray-500">Preço Base (Balcão)</p><p class="font-bold text-lg text-green-600">R$ ${precoVendaBase.toFixed(2)}</p></div>
                 </div>
-                ${custoEmbalagens > 0 ? '<p class="text-xs text-gray-400 mt-2 text-center"><i class="fas fa-info-circle mr-1"></i>Embalagem incluída no custo total para garantir a margem de lucro desejada.</p>' : ''}
+                ${custoEmbalagens > 0 ? '<p class="text-xs text-gray-400 mt-2 text-center"><i class="fas fa-info-circle mr-1"></i>Embalagem repassada ao cliente (não entra no cálculo da margem).</p>' : ''}
             `;
             const tabelaContainer = document.getElementById('tabela-precos');
             const table = document.createElement('table');
@@ -2446,9 +2446,11 @@
 
                 const denominadorCanal = 1 - taxasTotais - custoOpPercentual - margemLucro;
                 const inviavel = denominadorCanal <= 0;
-                const precoFinal = inviavel ? 0 : custoTotal / denominadorCanal;
+                // Margem apenas sobre insumos; embalagem é repasse direto
+                const precoBaseCanal = inviavel ? 0 : custoInsumos / denominadorCanal;
+                const precoFinal = precoBaseCanal + custoEmbalagens;
                 const recebidoCanal = precoFinal * (1 - taxasTotais);
-                const custoOpPorPrato = precoFinal * custoOpPercentual;
+                const custoOpPorPrato = precoBaseCanal * custoOpPercentual;
                 const lucroCanal = recebidoCanal - custoTotal - custoOpPorPrato;
 
                 ultimoCalculo.canais[canal.nome] = {
@@ -3544,9 +3546,11 @@ Faça a análise completa de mercado conforme suas instruções.`;
                 if (denom <= 0) {
                     canaisHtml += `<div class="flex justify-between items-center p-2 bg-red-50 rounded-lg"><span class="text-sm font-medium text-gray-700">${canal.nome}</span><span class="text-xs text-red-600 font-semibold">Inviável</span></div>`;
                 } else {
-                    const preco = custoTotal / denom;
+                    // Margem aplicada apenas sobre insumos; embalagem é repasse direto ao cliente
+                    const precoBase = custoInsumos / denom;
+                    const preco = precoBase + custoEmbalagens;
                     const recebido = preco * (1 - taxas);
-                    const lucro = recebido - custoTotal - (preco * custoOpPerc);
+                    const lucro = recebido - custoTotal - (precoBase * custoOpPerc);
                     canaisHtml += `
                         <div class="p-3 bg-gray-50 rounded-lg">
                             <div class="flex justify-between items-center">
@@ -3558,6 +3562,7 @@ Faça a análise completa de mercado conforme suas instruções.`;
                                 <span>Recebe: R$ ${recebido.toFixed(2)}</span>
                                 <span class="text-green-600 font-semibold">Lucro: R$ ${lucro.toFixed(2)}</span>
                             </div>
+                            ${custoEmbalagens > 0 ? `<div class="text-xs text-gray-400 mt-1">Embalagem repassada: R$ ${custoEmbalagens.toFixed(2)}</div>` : ''}
                         </div>
                     `;
                 }
