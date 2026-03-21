@@ -658,6 +658,9 @@
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-700">Gestão de Insumos</h2>
                         <div class="flex gap-2">
+                            <button onclick="exportarInsumosPlanilha()" class="bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors">
+                                <i class="fas fa-file-download mr-2"></i> Baixar Planilha
+                            </button>
                             <button onclick="abrirGerenciarCategorias()" class="bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-600 transition-colors">
                                 <i class="fas fa-tags mr-2"></i> Categorias
                             </button>
@@ -2196,6 +2199,91 @@
             });
             container.innerHTML = '';
             container.appendChild(table);
+        }
+
+        function exportarInsumosPlanilha() {
+            const insumos = window.appState.insumosCache();
+            if (!insumos.length) {
+                alert('Nenhum insumo cadastrado para exportar.');
+                return;
+            }
+
+            const escapeCsv = (val) => {
+                const str = String(val == null ? '' : val);
+                if (str.includes(';') || str.includes('"') || str.includes('\n')) return '"' + str.replace(/"/g, '""') + '"';
+                return str;
+            };
+
+            // Cabeçalho da planilha de insumos
+            const headers = ['Nome', 'Categoria', 'Preço Compra (R$)', 'Qtd Compra', 'Unidade', 'Desperdício (%)', 'Fator de Correção', 'Índice Cocção (%)', 'Custo Real (R$)', 'Custo por Unidade (R$)'];
+            let csv = headers.map(escapeCsv).join(';') + '\n';
+
+            insumos.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(insumo => {
+                const despPerc = parseFloat(insumo.percentualDesperdicio) || 0;
+                const rendimento = 1 - despPerc;
+                const fc = rendimento > 0 ? (1 / rendimento) : 0;
+                let custoReal = rendimento > 0 ? parseFloat(insumo.precoCompra) / rendimento : 0;
+                const ic = insumo.indiceCoccao;
+                const temCoccao = ic && ic > 0 && ic < 1;
+                if (temCoccao) custoReal = custoReal / ic;
+                const unidadeCompra = insumo.unidadeCompra || 'un';
+                const custoPorUnidade = parseFloat(insumo.qtdCompra) > 0 ? custoReal / parseFloat(insumo.qtdCompra) : 0;
+                const catInfo = getCategoriaById(insumo.categoria || 'outros');
+
+                const row = [
+                    insumo.nome,
+                    catInfo.nome,
+                    parseFloat(insumo.precoCompra).toFixed(2).replace('.', ','),
+                    insumo.qtdCompra,
+                    unidadeCompra,
+                    (despPerc * 100).toFixed(0) + '%',
+                    fc.toFixed(2).replace('.', ','),
+                    temCoccao ? (ic * 100).toFixed(0) + '%' : '-',
+                    custoReal.toFixed(2).replace('.', ','),
+                    custoPorUnidade.toFixed(4).replace('.', ',')
+                ];
+                csv += row.map(escapeCsv).join(';') + '\n';
+            });
+
+            // Tabela de referência de perdas (FC)
+            csv += '\n\n';
+            csv += 'TABELA DE REFERÊNCIA - FATOR DE CORREÇÃO (FC)\n';
+            csv += 'FC = Peso Bruto / Peso Líquido. Quanto maior o FC; maior o desperdício.\n\n';
+
+            csv += 'CARNES E AVES\n';
+            csv += 'Alimento;FC\n';
+            csv += 'Alcatra;1,12-1,20\n';
+            csv += 'Acém;1,11-1,28\n';
+            csv += 'Peito de frango;2,17\n';
+            csv += 'Frango inteiro;2,38\n';
+            csv += 'Camarão;4,10\n\n';
+
+            csv += 'LEGUMES E VERDURAS\n';
+            csv += 'Alimento;FC\n';
+            csv += 'Batata;1,06-1,33\n';
+            csv += 'Cebola;1,03-1,17\n';
+            csv += 'Cenoura;1,12-1,17\n';
+            csv += 'Alface;1,33\n';
+            csv += 'Brócolis;1,40-2,20\n\n';
+
+            csv += 'FRUTAS\n';
+            csv += 'Alimento;FC\n';
+            csv += 'Banana;1,51\n';
+            csv += 'Laranja;1,34-2,00\n';
+            csv += 'Maçã;1,13\n';
+            csv += 'Abacaxi;1,47-1,89\n';
+            csv += 'Manga;1,38-1,66\n';
+
+            // BOM para Excel reconhecer UTF-8
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const data = new Date().toISOString().slice(0, 10);
+            a.download = `insumos_${data}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function renderProdutos(lista = window.appState.produtosCache()) {
