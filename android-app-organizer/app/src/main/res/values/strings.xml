@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Organizador de Apps</string>
+    <string name="cat_games">Jogos</string>
+    <string name="cat_social">Redes Sociais</string>
+    <string name="cat_communication">Comunicação</string>
+    <string name="cat_productivity">Produtividade</string>
+    <string name="cat_finance">Finanças</string>
+    <string name="cat_shopping">Compras</string>
+    <string name="cat_media">Música e Vídeo</string>
+    <string name="cat_photo">Fotos e Imagens</string>
+    <string name="cat_news">Notícias e Leitura</string>
+    <string name="cat_maps">Mapas e Viagens</string>
+    <string name="cat_health">Saúde e Fitness</string>
+    <string name="cat_food">Comida e Delivery</string>
+    <string name="cat_transport">Transporte</string>
+    <string name="cat_education">Educação</string>
+    <string name="cat_tools">Ferramentas e Sistema</string>
+    <string name="cat_other">Outros</string>
+    <string name="empty_search">Nenhum app encontrado.</string>
+    <string name="search_hint">Buscar app…</string>
+    <string name="loading">Lendo seus apps…</string>
+</resources>
