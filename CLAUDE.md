@@ -158,8 +158,10 @@ Env vars: `SECRET_KEY` (required), `GEMINI_API_KEY` (optional global key),
 - **No CI, no tests, no linter** are configured. Verify changes by opening the
   HTML file in a browser (main app) or running the Flask app (Professor IA).
 - **No build step** for the main app — editing `index.html` / `cardapio.html`
-  is the deploy artifact. Deployment is static hosting (Firebase project
-  `meu-precificador-show`).
+  is the deploy artifact. **Deployment is via Vercel** (static hosting), which
+  auto-deploys pushes/PRs and reports status back on the PR. Note the Firebase
+  *project* (`meu-precificador-show`) provides Auth + Firestore for the app, but
+  is not where the static files are hosted.
 - When asked to push, push to the designated feature branch with
   `git push -u origin <branch>` and open a **draft PR** if none exists.
 
