@@ -63,3 +63,29 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## Project: meu-precificador
+
+Repositório com três partes independentes:
+
+- **`index.html`** — App "Precificador Show de Delícias". Arquivo HTML único
+  (Tailwind via CDN, Chart.js, Firebase/Firestore + localStorage, JS vanilla).
+  Faz precificação de produtos, simuladores iFood, frete embutido, montador de
+  marmita, gestão de insumos/embalagens e relatórios de rentabilidade.
+- **`cardapio.html`** — "Cardápio Digital". Arquivo HTML único (Tailwind via
+  CDN, JS vanilla) para exibir cardápio e gerar pedidos.
+- **`professor-ia/`** — App separado de tutoria de matemática (Python/Flask,
+  SQLite, Pillow, API Gemini). Self-hosted em VPS, com seu próprio `SETUP.md`
+  e Docker. Não tem relação com a precificação.
+
+### Convenções
+
+- `index.html` e `cardapio.html` são arquivos únicos e grandes, com HTML, CSS e
+  JS inline. Edite de forma cirúrgica — uma chave ou tag fora do lugar quebra o
+  `<script>` inteiro. Sem build step.
+- Deploy: a Vercel publica os HTMLs estáticos da raiz. O `professor-ia/` roda
+  em VPS própria (não é publicado pela Vercel).
+- Não há suíte de testes automatizada nos HTMLs; valide abrindo no navegador.
+- Para o `professor-ia/`, siga o `professor-ia/SETUP.md`.
