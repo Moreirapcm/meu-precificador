@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luluneth - Publicar no TikTok</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; }
+        .header { background: #1a1a1a; padding: 15px 30px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; }
+        .header h1 { font-size: 20px; color: #fff; }
+        .header .logo { display: flex; align-items: center; gap: 10px; }
+        .header .logo span { color: #fe2c55; font-weight: bold; }
+        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        .step { background: #1a1a1a; border-radius: 12px; padding: 30px; margin-bottom: 20px; border: 1px solid #333; display: none; }
+        .step.active { display: block; }
+        .step h2 { font-size: 22px; margin-bottom: 15px; }
+        .step p { color: #aaa; margin-bottom: 20px; line-height: 1.6; }
+        .btn { padding: 12px 30px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .btn-tiktok { background: #fe2c55; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .btn-tiktok:hover { background: #e0264c; }
+        .btn-primary { background: #25f4ee; color: #000; }
+        .btn-primary:hover { background: #1dd6c9; }
+        .btn-secondary { background: #333; color: #fff; margin-right: 10px; }
+        .video-preview { background: #000; border-radius: 8px; width: 200px; height: 356px; display: flex; align-items: center; justify-content: center; margin: 20px 0; border: 2px solid #333; position: relative; overflow: hidden; }
+        .video-preview .play-icon { font-size: 48px; color: #fe2c55; }
+        .video-info { display: flex; gap: 30px; align-items: flex-start; }
+        .video-details { flex: 1; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: #aaa; margin-bottom: 5px; font-size: 14px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px 15px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 14px; }
+        .form-group textarea { height: 80px; resize: none; }
+        .status-bar { display: flex; align-items: center; gap: 10px; padding: 15px; background: #0a0a0a; border-radius: 8px; margin-top: 15px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .status-dot.green { background: #25f4ee; }
+        .status-dot.yellow { background: #ffe135; }
+        .status-dot.red { background: #fe2c55; }
+        .progress-bar { width: 100%; height: 6px; background: #333; border-radius: 3px; margin-top: 15px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #25f4ee, #fe2c55); border-radius: 3px; transition: width 0.5s; }
+        .success-icon { font-size: 64px; text-align: center; margin: 20px 0; }
+        .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .tag { background: #333; padding: 4px 12px; border-radius: 15px; font-size: 12px; color: #25f4ee; }
+        .user-info { display: flex; align-items: center; gap: 10px; padding: 10px 15px; background: #0a0a0a; border-radius: 8px; margin-bottom: 20px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #fe2c55, #25f4ee); display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <span>Luluneth</span> | Publicador TikTok
+        </div>
+        <div id="headerStatus" style="color: #aaa; font-size: 14px;">Desconectado</div>
+    </div>
+
+    <div class="container">
+        <!-- Step 1: Login -->
+        <div class="step active" id="step1">
+            <h2>1. Conectar ao TikTok</h2>
+            <p>Para publicar vídeos automaticamente, conecte sua conta do TikTok usando a Content Posting API.</p>
+            <button class="btn btn-tiktok" onclick="startLogin()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.75a8.18 8.18 0 0 0 4.76 1.52v-3.4a4.85 4.85 0 0 1-1-.18z"/></svg>
+                Conectar com TikTok
+            </button>
+            <div class="status-bar" id="loginStatus" style="display:none;">
+                <div class="status-dot yellow"></div>
+                <span>Redirecionando para autorizacao TikTok...</span>
+            </div>
+        </div>
+
+        <!-- Step 2: Authorized -->
+        <div class="step" id="step2">
+            <h2>2. Conta Conectada</h2>
+            <div class="user-info">
+                <div class="avatar">LN</div>
+                <div>
+                    <div style="font-weight: 600;">@luluneth</div>
+                    <div style="color: #aaa; font-size: 13px;">Conectado via Content Posting API</div>
+                </div>
+            </div>
+            <div class="status-bar">
+                <div class="status-dot green"></div>
+                <span>Escopos autorizados: video.publish, video.upload</span>
+            </div>
+            <br>
+            <button class="btn btn-primary" onclick="showUpload()">Publicar Video</button>
+        </div>
+
+        <!-- Step 3: Upload -->
+        <div class="step" id="step3">
+            <h2>3. Publicar Video no TikTok</h2>
+            <div class="video-info">
+                <div class="video-preview">
+                    <div style="text-align:center;">
+                        <div class="play-icon">&#9658;</div>
+                        <div style="font-size:12px; color:#aaa; margin-top:10px;">oracao_dia.mp4</div>
+                        <div style="font-size:11px; color:#666;">1080x1920 (9:16)</div>
+                    </div>
+                </div>
+                <div class="video-details">
+                    <div class="form-group">
+                        <label>Titulo</label>
+                        <input type="text" value="Oracao do Dia - Deus te abencoe">
+                    </div>
+                    <div class="form-group">
+                        <label>Descricao</label>
+                        <textarea>Que Deus abencoe seu dia com muita paz e amor. Compartilhe com alguem que precisa ouvir isso hoje.</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Hashtags</label>
+                        <div class="tags">
+                            <span class="tag">#oracao</span>
+                            <span class="tag">#deus</span>
+                            <span class="tag">#fe</span>
+                            <span class="tag">#motivacao</span>
+                            <span class="tag">#shorts</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; color: #aaa; font-size: 13px;">
+                        API: POST /v2/post/publish/video/init/<br>
+                        Escopo: video.publish + video.upload
+                    </div>
+                </div>
+            </div>
+            <br>
+            <button class="btn btn-primary" onclick="startPublish()">Publicar via Content Posting API</button>
+            <div id="publishProgress" style="display:none;">
+                <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
+                <div class="status-bar">
+                    <div class="status-dot yellow" id="publishDot"></div>
+                    <span id="publishText">Enviando video...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Success -->
+        <div class="step" id="step4">
+            <h2>4. Publicado com Sucesso!</h2>
+            <div class="success-icon">&#10003;</div>
+            <div style="text-align: center;">
+                <p style="font-size: 18px; color: #25f4ee; margin-bottom: 10px;">Video publicado no TikTok!</p>
+                <p>O video "Oracao do Dia - Deus te abencoe" foi publicado com sucesso na conta @luluneth usando a Content Posting API.</p>
+                <div class="status-bar" style="justify-content: center;">
+                    <div class="status-dot green"></div>
+                    <span>Status: publish_complete</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function startLogin() {
+            document.getElementById('loginStatus').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('step1').classList.remove('active');
+                document.getElementById('step2').classList.add('active');
+                document.getElementById('headerStatus').textContent = 'Conectado: @luluneth';
+                document.getElementById('headerStatus').style.color = '#25f4ee';
+            }, 2500);
+        }
+
+        function showUpload() {
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.add('active');
+        }
+
+        function startPublish() {
+            var prog = document.getElementById('publishProgress');
+            prog.style.display = 'block';
+            var fill = document.getElementById('progressFill');
+            var dot = document.getElementById('publishDot');
+            var text = document.getElementById('publishText');
+
+            var steps = [
+                { w: '20%', t: 'Iniciando upload via API...', delay: 1000 },
+                { w: '45%', t: 'Enviando video (chunk upload)...', delay: 1500 },
+                { w: '70%', t: 'Processando video no TikTok...', delay: 2000 },
+                { w: '90%', t: 'Finalizando publicacao...', delay: 1500 },
+                { w: '100%', t: 'Concluido!', delay: 1000 }
+            ];
+
+            var total = 0;
+            steps.forEach(function(step) {
+                total += step.delay;
+                setTimeout(function() {
+                    fill.style.width = step.w;
+                    text.textContent = step.t;
+                }, total);
+            });
+
+            setTimeout(function() {
+                document.getElementById('step3').classList.remove('active');
+                document.getElementById('step4').classList.add('active');
+            }, total + 500);
+        }
+    </script>
+</body>
+</html>
