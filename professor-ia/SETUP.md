@@ -90,6 +90,22 @@ sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d professor.seudominio.com
 ```
 
+### Passo 4 (opcional): Deploy automático
+
+Para a VPS se atualizar sozinha a cada merge na `main`, agende o
+`auto-deploy.sh` no cron:
+
+```bash
+chmod +x /opt/n8n-stack/meu-precificador/professor-ia/auto-deploy.sh
+(crontab -l 2>/dev/null; echo '*/5 * * * * /opt/n8n-stack/meu-precificador/professor-ia/auto-deploy.sh') | crontab -
+```
+
+A cada 5 minutos o script consulta o GitHub. Se a `main` avançou, faz
+`git pull` e rebuilda o container — mas só quando algo dentro de
+`professor-ia/` mudou. Se houver mudanças locais não commitadas na VPS,
+ele pausa e avisa no log em vez de atropelar. Logs em
+`/var/log/professor-ia-deploy.log`.
+
 ---
 
 ## Rodar sem Docker (desenvolvimento)
