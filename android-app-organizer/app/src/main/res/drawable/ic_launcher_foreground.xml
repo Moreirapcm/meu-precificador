@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Pasta estilizada -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,40 L48,40 L54,46 L78,46 C80.2,46 82,47.8 82,50 L82,72 C82,74.2 80.2,76 78,76 L30,76 C27.8,76 26,74.2 26,72 L26,44 C26,41.8 27.8,40 30,40 Z" />
+    <path
+        android:fillColor="#1F6FEB"
+        android:pathData="M36,54 L40,54 L40,58 L36,58 Z M44,54 L48,54 L48,58 L44,58 Z M52,54 L56,54 L56,58 L52,58 Z M60,54 L64,54 L64,58 L60,58 Z M68,54 L72,54 L72,58 L68,58 Z M36,62 L40,62 L40,66 L36,66 Z M44,62 L48,62 L48,66 L44,66 Z M52,62 L56,62 L56,66 L52,66 Z M60,62 L64,62 L64,66 L60,66 Z M68,62 L72,62 L72,66 L68,66 Z" />
+</vector>
