@@ -17,7 +17,7 @@ Natural Earth (domínio público).
 **Do código, em casa:**
 
 ```bash
-cd jogo
+# a partir desta pasta:
 python3 -m http.server 8000     # ou: npx serve .
 # abra http://localhost:8000
 ```
