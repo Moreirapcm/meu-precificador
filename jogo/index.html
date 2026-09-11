@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#070a10">
+<title>Última Fronteira — Defesa da Terra</title>
+<meta name="description" content="Estratégia em tempo real: reconstrua uma base em cidades reais da Terra arrasadas pela invasão. Operários, mineração, muros, tropas e tecnologia, no celular ou no computador.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================ MAPA DO MUNDO ============================ -->
+<section id="telaInicio" class="tela ativa">
+  <header class="marca">
+    <span class="emblema">◈</span>
+    <div>
+      <h1>ÚLTIMA <b>FRONTEIRA</b></h1>
+      <small>COMANDO DE DEFESA TERRESTRE · MAPA ESTRATÉGICO</small>
+    </div>
+  </header>
+
+  <div class="mundo">
+    <canvas id="mapaMundo" aria-label="Mapa do mundo. Escolha um setor da Terra."></canvas>
+    <div class="mundo-legenda">
+      <span><i class="ponto liberado"></i> liberado</span>
+      <span><i class="ponto concluido"></i> concluído</span>
+      <span><i class="ponto bloqueado"></i> bloqueado</span>
+    </div>
+  </div>
+
+  <aside class="ficha">
+    <span class="olho">SETOR SELECIONADO</span>
+    <h2 id="setorNome">—</h2>
+    <p class="regiao" id="setorRegiao"></p>
+    <p class="coord" id="setorCoord"></p>
+    <dl class="briefing">
+      <div><dt>Objetivo</dt><dd id="setorObjetivo"></dd></div>
+      <div><dt>Terreno</dt><dd id="setorResumo"></dd></div>
+      <div><dt>Risco</dt><dd id="setorRisco"></dd></div>
+    </dl>
+    <p class="fato" id="setorFato"></p>
+    <div class="numeros" id="setorNumeros"></div>
+
+    <label class="campo">
+      <span>Dificuldade</span>
+      <select id="selDificuldade">
+        <option value="recruta">Recruta — mais avisos, menos pressão</option>
+        <option value="comandante" selected>Comandante — equilíbrio de referência</option>
+        <option value="veterano">Veterano — ataques maiores e coordenados</option>
+      </select>
+    </label>
+    <label class="campo">
+      <span>Modo</span>
+      <select id="selModo">
+        <option value="campanha" selected>Campanha — cumprir o objetivo do setor</option>
+        <option value="sobrevivencia">Sobrevivência — pressão sem fim</option>
+        <option value="livre">Construção livre — sem ataques</option>
+      </select>
+    </label>
+
+    <button id="btnJogar" class="principal">ASSUMIR O COMANDO <span>↗</span></button>
+    <button id="btnContinuar" class="secundario" hidden>Continuar partida salva</button>
+    <button id="btnComoJogar" class="texto">Como se joga</button>
+  </aside>
+</section>
+
+<!-- ============================== PARTIDA =============================== -->
+<section id="telaJogo" class="tela">
+
+  <div id="barraTopo">
+    <div class="recursos">
+      <span title="Minerais: pagam unidades, construções e reparos"><i class="m">◆</i><b id="hudM">0</b></span>
+      <span title="Cristais: pesquisa avançada e unidades pesadas"><i class="c">⬡</i><b id="hudC">0</b></span>
+      <span title="População usada / capacidade"><i class="p">👤</i><b id="hudPop">0/0</b></span>
+      <span title="Capacidade elétrica livre / fornecida"><i class="e">ϟ</i><b id="hudE">0/0</b></span>
+      <span title="Energia tática: bombardeio e escudo"><i class="t">◉</i><b id="hudT">0</b></span>
+    </div>
+    <div class="onda">
+      <span id="hudFaseOnda">PREPARAÇÃO</span>
+      <b id="hudOnda">ONDA 0/6</b>
+      <i id="hudRelogio">1:30</i>
+    </div>
+    <div class="utilidades">
+      <button id="btnVel" title="Velocidade do combate">1×</button>
+      <button id="btnPausa" title="Pausar (espaço)">⏸</button>
+      <button id="btnMenu" title="Menu">☰</button>
+    </div>
+  </div>
+
+  <div id="campo">
+    <canvas id="jogo"></canvas>
+
+    <div id="minimapaCaixa">
+      <canvas id="minimapa" width="150" height="150"></canvas>
+    </div>
+
+    <div id="objetivoHud"><b id="objetivoTexto"></b><span id="objetivoProgresso"></span></div>
+    <div id="avisoHud" role="status" aria-live="polite"></div>
+    <div id="chefeHud" hidden><span id="chefeNome"></span><div><i id="chefeVida"></i></div></div>
+
+    <div id="modoHud" hidden>
+      <span id="modoTexto"></span>
+      <button id="btnCancelarModo">Cancelar</button>
+    </div>
+
+    <div id="colocacaoHud" hidden>
+      <h2>Escolha o local da Central de Comando</h2>
+      <p id="colocacaoMotivo">Uma área plana e livre de 4 × 4 células, com rota até uma jazida e longe das zonas de invasão.</p>
+      <button id="btnSugerir" class="secundario">Sugerir um bom local</button>
+    </div>
+  </div>
+
+  <div id="barraAcoes">
+    <div class="selecao-info">
+      <b id="selNome">Nada selecionado</b>
+      <span id="selDetalhe">Toque em uma estrutura, unidade ou no terreno.</span>
+    </div>
+    <div class="botoes" id="acoesContexto"></div>
+  </div>
+
+  <nav id="abas">
+    <button data-gaveta="construir" class="ativo">Construir</button>
+    <button data-gaveta="tropas">Tropas</button>
+    <button data-gaveta="evolucao">Evolução</button>
+    <button data-gaveta="comando">Comando</button>
+    <button data-gaveta="tatica">Tática</button>
+  </nav>
+
+  <div id="gaveta">
+    <div class="puxador" id="puxadorGaveta"></div>
+    <div id="gavetaConteudo"></div>
+  </div>
+
+</section>
+
+<!-- ============================ TELAS SOBREPOSTAS ======================== -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-caixa">
+    <span class="olho" id="modalOlho"></span>
+    <h2 id="modalTitulo"></h2>
+    <div id="modalCorpo"></div>
+    <div class="modal-acoes" id="modalAcoes"></div>
+  </div>
+</div>
+
+<script src="src/util.js"></script>
+<script src="src/data.js"></script>
+<script src="src/geo.js"></script>
+<script src="src/world.js"></script>
+<script src="src/path.js"></script>
+<script src="src/sim.js"></script>
+<script src="src/sim-unidades.js"></script>
+<script src="src/sim-combate.js"></script>
+<script src="src/salvar.js"></script>
+<script src="src/render.js"></script>
+<script src="src/render2.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/ui2.js"></script>
+<script src="src/mundo-ui.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
