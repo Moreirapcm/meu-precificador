@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#070a10">
-<title>Última Fronteira — Defesa da Terra</title>
+<title>Última Fronteira</title>
 <meta name="description" content="Estratégia em tempo real: reconstrua uma base em cidades reais da Terra arrasadas pela invasão. Operários, mineração, muros, tropas e tecnologia, no celular ou no computador.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <style>
 /* Última Fronteira — interface para celular e computador.
    Tudo em unidades relativas; alvos de toque com no mínimo 44px. */
@@ -26,13 +29,16 @@
   --acoes: 74px;
   --abas: 46px;
   --seguro-b: env(safe-area-inset-bottom, 0px);
+  /* Chakra Petch para o painel de comando; Barlow para o texto corrido. */
+  --hud: 'Chakra Petch', 'Segoe UI Semibold', system-ui, sans-serif;
+  --corpo: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
   margin: 0; height: 100%; overflow: hidden;
   background: var(--fundo); color: var(--texto);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 14.5px/1.5 var(--corpo);
   overscroll-behavior: none; touch-action: none;
 }
 button, select { font: inherit; color: inherit; }
@@ -53,9 +59,9 @@ button { cursor: pointer; border: 0; background: none; }
 }
 .marca { grid-area: marca; display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--borda); }
 .marca .emblema { font-size: 30px; color: var(--acento); }
-.marca h1 { margin: 0; font-size: 19px; letter-spacing: 3px; font-weight: 500; }
+.marca h1 { margin: 0; font-family: var(--hud); font-size: 20px; letter-spacing: 3.5px; font-weight: 500; }
 .marca h1 b { font-weight: 800; }
-.marca small { color: var(--suave); font-size: 10px; letter-spacing: 2.4px; }
+.marca small { color: var(--suave); font-family: var(--hud); font-size: 10px; letter-spacing: 2.4px; }
 
 .mundo { grid-area: mundo; position: relative; min-height: 0; }
 #mapaMundo { width: 100%; height: 100%; display: block; touch-action: none; }
@@ -66,8 +72,8 @@ button { cursor: pointer; border: 0; background: none; }
 .ponto.bloqueado { background: #51607a; }
 
 .ficha { grid-area: ficha; border-left: 1px solid var(--borda); background: var(--painel); padding: 18px; overflow-y: auto; }
-.olho { font-size: 10px; letter-spacing: 2.2px; color: var(--acento); }
-.ficha h2 { margin: 6px 0 2px; font-size: 22px; }
+.olho { font-family: var(--hud); font-size: 10px; letter-spacing: 2.2px; color: var(--acento); font-weight: 600; }
+.ficha h2 { margin: 6px 0 2px; font-family: var(--hud); font-size: 23px; font-weight: 700; letter-spacing: .2px; text-wrap: balance; }
 .ficha .regiao { margin: 0; color: var(--suave); font-size: 12.5px; }
 .ficha .coord { margin: 2px 0 14px; color: #6d7c93; font-size: 11px; font-variant-numeric: tabular-nums; }
 .briefing { margin: 0 0 12px; }
@@ -77,15 +83,15 @@ button { cursor: pointer; border: 0; background: none; }
 .fato { font-size: 12px; color: #93a3ba; border-left: 2px solid var(--borda); padding-left: 10px; margin: 0 0 14px; font-style: italic; }
 .numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
 .numeros div { background: var(--painel2); border: 1px solid var(--borda); border-radius: 8px; padding: 8px; text-align: center; }
-.numeros b { display: block; font-size: 17px; }
-.numeros span { font-size: 9.5px; color: var(--suave); letter-spacing: 0.6px; }
+.numeros b { display: block; font-family: var(--hud); font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.numeros span { font-family: var(--hud); font-size: 9.5px; color: var(--suave); letter-spacing: 0.8px; }
 
 .campo { display: block; margin-bottom: 10px; }
-.campo span { display: block; font-size: 10px; letter-spacing: 1.6px; color: var(--suave); margin-bottom: 4px; }
+.campo span { display: block; font-family: var(--hud); font-size: 10px; letter-spacing: 1.6px; color: var(--suave); margin-bottom: 4px; }
 .campo select { width: 100%; padding: 10px; border-radius: 8px; background: var(--painel2); border: 1px solid var(--borda); }
 
 .principal {
-  width: 100%; padding: 14px; margin-top: 6px; border-radius: 10px; font-weight: 700; letter-spacing: 1.4px;
+  width: 100%; padding: 14px; margin-top: 6px; border-radius: 10px; font-family: var(--hud); font-weight: 700; letter-spacing: 1.6px;
   background: linear-gradient(135deg, #2f6fae, #48b8d8); color: #06121c;
 }
 .principal:disabled { opacity: .45; }
@@ -105,13 +111,13 @@ button { cursor: pointer; border: 0; background: none; }
 .recursos i { font-style: normal; font-size: 13px; }
 .recursos i.m { color: var(--mineral); } .recursos i.c { color: var(--cristal); }
 .recursos i.e { color: #c49bff; } .recursos i.t { color: #ff9ecb; }
-.recursos b { font-size: 14px; }
+.recursos b { font-family: var(--hud); font-size: 14.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .recursos span.critico b { color: var(--perigo); }
 
 .onda { text-align: center; line-height: 1.15; }
-.onda span { display: block; font-size: 8.5px; letter-spacing: 1.8px; color: var(--suave); }
-.onda b { font-size: 12px; }
-.onda i { font-style: normal; font-size: 11px; color: var(--atencao); font-variant-numeric: tabular-nums; }
+.onda span { display: block; font-family: var(--hud); font-size: 8.5px; letter-spacing: 1.8px; color: var(--suave); }
+.onda b { font-family: var(--hud); font-size: 12.5px; font-weight: 700; letter-spacing: .6px; }
+.onda i { font-style: normal; font-family: var(--hud); font-size: 11.5px; color: var(--atencao); font-variant-numeric: tabular-nums; }
 .onda.ataque b, .onda.ataque i { color: var(--perigo); }
 
 .utilidades { display: flex; gap: 4px; }
@@ -131,7 +137,7 @@ button { cursor: pointer; border: 0; background: none; }
   background: rgba(10,16,26,.82); border: 1px solid var(--borda); border-radius: 8px;
   padding: 7px 10px; font-size: 11.5px; line-height: 1.35;
 }
-#objetivoHud b { display: block; font-weight: 600; }
+#objetivoHud b { display: block; font-family: var(--hud); font-weight: 600; }
 #objetivoHud span { color: var(--suave); font-size: 10.5px; }
 
 #avisoHud {
@@ -146,7 +152,7 @@ button { cursor: pointer; border: 0; background: none; }
 #avisoHud.bom { border-color: var(--bom); }
 
 #chefeHud { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 42%; text-align: center; }
-#chefeHud span { font-size: 11px; letter-spacing: 2px; color: #ff8fb0; }
+#chefeHud span { font-family: var(--hud); font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #ff8fb0; }
 #chefeHud div { height: 6px; background: #2a1220; border: 1px solid #6a2740; border-radius: 4px; margin-top: 3px; }
 #chefeHud i { display: block; height: 100%; background: linear-gradient(90deg, #ff3f8f, #ff8fb0); }
 
@@ -162,7 +168,7 @@ button { cursor: pointer; border: 0; background: none; }
   width: min(520px, 92%); text-align: center; padding: 12px 16px;
   background: rgba(10,16,26,.93); border: 1px solid var(--borda); border-radius: 12px;
 }
-#colocacaoHud h2 { margin: 0 0 4px; font-size: 15px; }
+#colocacaoHud h2 { margin: 0 0 4px; font-family: var(--hud); font-size: 16px; font-weight: 600; }
 #colocacaoHud p { margin: 0 0 8px; font-size: 12px; color: var(--suave); }
 #colocacaoHud p.erro { color: var(--perigo); }
 #colocacaoHud .secundario { width: auto; padding: 8px 16px; margin: 0; }
@@ -173,7 +179,7 @@ button { cursor: pointer; border: 0; background: none; }
   background: var(--painel); border-top: 1px solid var(--borda); overflow: hidden;
 }
 .selecao-info { min-width: 110px; max-width: 34%; line-height: 1.25; }
-.selecao-info b { display: block; font-size: 12.5px; }
+.selecao-info b { display: block; font-family: var(--hud); font-size: 13px; font-weight: 600; }
 .selecao-info span { font-size: 10.5px; color: var(--suave); display: block; }
 #barraAcoes .botoes { display: flex; gap: 6px; flex: 1; overflow-x: auto; scrollbar-width: none; }
 #barraAcoes .botoes::-webkit-scrollbar { display: none; }
@@ -183,7 +189,7 @@ button { cursor: pointer; border: 0; background: none; }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
 }
 .acao i { font-style: normal; font-size: 16px; }
-.acao b { font-size: 10px; font-weight: 600; }
+.acao b { font-family: var(--hud); font-size: 10.5px; font-weight: 600; }
 .acao small { font-size: 9px; color: var(--suave); }
 .acao:disabled { opacity: .42; }
 .acao.ligado { border-color: var(--bom); background: #17301f; }
@@ -191,7 +197,7 @@ button { cursor: pointer; border: 0; background: none; }
 
 /* abas e gaveta */
 #abas { display: flex; background: var(--painel); border-top: 1px solid var(--borda); position: relative; z-index: 21; }
-#abas button { flex: 1; font-size: 11.5px; letter-spacing: .4px; color: var(--suave); border-top: 2px solid transparent; }
+#abas button { flex: 1; font-family: var(--hud); font-size: 12px; font-weight: 600; letter-spacing: .6px; color: var(--suave); border-top: 2px solid transparent; }
 #abas button.ativo { color: var(--texto); border-top-color: var(--acento); background: var(--painel2); }
 
 /* No celular a gaveta sobe acima das abas, que continuam alcançáveis. */
@@ -214,15 +220,15 @@ button { cursor: pointer; border: 0; background: none; }
 }
 .carta:disabled { opacity: .5; }
 .carta .linha { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
-.carta b { font-size: 12.5px; }
-.carta .preco { font-size: 11px; color: var(--mineral); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.carta b { font-family: var(--hud); font-size: 13px; font-weight: 600; }
+.carta .preco { font-family: var(--hud); font-size: 11.5px; color: var(--mineral); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .carta .preco em { color: var(--cristal); font-style: normal; }
 .carta small { font-size: 10.5px; color: var(--suave); line-height: 1.3; }
 .carta .falta { color: var(--perigo); font-size: 10px; }
 .carta.silhueta b, .carta.silhueta small { filter: blur(0); color: #5e6b80; }
 .carta.selecionada { border-color: var(--acento); background: #12263a; }
 
-.grupo-titulo { font-size: 10px; letter-spacing: 1.8px; color: var(--suave); margin: 12px 0 6px; }
+.grupo-titulo { font-family: var(--hud); font-size: 10px; font-weight: 600; letter-spacing: 1.8px; color: var(--suave); margin: 12px 0 6px; }
 .fila { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
 .fila button { padding: 6px 10px; border-radius: 8px; background: var(--painel2); border: 1px solid var(--borda); font-size: 11px; }
 .progresso { height: 6px; background: #0a1018; border: 1px solid var(--borda); border-radius: 4px; overflow: hidden; margin: 6px 0; }
@@ -233,7 +239,7 @@ button { cursor: pointer; border: 0; background: none; }
 .modal[hidden] { display: none; }
 .modal { position: fixed; inset: 0; background: rgba(4,7,12,.82); display: flex; align-items: center; justify-content: center; z-index: 40; padding: 18px; }
 .modal-caixa { width: min(520px, 100%); max-height: 86vh; overflow-y: auto; background: var(--painel); border: 1px solid var(--borda); border-radius: 14px; padding: 20px; }
-.modal-caixa h2 { margin: 6px 0 10px; font-size: 20px; }
+.modal-caixa h2 { margin: 6px 0 10px; font-family: var(--hud); font-size: 21px; font-weight: 700; text-wrap: balance; }
 .modal-caixa p { font-size: 13px; color: #c3cddc; }
 .modal-caixa ul { padding-left: 18px; font-size: 13px; color: #c3cddc; }
 .modal-caixa li { margin-bottom: 5px; }
@@ -242,8 +248,8 @@ button { cursor: pointer; border: 0; background: none; }
 .modal-acoes button.principal { background: linear-gradient(135deg, #2f6fae, #48b8d8); color: #06121c; }
 .placar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0; }
 .placar div { background: var(--painel2); border: 1px solid var(--borda); border-radius: 8px; padding: 8px 10px; }
-.placar b { display: block; font-size: 17px; }
-.placar span { font-size: 10px; color: var(--suave); letter-spacing: .8px; }
+.placar b { display: block; font-family: var(--hud); font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.placar span { font-family: var(--hud); font-size: 10px; color: var(--suave); letter-spacing: .8px; }
 
 /* ============================ telas estreitas ========================== */
 @media (max-width: 820px) {
@@ -282,6 +288,15 @@ button { cursor: pointer; border: 0; background: none; }
     border-left: 1px solid var(--borda); border-top: 0; z-index: 10;
   }
   .puxador { display: none; }
+}
+
+/* Quem pede menos movimento não recebe transições de painel. */
+@media (prefers-reduced-motion: reduce) {
+  #gaveta, #avisoHud { transition: none; }
+}
+/* Foco visível no teclado. */
+button:focus-visible, select:focus-visible, canvas:focus-visible {
+  outline: 2px solid var(--acento); outline-offset: 2px;
 }
 
 </style>
@@ -341,6 +356,7 @@ button { cursor: pointer; border: 0; background: none; }
     <button id="btnJogar" class="principal">ASSUMIR O COMANDO <span>↗</span></button>
     <button id="btnContinuar" class="secundario" hidden>Continuar partida salva</button>
     <button id="btnComoJogar" class="texto">Como se joga</button>
+    <button id="btnColar" class="texto">Colar progresso de outro aparelho</button>
   </aside>
 </section>
 
@@ -5725,6 +5741,7 @@ button { cursor: pointer; border: 0; background: none; }
     var self = this;
     $('btnJogar').onclick = function () { self.comecar(self.setorEscolhido); };
     $('btnComoJogar').onclick = function () { self.mostrarAjuda(); };
+    $('btnColar').onclick = function () { self.importar(); };
     $('btnContinuar').onclick = function () { self.continuar(); };
     var salvo = UF.Salvar.ler();
     if (salvo && salvo.fase === 'jogando') {
@@ -5826,23 +5843,61 @@ button { cursor: pointer; border: 0; background: none; }
     this.ui.atualizarHud();
   };
 
+  /* Levar o progresso para outro aparelho.
+     Copiar e colar funciona em todo lugar — inclusive dentro de visualizadores
+     que não deixam a página baixar arquivos. */
   Jogo.prototype.exportar = function () {
+    var self = this;
     var texto = UF.Salvar.exportar(this.sim);
-    try {
-      var blob = new Blob([texto], { type: 'application/json' });
-      var url = URL.createObjectURL(blob);
-      var a = doc.createElement('a');
-      a.href = url;
-      a.download = 'ultima-fronteira-progresso.json';
-      doc.body.appendChild(a); a.click(); doc.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      this.ui.mostrarAviso('Arquivo de progresso gerado.', 'bom');
-    } catch (e) {
-      this.ui.abrirModal('PROGRESSO', 'Copie o texto abaixo',
-        '<p>Guarde este texto para restaurar o progresso em outro aparelho.</p>' +
-        '<textarea style="width:100%;height:140px">' + texto.replace(/</g, '&lt;') + '</textarea>',
-        [{ rotulo: 'Fechar', principal: true, aoClicar: this.ui.fecharModal.bind(this.ui) }]);
-    }
+    this.ui.abrirModal('PROGRESSO', 'Levar para outro aparelho',
+      '<p>Copie o texto abaixo e cole no outro aparelho pela opção <b>Colar progresso</b>. ' +
+      'Ele guarda a partida atual e os setores já concluídos.</p>' +
+      '<textarea id="caixaProgresso" readonly style="width:100%;height:130px;font:11px/1.4 ui-monospace,monospace;' +
+      'background:#0a1018;color:#c3cddc;border:1px solid #22304a;border-radius:8px;padding:8px"></textarea>' +
+      '<p id="avisoCopia" style="min-height:18px"></p>', [
+      { rotulo: 'Copiar', principal: true, aoClicar: function () {
+        var area = doc.getElementById('caixaProgresso');
+        area.select(); area.setSelectionRange(0, area.value.length);
+        var pronto = function (ok) {
+          doc.getElementById('avisoCopia').textContent = ok
+            ? 'Copiado. Cole no outro aparelho.'
+            : 'Não consegui copiar sozinho — selecione o texto e copie na mão.';
+        };
+        if (global.navigator && navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(area.value).then(function () { pronto(true); }, function () { pronto(false); });
+        } else {
+          var ok = false;
+          try { ok = doc.execCommand('copy'); } catch (e) { ok = false; }
+          pronto(ok);
+        }
+      } },
+      { rotulo: 'Colar progresso', aoClicar: function () { self.importar(); } },
+      { rotulo: 'Fechar', aoClicar: function () { self.ui.fecharModal(); } }
+    ]);
+    /* O valor entra depois de montar, para não passar pelo HTML. */
+    var area = doc.getElementById('caixaProgresso');
+    if (area) area.value = texto;
+  };
+
+  Jogo.prototype.importar = function () {
+    var self = this;
+    this.ui.abrirModal('PROGRESSO', 'Colar progresso',
+      '<p>Cole aqui o texto copiado do outro aparelho.</p>' +
+      '<textarea id="caixaColar" style="width:100%;height:130px;font:11px/1.4 ui-monospace,monospace;' +
+      'background:#0a1018;color:#c3cddc;border:1px solid #22304a;border-radius:8px;padding:8px"></textarea>' +
+      '<p id="avisoColar" style="min-height:18px"></p>', [
+      { rotulo: 'Restaurar', principal: true, aoClicar: function () {
+        var texto = (doc.getElementById('caixaColar') || {}).value || '';
+        try {
+          UF.Salvar.importar(texto);
+          doc.getElementById('avisoColar').textContent = 'Progresso restaurado. Voltando ao mapa...';
+          setTimeout(function () { self.ui.fecharModal(); self.voltarAoMapa(); }, 900);
+        } catch (e) {
+          doc.getElementById('avisoColar').textContent = 'Não consegui ler esse texto: ' + e.message;
+        }
+      } },
+      { rotulo: 'Cancelar', aoClicar: function () { self.ui.fecharModal(); } }
+    ]);
   };
 
   Jogo.prototype.mostrarAjuda = function () {

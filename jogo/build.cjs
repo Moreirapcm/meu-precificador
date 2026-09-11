@@ -26,8 +26,11 @@ const corpo = html
 const titulo = (html.match(/<title>([^<]*)<\/title>/) || [, 'Última Fronteira'])[1];
 const descricao = (html.match(/<meta name="description" content="([^"]*)"/) || [, ''])[1];
 
+const fontes = (html.match(/<link rel="preconnect"[^>]*>|<link rel="stylesheet" href="https:\/\/fonts[^>]*>/g) || []).join('\n');
+
 const conteudo = `<title>${titulo}</title>
 <meta name="description" content="${descricao}">
+${fontes}
 <style>
 ${css}
 </style>

@@ -27,6 +27,7 @@
     var self = this;
     $('btnJogar').onclick = function () { self.comecar(self.setorEscolhido); };
     $('btnComoJogar').onclick = function () { self.mostrarAjuda(); };
+    $('btnColar').onclick = function () { self.importar(); };
     $('btnContinuar').onclick = function () { self.continuar(); };
     var salvo = UF.Salvar.ler();
     if (salvo && salvo.fase === 'jogando') {
@@ -128,23 +129,61 @@
     this.ui.atualizarHud();
   };
 
+  /* Levar o progresso para outro aparelho.
+     Copiar e colar funciona em todo lugar — inclusive dentro de visualizadores
+     que não deixam a página baixar arquivos. */
   Jogo.prototype.exportar = function () {
+    var self = this;
     var texto = UF.Salvar.exportar(this.sim);
-    try {
-      var blob = new Blob([texto], { type: 'application/json' });
-      var url = URL.createObjectURL(blob);
-      var a = doc.createElement('a');
-      a.href = url;
-      a.download = 'ultima-fronteira-progresso.json';
-      doc.body.appendChild(a); a.click(); doc.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      this.ui.mostrarAviso('Arquivo de progresso gerado.', 'bom');
-    } catch (e) {
-      this.ui.abrirModal('PROGRESSO', 'Copie o texto abaixo',
-        '<p>Guarde este texto para restaurar o progresso em outro aparelho.</p>' +
-        '<textarea style="width:100%;height:140px">' + texto.replace(/</g, '&lt;') + '</textarea>',
-        [{ rotulo: 'Fechar', principal: true, aoClicar: this.ui.fecharModal.bind(this.ui) }]);
-    }
+    this.ui.abrirModal('PROGRESSO', 'Levar para outro aparelho',
+      '<p>Copie o texto abaixo e cole no outro aparelho pela opção <b>Colar progresso</b>. ' +
+      'Ele guarda a partida atual e os setores já concluídos.</p>' +
+      '<textarea id="caixaProgresso" readonly style="width:100%;height:130px;font:11px/1.4 ui-monospace,monospace;' +
+      'background:#0a1018;color:#c3cddc;border:1px solid #22304a;border-radius:8px;padding:8px"></textarea>' +
+      '<p id="avisoCopia" style="min-height:18px"></p>', [
+      { rotulo: 'Copiar', principal: true, aoClicar: function () {
+        var area = doc.getElementById('caixaProgresso');
+        area.select(); area.setSelectionRange(0, area.value.length);
+        var pronto = function (ok) {
+          doc.getElementById('avisoCopia').textContent = ok
+            ? 'Copiado. Cole no outro aparelho.'
+            : 'Não consegui copiar sozinho — selecione o texto e copie na mão.';
+        };
+        if (global.navigator && navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(area.value).then(function () { pronto(true); }, function () { pronto(false); });
+        } else {
+          var ok = false;
+          try { ok = doc.execCommand('copy'); } catch (e) { ok = false; }
+          pronto(ok);
+        }
+      } },
+      { rotulo: 'Colar progresso', aoClicar: function () { self.importar(); } },
+      { rotulo: 'Fechar', aoClicar: function () { self.ui.fecharModal(); } }
+    ]);
+    /* O valor entra depois de montar, para não passar pelo HTML. */
+    var area = doc.getElementById('caixaProgresso');
+    if (area) area.value = texto;
+  };
+
+  Jogo.prototype.importar = function () {
+    var self = this;
+    this.ui.abrirModal('PROGRESSO', 'Colar progresso',
+      '<p>Cole aqui o texto copiado do outro aparelho.</p>' +
+      '<textarea id="caixaColar" style="width:100%;height:130px;font:11px/1.4 ui-monospace,monospace;' +
+      'background:#0a1018;color:#c3cddc;border:1px solid #22304a;border-radius:8px;padding:8px"></textarea>' +
+      '<p id="avisoColar" style="min-height:18px"></p>', [
+      { rotulo: 'Restaurar', principal: true, aoClicar: function () {
+        var texto = (doc.getElementById('caixaColar') || {}).value || '';
+        try {
+          UF.Salvar.importar(texto);
+          doc.getElementById('avisoColar').textContent = 'Progresso restaurado. Voltando ao mapa...';
+          setTimeout(function () { self.ui.fecharModal(); self.voltarAoMapa(); }, 900);
+        } catch (e) {
+          doc.getElementById('avisoColar').textContent = 'Não consegui ler esse texto: ' + e.message;
+        }
+      } },
+      { rotulo: 'Cancelar', aoClicar: function () { self.ui.fecharModal(); } }
+    ]);
   };
 
   Jogo.prototype.mostrarAjuda = function () {
