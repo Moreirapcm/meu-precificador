@@ -207,7 +207,7 @@
         if (w.occ[i] !== 0) return { ok: false, motivo: 'Já existe uma estrutura aqui' };
         if (def.sobre) {
           var jaz = w.jazidaPorId(w.recurso[i]);
-          if (!jaz || jaz.tipo !== def.sobre) return { ok: false, motivo: 'Precisa ficar sobre uma jazida de cristais' };
+          if (!jaz || jaz.tipo !== def.sobre) return { ok: false, motivo: 'Precisa ficar sobre um afloramento de petróleo' };
         } else if (w.recurso[i] !== 0) {
           return { ok: false, motivo: 'Sobre uma jazida' };
         }

@@ -369,12 +369,12 @@
   };
 
   World.prototype.plantarJazidas = function (rand) {
-    var alvo = this.cfg.jazidas, cristais = this.cfg.cristais;
+    var alvo = this.cfg.jazidas, pocos = this.cfg.pocos;
     var cx = this.w / 2, cy = this.h / 2;
     var postos = [];
     var tentativas = 0;
     /* Uma jazida inicial garantida perto do centro, para a economia não travar. */
-    while (postos.length < alvo + cristais && tentativas++ < 6000) {
+    while (postos.length < alvo + pocos && tentativas++ < 6000) {
       var primeira = postos.length === 0;
       var raio = primeira ? 6 + rand() * 4 : 6 + rand() * (this.w * 0.46);
       var ang = rand() * Math.PI * 2;
@@ -387,16 +387,16 @@
         if (Math.hypot(postos[p].x - x, postos[p].y - y) < 7) { perto = true; break; }
       }
       if (perto) continue;
-      var ehCristal = !primeira && postos.length >= alvo;
-      postos.push({ x: x, y: y, cristal: ehCristal });
+      var ehPetroleo = !primeira && postos.length >= alvo;
+      postos.push({ x: x, y: y, petroleo: ehPetroleo });
     }
 
     for (var k = 0; k < postos.length; k++) {
       var pos = postos[k];
       var jaz = {
         id: k + 1, x: pos.x, y: pos.y, w: 2, h: 2,
-        tipo: pos.cristal ? 'cristal' : 'mineral',
-        estoque: pos.cristal ? 900 + Math.floor(rand() * 300) : 1400 + Math.floor(rand() * 900),
+        tipo: pos.petroleo ? 'petroleo' : 'mineral',
+        estoque: pos.petroleo ? 900 + Math.floor(rand() * 300) : 1400 + Math.floor(rand() * 900),
         vagas: 4, ocupadas: 0, extrator: 0
       };
       jaz.estoqueMax = jaz.estoque;

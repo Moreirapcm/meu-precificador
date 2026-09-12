@@ -112,7 +112,7 @@
 
     if (this.jazidaSelecionada) {
       var jz = this.jazidaSelecionada;
-      $('selNome').textContent = jz.tipo === 'cristal' ? 'Jazida de cristais' : 'Depósito de minério';
+      $('selNome').textContent = jz.tipo === 'petroleo' ? 'Afloramento de petróleo' : 'Depósito de minério';
       $('selDetalhe').textContent = U.num(jz.estoque) + ' restantes · ' + jz.ocupadas + '/' + jz.vagas + ' operários';
       cx.appendChild(botao('Minerar aqui', '⛏', 'operário livre', function () {
         var op = sim.operarioLivreMaisProximo(jz.x, jz.y);
@@ -120,8 +120,8 @@
         sim.darTarefa(op, { tipo: 'minerar', jazida: jz.id }, true);
         self.mostrarAviso('Operário enviado à jazida.', 'info');
       }));
-      if (jz.tipo === 'cristal') {
-        cx.appendChild(botao('Extrator', '⬡', this.precoTexto(sim.custoDe(ESTR.extrator)), function () { self.iniciarConstrucao('extrator'); },
+      if (jz.tipo === 'petroleo') {
+        cx.appendChild(botao('Bomba', '⬢', this.precoTexto(sim.custoDe(ESTR.extrator)), function () { self.iniciarConstrucao('extrator'); },
           { desativado: !!sim.requisitoFaltante(ESTR.extrator), motivo: sim.requisitoFaltante(ESTR.extrator) }));
       }
       return;
@@ -306,7 +306,7 @@
     var c = this.sim.custoDe(def);
     var partes = [];
     if (c.m) partes.push(c.m + ' ◆');
-    if (c.c) partes.push('<em>' + c.c + ' ⬡</em>');
+    if (c.c) partes.push('<em>' + c.c + ' ⬢</em>');
     return partes.join(' ') || 'grátis';
   };
 

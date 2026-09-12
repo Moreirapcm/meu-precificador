@@ -357,7 +357,7 @@
   UI.prototype.precoTexto = function (custo) {
     var partes = [];
     if (custo.m) partes.push(custo.m + ' ◆');
-    if (custo.c) partes.push(custo.c + ' ⬡');
+    if (custo.c) partes.push(custo.c + ' ⬢');
     return partes.join(' + ') || 'grátis';
   };
 
@@ -406,6 +406,9 @@
       return;
     }
     this.sim.iniciar(x, y);
+    /* A prévia É o cubo translúcido do local escolhido. Sem apagá-la aqui, ela
+       fica desenhada por cima da Central pelo resto da partida. */
+    this.render.previa = null;
     $('colocacaoHud').hidden = true;
     this.render.centralizarEm(x + 2, y + 2);
     UF.audio.evento('obraConcluida');

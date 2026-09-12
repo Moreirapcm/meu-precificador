@@ -1,0 +1,13 @@
+ATENCAO AO FUNDO: esta peca vai sobre FUNDO MAGENTA, nao verde. O fundo e MAGENTA puro chapado.
+
+Crie uma construcao para o MESMO jogo de estrategia isometrico, no MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos (o mesmo do Age of Empires 2), e mesma iluminacao vinda de cima e da esquerda da Central de Comando. CONTEXTO: Terra, ano de 2050, uma colonia humana reconstruindo a cidade depois da invasao alienigena. A tecnologia e evolucao crivel do que existe hoje.
+
+PECA: uma USINA EOLICA. Ocupa 2 por 2 celulas. Da mais energia que a solar, mas e alta e frageis: um alvo facil.
+
+APARENCIA: UMA unica turbina eolica de eixo horizontal, moderna, sobre uma base circular de concreto. Torre tubular BEM ALTA e afilada, com a nacele no topo e tres pas longas e finas, ligeiramente curvas, em posicao de giro. As pas sao o que domina a silhueta: longas, esguias, dando a sensacao de movimento. Na base da torre, uma porta de acesso pequena, um quadro eletrico com cabos e uma escada. Luz de balizamento vermelha piscando no alto da nacele.
+
+ALTURA: e a construcao mais ALTA e mais FINA da base, o oposto do bunker. Isso e de proposito: voce deve bater o olho e saber que e a eolica.
+
+CORES: branco acinzentado na torre e nas pas, cinza escuro na nacele, faixa laranja e branca alternada na ponta das pas, luz vermelha no topo e luz azul clara no quadro eletrico.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao. Repito: o fundo e MAGENTA, nao verde. A figura e PEQUENA no jogo: formas simples, silhueta forte, nada de detalhe miudo. Gere UMA unica imagem quadrada com UMA unica construcao, centralizada. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

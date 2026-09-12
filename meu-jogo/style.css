@@ -12,7 +12,7 @@
   --atencao: #ffd479;
   --perigo: #ff7a6b;
   --mineral: #ffd479;
-  --cristal: #7ee0ff;
+  --petroleo: #e8a33d;
   --topo: 52px;
   --acoes: 74px;
   --abas: 46px;
@@ -97,7 +97,7 @@ button { cursor: pointer; border: 0; background: none; }
 .recursos::-webkit-scrollbar { display: none; }
 .recursos span { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .recursos i { font-style: normal; font-size: 13px; }
-.recursos i.m { color: var(--mineral); } .recursos i.c { color: var(--cristal); }
+.recursos i.m { color: var(--mineral); } .recursos i.c { color: var(--petroleo); }
 .recursos i.e { color: #c49bff; } .recursos i.t { color: #ff9ecb; }
 .recursos b { font-family: var(--hud); font-size: 14.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .recursos span.critico b { color: var(--perigo); }
@@ -210,10 +210,22 @@ button { cursor: pointer; border: 0; background: none; }
 .carta .linha { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .carta b { font-family: var(--hud); font-size: 13px; font-weight: 600; }
 .carta .preco { font-family: var(--hud); font-size: 11.5px; color: var(--mineral); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.carta .preco em { color: var(--cristal); font-style: normal; }
+.carta .preco em { color: var(--petroleo); font-style: normal; }
 .carta small { font-size: 10.5px; color: var(--suave); line-height: 1.3; }
 .carta .falta { color: var(--perigo); font-size: 10px; }
 .carta.silhueta b, .carta.silhueta small { filter: blur(0); color: #5e6b80; }
+/* Bloqueada tem que SALTAR aos olhos como bloqueada. Só apagar o texto não
+   bastou: um jogador olhou a lista cheia de torres e concluiu que nenhuma
+   estava disponível, quando metade estava. Fundo afundado, borda tracejada e
+   cadeado dizem a mesma coisa por três caminhos diferentes. */
+.carta.silhueta {
+  background: #0a0f16; border-style: dashed; border-color: #1e2836; opacity: .78;
+}
+.carta.silhueta .preco { color: #5e6b80; }
+.carta.silhueta b::after {
+  content: ' 🔒'; font-size: 10px; opacity: .75; letter-spacing: 0;
+}
+.carta:not(.silhueta) { box-shadow: inset 2px 0 0 var(--acento); }
 .carta.selecionada { border-color: var(--acento); background: #12263a; }
 
 .grupo-titulo { font-family: var(--hud); font-size: 10px; font-weight: 600; letter-spacing: 1.8px; color: var(--suave); margin: 12px 0 6px; }

@@ -348,9 +348,9 @@
         /* Entrega: soma uma única vez e zera o inventário. */
         u.rota = null;
         if (u.carga > 0) {
-          if (u.cargaTipo === 'cristal') this.jogador.c += u.carga;
+          if (u.cargaTipo === 'petroleo') this.jogador.c += u.carga;
           else { this.jogador.m += u.carga; this.estatisticas.entregue += u.carga; }
-          this.emitir('entrega', { id: u.id, qtd: u.carga, tipo: u.cargaTipo });
+          this.emitir('entrega', { id: u.id, qtd: u.carga, recurso: u.cargaTipo });
           u.carga = 0;
         }
         tarefa.estado = 'indo';

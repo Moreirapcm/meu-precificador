@@ -1,0 +1,13 @@
+ATENCAO AO FUNDO: fundo MAGENTA puro chapado, nao verde.
+
+Crie uma construcao para o MESMO jogo de estrategia isometrico, MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos, mesma iluminacao vinda de cima e da esquerda da Central de Comando. CONTEXTO: Terra, ano de 2050.
+
+PECA: uma BOMBA DE PETROLEO. Ocupa 2 por 2 celulas, entao e pequena. Ela e construida EM CIMA de um afloramento de petroleo e extrai sozinha, sem operario.
+
+APARENCIA: um cavalo-de-pau — aquela bomba de haste que sobe e desce, a mais reconhecivel dos campos de petroleo. Sobre uma laje de concreto: o bercos de treliça metalica, o balancim comprido deitado por cima, com o contrapeso pesado numa ponta e a cabeca curva de cavalo na outra, e a haste descendo dela para dentro do poco. Ao lado, um tanque de armazenamento cilindrico com escada e passarela no topo, e um quadro de controle pequeno com mostradores acesos. Tubulacao grossa ligando a bomba ao tanque. Manchas de oleo na laje e na base do poco.
+
+CORES: azul aco escuro na estrutura da bomba, como o resto da base, faixa laranja de sinalizacao no balancim e no bercos, cinza no tanque, e AMBAR luminoso no visor do tanque e nos mostradores — a mesma cor do petroleo, para se reconhecer que as duas coisas sao da mesma familia.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem sombra projetada no chao. Repito: o fundo e MAGENTA.
+
+Gere UMA unica imagem quadrada com UMA unica construcao, centralizada. Sem colagem, sem grade, sem texto.

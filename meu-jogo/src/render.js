@@ -25,6 +25,7 @@
     this.cam = { x: 0, y: 0, zoom: 1 };
     this.efeitos = [];
     this.marcadores = [];
+    this.anima = UF.Anima ? new UF.Anima() : null;
     this.previa = null;              /* prévia de construção */
     this.tracado = null;             /* prévia de muro por arraste */
     this.selecao = [];
@@ -86,6 +87,13 @@
     this.deslocamentoTerreno = { x: w.h * (LARG / 2), y: ALT };
     var dx = this.deslocamentoTerreno.x, dy = this.deslocamentoTerreno.y;
     var rand = U.rng(this.sim.setor.semente * 3 + 7);
+    /* Ruído por célula, estável: a mesma célula devolve sempre o mesmo valor,
+       então o chão não cintila quando o mapa é repintado. */
+    var sem = this.sim.setor.semente;
+    function ruido(x, y) {
+      var n = Math.sin(x * 127.1 + y * 311.7 + sem * 0.37) * 43758.5453;
+      return n - Math.floor(n);
+    }
 
     for (var y = 0; y < w.h; y++) {
       for (var x = 0; x < w.w; x++) {
@@ -95,7 +103,9 @@
         if (t === T.AGUA) cor = pal.agua;
         else if (t === T.ESCOMBRO) cor = pal.entulho;
         else if (t === T.ROCHA) cor = pal.rocha;
-        else cor = ((x + y) % 2) ? pal.chao : pal.chao2;
+        /* Era `(x+y)%2` — um xadrez, o padrão mais fácil de o olho pegar.
+           Ruído com semente dá a mesma variação sem desenhar tabuleiro. */
+        else cor = ruido(x, y) < 0.5 ? pal.chao : pal.chao2;
         var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
         this.losango(c, px, py, cor);
         if (t === T.AGUA && rand() < 0.16) this.losango(c, px, py, pal.aguaBrilho, 0.5);
@@ -115,9 +125,58 @@
       }
     }
     c.globalAlpha = 1;
+    this.suavizarBordas(c, w, dx, dy, pal);
     this.texturarTerreno(c, w, dx, dy);
     this.cvTerreno = off;
     this.terrenoSemTextura = !(UF.sprites && UF.sprites.chaoPronto());
+  };
+
+  /* Onde dois terrenos se encostam, o corte é um losango duro e o olho lê a
+     grade na hora. O Age of Empires resolve isso sem desenhar borda nenhuma:
+     pinta o terreno vizinho por cima, através de uma máscara, e deixa a
+     fronteira irregular. Aqui a máscara é um gradiente na direção do vizinho —
+     o vizinho "vaza" para dentro da célula e some no meio dela.
+     Quem pinta por cima de quem sai da PRIORIDADE: rocha cobre entulho, que
+     cobre chão, que cobre água. Sem isso as duas células se pintariam
+     mutuamente e a borda ficaria suja. */
+  var PRIORIDADE = {};
+  PRIORIDADE[0] = 20;    /* asfalto/planície */
+  PRIORIDADE[3] = 40;    /* escombro */
+  PRIORIDADE[1] = 60;    /* rocha */
+  PRIORIDADE[2] = 10;    /* água: sempre por baixo */
+
+  Render.prototype.suavizarBordas = function (c, w, dx, dy, pal) {
+    var corDe = {};
+    corDe[2] = pal.agua; corDe[3] = pal.entulho;
+    corDe[1] = pal.rocha; corDe[0] = pal.chao;
+    var lados = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+    for (var y = 0; y < w.h; y++) {
+      for (var x = 0; x < w.w; x++) {
+        var t = w.terreno[w.idx(x, y)];
+        if (t === T.RUINA) t = T.ESCOMBRO;
+        var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
+
+        for (var k = 0; k < lados.length; k++) {
+          var nx = x + lados[k][0], ny = y + lados[k][1];
+          if (nx < 0 || ny < 0 || nx >= w.w || ny >= w.h) continue;
+          var tv = w.terreno[w.idx(nx, ny)];
+          if (tv === T.RUINA) tv = T.ESCOMBRO;
+          if (tv === t || (PRIORIDADE[tv] || 0) <= (PRIORIDADE[t] || 0)) continue;
+
+          /* o gradiente nasce no canto do vizinho e morre no centro da célula */
+          var vx = (nx - ny) * (LARG / 2) + dx, vy = (nx + ny) * (ALT / 2) + dy;
+          var g = c.createLinearGradient(
+            (px + vx) / 2, (py + vy) / 2 + ALT / 2, px, py + ALT / 2);
+          g.addColorStop(0, corDe[tv] || pal.chao);
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          c.save();
+          c.globalAlpha = 0.85;
+          this.losango(c, px, py, g);
+          c.restore();
+        }
+      }
+    }
   };
 
   /* Textura por cima da cor chapada, em 'overlay': a cor do setor continua sendo
@@ -137,6 +196,15 @@
       var img = UF.sprites.cenario(grupos[g].nome);
       var padrao = c.createPattern(img, 'repeat');
       if (!padrao) continue;
+      /* A textura é esticada para cobrir ~10 células em vez de 4. É o truque que
+         o Age of Empires usa: uma folha grande de terreno em vez de um azulejo
+         por célula. No tamanho natural a mesma mancha reaparece a cada quatro
+         losangos e o olho pega o padrão; esticada, a repetição cai fora do
+         campo de visão. Custa zero — é a mesma imagem, desenhada maior. */
+      if (padrao.setTransform) {
+        var k = (10 * LARG) / img.width;
+        padrao.setTransform({ a: k, b: 0, c: 0, d: k, e: 0, f: 0 });
+      }
       c.save();
       c.beginPath();
       var achou = false;
@@ -245,6 +313,7 @@
   Render.prototype.desenhar = function (dt) {
     var ctx = this.ctx, sim = this.sim;
     this.quadro++;
+    if (this.anima) this.anima.avancar(sim, dt);
     var larg = this.cv.clientWidth, alt = this.cv.clientHeight;
     ctx.fillStyle = this.pal.ceu;
     ctx.fillRect(0, 0, larg, alt);
@@ -416,22 +485,49 @@
     var j = item.dado, z = this.cam.zoom;
     var vazia = j.estoque <= 0;
     var frac = j.estoqueMax ? j.estoque / j.estoqueMax : 0;
-    var cor = j.tipo === 'cristal' ? '#7ee0ff' : '#d8b26a';
+
+    /* Com sprite, a jazida MINGUA conforme é extraída. Não é enfeite: é a mesma
+       informação que a caixa procedural dava pela altura, e é por ela que o
+       jogador escolhe para onde mandar o próximo operário sem clicar em nada.
+       Esgotada, sobra um toco cinzento — a rocha continua lá, o minério não. */
+    var img = UF.sprites && UF.sprites.cenario(
+      j.tipo === 'petroleo' ? 'jazida-petroleo' : 'jazida-mineral');
+    if (img) {
+      var cheia = 0.55 + 0.45 * (vazia ? 0 : 0.35 + frac * 0.65);
+      var leste = this.paraTela(j.x + 2, j.y);
+      var oeste = this.paraTela(j.x, j.y + 2);
+      var sul = this.paraTela(j.x + 2, j.y + 2);
+      var larg = (leste.x - oeste.x) * cheia;
+      var alt = img.height * (larg / img.width);
+      ctx.save();
+      if (vazia) ctx.globalAlpha = 0.55;
+      ctx.drawImage(img, (leste.x + oeste.x) / 2 - larg / 2, sul.y - alt, larg, alt);
+      ctx.restore();
+      return;
+    }
+
+    var cor = j.tipo === 'petroleo' ? '#2a2622' : '#d8b26a';
     if (vazia) cor = '#6a675e';
     var cores = { topo: sombrear(cor, 1), esq: sombrear(cor, 0.55), dir: sombrear(cor, 0.76) };
     var altura = 6 + 16 * (vazia ? 0.25 : 0.4 + frac * 0.6);
     this.caixa(ctx, j.x + 0.12, j.y + 0.12, 1.76, 1.76, altura, cores);
-    if (j.tipo === 'cristal' && !vazia) {
+    /* Espelho de óleo pulsando no topo. Era um espinho de cristal apontando para
+       cima; petróleo não cresce em ponta — aflora e reflete. O âmbar é o que
+       identifica a jazida de longe, do mesmo jeito que o dourado identifica a
+       de minério: a poça preta sozinha some no chão escuro. */
+    if (j.tipo === 'petroleo' && !vazia) {
       var p = this.paraTela(j.x + 1, j.y + 1);
       ctx.save();
-      ctx.globalAlpha = 0.5 + 0.25 * Math.sin(this.quadro / 18);
-      ctx.fillStyle = '#9df0ff';
+      ctx.globalAlpha = 0.55 + 0.25 * Math.sin(this.quadro / 18);
+      ctx.fillStyle = '#e8a33d';
       ctx.beginPath();
-      ctx.moveTo(p.x, p.y - (altura + 16) * z);
-      ctx.lineTo(p.x + 7 * z, p.y - (altura + 2) * z);
-      ctx.lineTo(p.x, p.y - altura * z + 6 * z);
-      ctx.lineTo(p.x - 7 * z, p.y - (altura + 2) * z);
-      ctx.closePath(); ctx.fill();
+      ctx.ellipse(p.x, p.y - altura * z, 13 * z, 6.5 * z, 0, 0, 6.283);
+      ctx.fill();
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#ffd98a';
+      ctx.beginPath();
+      ctx.ellipse(p.x - 4 * z, p.y - (altura + 1) * z, 4 * z, 2 * z, 0, 0, 6.283);
+      ctx.fill();
       ctx.restore();
     }
   };

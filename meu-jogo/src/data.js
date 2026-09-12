@@ -30,10 +30,29 @@
       custo: { m: 100 }, pop: 10, visao: 6, req: { ed: 'central' },
       desc: 'Aumenta a capacidade de população em 10.'
     },
+    /* Quatro formas de gerar energia, cada uma com um defeito próprio — é o que
+       transforma "aperte o botão do gerador" em decisão. A chave `gerador`
+       continua a mesma de propósito: ela é a base do equilíbrio já medido, e
+       trocá-la invalidaria as partidas salvas. Só o nome e a arte mudaram. */
     gerador: {
-      nome: 'Gerador', cat: 'base', w: 2, h: 2, hp: 520, tempo: 10,
+      nome: 'Usina solar', cat: 'base', w: 2, h: 2, hp: 520, tempo: 10,
       custo: { m: 100 }, fornece: 12, visao: 6, req: { ed: 'central' },
-      desc: 'Fornece 12 de capacidade elétrica. Em déficit, a produção avançada pausa.'
+      desc: 'Barata e resistente. Fornece 12 de energia e ocupa pouco. Em déficit, a produção avançada pausa.'
+    },
+    eolica: {
+      nome: 'Usina eólica', cat: 'base', w: 2, h: 2, hp: 300, tempo: 13,
+      custo: { m: 150 }, fornece: 21, visao: 8, req: { ed: 'central' },
+      desc: 'Quase o dobro de energia da solar no mesmo espaço. Torre alta e frágil: cai fácil sob fogo.'
+    },
+    nuclear: {
+      nome: 'Usina nuclear', cat: 'base', w: 3, h: 3, hp: 900, tempo: 26,
+      custo: { m: 300 }, fornece: 55, visao: 7, req: { tech: 2 },
+      desc: 'Resolve a energia da base inteira sozinha. Cara, lenta de erguer e grande demais para esconder.'
+    },
+    fusao: {
+      nome: 'Reator de fusão', cat: 'base', w: 3, h: 3, hp: 1150, tempo: 34,
+      custo: { m: 480, c: 90 }, fornece: 95, visao: 8, req: { tech: 3 },
+      desc: 'Mais energia que todas as outras juntas. Exige tecnologia III e barris de petróleo.'
     },
     deposito: {
       nome: 'Depósito avançado', cat: 'base', w: 2, h: 2, hp: 700, tempo: 12,
@@ -58,9 +77,9 @@
       desc: 'Executa uma pesquisa por vez. Destruí-lo pausa a pesquisa em curso.'
     },
     extrator: {
-      nome: 'Extrator de cristais', cat: 'tecnologia', w: 2, h: 2, hp: 640, tempo: 14,
-      custo: { m: 150 }, energia: 3, visao: 5, sobre: 'cristal', req: { tech: 2 },
-      desc: 'Instalado sobre uma jazida de cristais. Extrai sozinho, sem operário.'
+      nome: 'Bomba de petróleo', cat: 'tecnologia', w: 2, h: 2, hp: 640, tempo: 14,
+      custo: { m: 150 }, energia: 3, visao: 5, sobre: 'petroleo', req: { tech: 2 },
+      desc: 'Instalada sobre um afloramento de petróleo. Bombeia sozinha, sem operário.'
     },
     radar: {
       nome: 'Radar', cat: 'tecnologia', w: 2, h: 2, hp: 540, tempo: 14,
@@ -116,7 +135,7 @@
       nome: 'Torre de Plasma', cat: 'defesa', w: 2, h: 2, hp: 680, tempo: 14,
       custo: { m: 190, c: 40 }, energia: 4, papel: 'torre', visao: 9, req: { tech: 3 },
       arma: { dano: 43, cad: 1.15, alc: 8.5, ar: true, solo: true, vel: 20, perfura: true, cor: '#d79bff' },
-      desc: 'Ignora blindagem e atinge solo e ar. Exige tecnologia III e cristais.'
+      desc: 'Ignora blindagem e atinge solo e ar. Exige tecnologia III e barris de petróleo.'
     }
   };
 
@@ -217,7 +236,7 @@
   /* -------------------------------------------------------------- pesquisa */
   var PESQUISAS = [
     { id: 'tech2', ramo: 'comando', nome: 'Tecnologia II — Fortificação', custo: { m: 250 }, tempo: 40, tech: 2,
-      efeito: 'Libera Artilharia, Gelo, Oficina, extrator de cristais e tropas especializadas.' },
+      efeito: 'Libera Artilharia, Gelo, Oficina, bomba de petróleo e tropas especializadas.' },
     { id: 'tech3', ramo: 'comando', nome: 'Tecnologia III — Reconquista', custo: { m: 400, c: 100 }, tempo: 60, tech: 3, req: ['tech2'],
       efeito: 'Libera Plasma, sensores avançados e as tecnologias finais.' },
 
@@ -257,7 +276,7 @@
       pressao: 0.85, id: 'manaus', nome: 'Porto de Manaus', regiao: 'Manaus · Amazonas · Brasil',
       lat: -3.13, lon: -60.02, semente: 1207, dificuldade: 'Introdução', ordem: 1,
       bioma: 'porto', tam: 52, rochas: 0.35, agua: 0.4, rios: 1, urbano: 0.72, quadra: 8,
-      jazidas: 7, cristais: 1, entradas: 2, ruinas: 2,
+      jazidas: 7, pocos: 1, entradas: 2, ruinas: 2,
       objetivo: 'Estabelecer posição: sobreviver a 6 ataques com a Central de pé.',
       ondas: 6, chefe: false, minerais: 400, operarios: 4,
       resumo: 'O Rio Negro corta o setor e separa as frentes. Galpões do porto viraram depósitos de sucata.',
@@ -268,7 +287,7 @@
       pressao: 0.95, id: 'rio', nome: 'Zona Portuária do Rio', regiao: 'Rio de Janeiro · Brasil',
       lat: -22.897, lon: -43.181, semente: 4411, dificuldade: 'Economia', ordem: 2,
       bioma: 'costa', tam: 58, rochas: 1.5, agua: 0.85, urbano: 0.8, quadra: 7,
-      jazidas: 11, cristais: 3, entradas: 3, ruinas: 3, entregaAlvo: 2600,
+      jazidas: 11, pocos: 3, entradas: 3, ruinas: 3, entregaAlvo: 2600,
       objetivo: 'Proteger a extração: entregar 2.600 minerais e resistir a 9 ataques.',
       ondas: 9, chefe: false, minerais: 400, operarios: 4,
       resumo: 'Baía de um lado, maciços de granito do outro. Armazéns arrasados rendem muito material.',
@@ -279,7 +298,7 @@
       pressao: 1.0, id: 'sp', nome: 'Marginal Tietê', regiao: 'São Paulo · Brasil',
       lat: -23.517, lon: -46.634, semente: 9034, dificuldade: 'Cerco', ordem: 3,
       bioma: 'metropole', tam: 56, rochas: 0.5, agua: 0.5, rios: 1, urbano: 0.94, quadra: 6,
-      jazidas: 9, cristais: 3, entradas: 2, ruinas: 4,
+      jazidas: 9, pocos: 3, entradas: 2, ruinas: 4,
       objetivo: 'Segurar o corredor: resistir a 11 ataques, incluindo Titãs.',
       ondas: 11, chefe: false, minerais: 450, operarios: 4,
       resumo: 'Quarteirões colados e viadutos caídos. A própria cidade é o labirinto: poucos muros fecham muita coisa.',
@@ -290,7 +309,7 @@
       pressao: 1.0, id: 'cairo', nome: 'Cairo · Margem do Nilo', regiao: 'Cairo · Egito',
       lat: 30.044, lon: 31.236, semente: 5528, dificuldade: 'Defesa aérea', ordem: 4,
       bioma: 'deserto', tam: 58, rochas: 0.6, agua: 0.5, rios: 1, urbano: 0.7, quadra: 9,
-      jazidas: 9, cristais: 2, entradas: 4, ruinas: 3, aereo: 1.8,
+      jazidas: 9, pocos: 2, entradas: 4, ruinas: 3, aereo: 1.8,
       objetivo: 'Defender o céu: manter as instalações por 10 ataques com incursões aéreas pesadas.',
       ondas: 10, chefe: false, minerais: 450, operarios: 4,
       resumo: 'O Nilo de um lado, o deserto do outro, e a cidade baixa no meio. Quatro direções de ataque.',
@@ -301,7 +320,7 @@
       pressao: 1.05, id: 'manhattan', nome: 'Ilha de Manhattan', regiao: 'Nova York · Estados Unidos',
       lat: 40.758, lon: -73.985, semente: 7120, dificuldade: 'Cerco urbano', ordem: 5,
       bioma: 'ilha', tam: 54, rochas: 0.8, agua: 1.5, ilha: true, urbano: 1, quadra: 5,
-      jazidas: 8, cristais: 3, entradas: 2, ruinas: 4,
+      jazidas: 8, pocos: 3, entradas: 2, ruinas: 4,
       objetivo: 'Reconquistar o distrito: resistir a 12 ataques na ilha cercada.',
       ondas: 12, chefe: false, minerais: 500, operarios: 4,
       resumo: 'Ilha estreita entre dois rios, grade de ruas perfeita e arranha-céus caídos fechando avenidas.',
@@ -312,11 +331,11 @@
       pressao: 1.1, id: 'merida', nome: 'Mérida · Cratera de Chicxulub', regiao: 'Yucatán · México',
       lat: 20.97, lon: -89.62, semente: 7781, dificuldade: 'Final', ordem: 6,
       bioma: 'cratera', tam: 60, rochas: 1.1, agua: 0.45, cratera: true, urbano: 0.62, quadra: 8,
-      jazidas: 10, cristais: 5, entradas: 4, ruinas: 4,
+      jazidas: 10, pocos: 5, entradas: 4, ruinas: 4,
       objetivo: 'Última fronteira: derrotar a Matriarca mantendo o comando.',
       ondas: 13, chefe: true, minerais: 550, operarios: 5,
       resumo: 'A cidade colonial está sobre a borda do impacto de 66 milhões de anos. A colmeia se instalou no anel central.',
-      risco: 'Quatro direções, cristais em abundância e a Matriarca na onda final, com reforços e bombardeio.',
+      risco: 'Quatro direções, petróleo em abundância e a Matriarca na onda final, com reforços e bombardeio.',
       fato: 'A cratera tem cerca de 180 km e sua borda aparece na superfície como um anel de cenotes ao redor de Mérida.'
     }
   ];

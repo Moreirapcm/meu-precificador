@@ -489,7 +489,7 @@ teste('Recursos nunca ficam negativos sob gastos agressivos', function () {
   }
   avancar(sim, 30);
   ok(sim.jogador.m >= 0, 'minerais negativos: ' + sim.jogador.m);
-  ok(sim.jogador.c >= 0, 'cristais negativos: ' + sim.jogador.c);
+  ok(sim.jogador.c >= 0, 'petróleo negativo: ' + sim.jogador.c);
   ok(sim.jogador.popReservada >= 0, 'população reservada negativa');
 });
 
