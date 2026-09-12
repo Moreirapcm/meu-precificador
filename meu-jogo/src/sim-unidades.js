@@ -446,16 +446,30 @@
     this.emitir('unidadePronta', { id: u.id, tipo: item.tipo, estrutura: b.id });
   };
 
+  /* A unidade sai pela FRENTE da estrutura, não pelo primeiro canto livre que
+     a varredura encontrar. A ordem antiga começava em dy = -1, que na projeção
+     isométrica é o fundo: o soldado nascia atrás do prédio, escondido por ele,
+     e só reaparecia depois de andar — parecia que tinha vindo do nada.
+     Na tela, x e y maiores estão mais à frente, então a preferência é por
+     (dx + dy) maior; entre iguais, o mais perto do centro da fachada. */
   S.pontoDeSaida = function (b) {
     for (var r = 0; r <= 3; r++) {
+      var candidatas = [];
       for (var dy = -1 - r; dy <= b.h + r; dy++) {
         for (var dx = -1 - r; dx <= b.w + r; dx++) {
           var borda = dx < 0 || dy < 0 || dx >= b.w || dy >= b.h;
           if (!borda) continue;
           var cx = b.x + dx, cy = b.y + dy;
-          if (this.world.livre(cx, cy)) return { x: cx, y: cy };
+          if (!this.world.livre(cx, cy)) continue;
+          candidatas.push({ x: cx, y: cy, frente: dx + dy,
+            desvio: Math.abs(dx - (b.w - 1) / 2) + Math.abs(dy - (b.h - 1) / 2) });
         }
       }
+      if (!candidatas.length) continue;
+      candidatas.sort(function (m, n) {
+        return (n.frente - m.frente) || (m.desvio - n.desvio);
+      });
+      return { x: candidatas[0].x, y: candidatas[0].y };
     }
     return null;
   };

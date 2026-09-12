@@ -12,17 +12,23 @@
     var b = this.criarEstrutura('central', x, y, true);
     this.world.revelar(x + 2, y + 2, 13);
     var quantos = this.setor.operarios || R.operarios;
-    var postos = [];
-    for (var r = 1; postos.length < quantos && r < 9; r++) {
-      for (var dy = -r; dy <= b.h + r && postos.length < quantos; dy++) {
-        for (var dx = -r; dx <= b.w + r && postos.length < quantos; dx++) {
+    /* Os operários iniciais nascem na FRENTE da Central. A varredura começava
+       em dy = -1, que na projeção isométrica é o fundo: os quatro apareciam
+       atrás do prédio, escondidos por ele. Ordenar por (dx + dy) decrescente
+       põe primeiro quem está mais à frente na tela. */
+    var quantos2 = quantos, candidatas = [];
+    for (var r = 1; r < 9 && candidatas.length < quantos2 * 3; r++) {
+      for (var dy = -r; dy <= b.h + r; dy++) {
+        for (var dx = -r; dx <= b.w + r; dx++) {
           var borda = dx < 0 || dy < 0 || dx >= b.w || dy >= b.h;
           if (!borda) continue;
           var cx = x + dx, cy = y + dy;
-          if (this.world.livre(cx, cy)) postos.push({ x: cx, y: cy });
+          if (this.world.livre(cx, cy)) candidatas.push({ x: cx, y: cy, frente: dx + dy });
         }
       }
     }
+    candidatas.sort(function (m, n) { return n.frente - m.frente; });
+    var postos = candidatas.slice(0, quantos);
     for (var i = 0; i < postos.length; i++) {
       var u = this.criarUnidade('operario', postos[i].x + 0.5, postos[i].y + 0.5, 'aliado');
       var jaz = this.jazidaLivreMaisProxima(u.x, u.y);

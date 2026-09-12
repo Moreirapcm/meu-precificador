@@ -566,6 +566,11 @@
     }
 
     this.ruinas = [];
+    /* altura por célula: o vulto precisa saber, para cada célula à frente da
+       unidade, se o prédio dali é alto o bastante para escondê-la. Varrer a
+       lista inteira de ruínas por unidade e por célula seria centenas de
+       milhares de comparações por quadro. */
+    this.alturaRuina = new Float32Array(w.n);
     for (var p = 0; p < predios.length; p++) {
       var pr = predios[p];
       for (var q = 0; q < pr.celulas.length; q++) {
@@ -580,6 +585,7 @@
         var quebra = pr.arrasado ? 0.5 + rand() * 0.6
           : borda >= 2 ? 0.5 + rand() * 0.34
             : (borda === 1 ? 0.78 + rand() * 0.22 : 0.94 + rand() * 0.12);
+        this.alturaRuina[w.idx(x, y)] = pr.alt * quebra;
         this.ruinas.push({
           x: x, y: y, rocha: pr.rocha,
           alt: pr.alt * quebra,
@@ -624,12 +630,56 @@
     lista.sort(function (a, b) { return a.z - b.z; });
     for (var i = 0; i < lista.length; i++) lista[i].desenhar.call(this, ctx, lista[i]);
 
+    this.desenharVultos(ctx);
     this.desenharProjeteis(ctx);
     this.desenharEfeitos(ctx, dt);
     this.desenharNevoa(ctx);
     this.desenharAreasDePerigo(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
+  };
+
+  /* Vulto: o contorno da unidade aparecendo ATRAVÉS do prédio que a esconde.
+     Em isométrico, quem está atrás de um prédio alto some — e some de verdade,
+     não dá para clicar nem para saber que está lá. Todo RTS isométrico resolve
+     assim, desenhando a silhueta por cima no fim do quadro. Só para as
+     unidades do jogador: o inimigo escondido atrás de um prédio está escondido
+     de propósito, faz parte do jogo. */
+  Render.prototype.desenharVultos = function (ctx) {
+    var sim = this.sim, w = sim.world, z = this.cam.zoom;
+    for (var i = 0; i < sim.unidades.length; i++) {
+      var u = sim.unidades[i];
+      if (u.lado !== 'aliado' || u.morta || u.voa) continue;
+      if (!this.naTela(u.x, u.y)) continue;
+      var ux = Math.floor(u.x), uy = Math.floor(u.y);
+      /* o que cobre é o que está à FRENTE na diagonal da tela */
+      var tapado = false;
+      for (var d = 1; d <= 3 && !tapado; d++) {
+        for (var k = 0; k <= d && !tapado; k++) {
+          var cx = ux + k, cy = uy + (d - k);
+          if (!w.dentro(cx, cy)) continue;
+          var t = w.terreno[w.idx(cx, cy)];
+          if (t !== T.RUINA && t !== T.ROCHA) continue;
+          /* só conta se o prédio for alto o bastante para alcançar a unidade */
+          if (this.alturaRuina[w.idx(cx, cy)] > d * ALT * 0.9) tapado = true;
+        }
+      }
+      if (!tapado) continue;
+      var p = this.paraTela(u.x, u.y);
+      var h = 16 * z;
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.strokeStyle = '#8ce07f';
+      ctx.lineWidth = 1.6;
+      ctx.fillStyle = 'rgba(20,30,22,0.55)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y - h * 0.55, 4.4 * z, h * 0.55, 0, 0, 6.283);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - h * 1.25, 3 * z, 0, 6.283);
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
   };
 
   /* Linhas de célula só perto do cursor/prévia: orienta sem poluir. */
