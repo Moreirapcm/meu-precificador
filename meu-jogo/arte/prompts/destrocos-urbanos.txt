@@ -1,0 +1,18 @@
+ATENCAO AO FUNDO: fundo MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem sombra projetada no chao. Repito: o fundo e MAGENTA.
+
+Crie uma FOLHA DE PECAS para o MESMO jogo de estrategia isometrico das pecas anteriores. MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos, mesma iluminacao vinda de cima e da esquerda. CONTEXTO: Terra, ano de 2050, cidade abandonada.
+
+Gere SEIS pecas SEPARADAS, bem espacadas, organizadas em duas linhas de tres, cada uma isolada no fundo magenta, sem encostar uma na outra:
+
+1. TRECHO DE VIADUTO DE CONCRETO QUEBRADO: um pedaco de pista elevada apoiado em dois pilares, com a ponta partida e ferragem exposta pendurada.
+2. PILAR DE VIADUTO sozinho, alto, com o comeco da pista quebrada em cima, pichado.
+3. PREDIO PEQUENO DESABADO: so as paredes de baixo de pe, o resto virou monte de laje e ferragem.
+4. PASSARELA DE PEDESTRES caida atravessada, estrutura metalica torcida.
+5. MONTE DE ENTULHO grande: laje quebrada, tijolo, ferro retorcido, poeira, mato nascendo.
+6. POSTE DE LUZ CAIDO junto com um pedaco de muro de concreto tombado e um container de lixo virado.
+
+TODAS as pecas: concreto manchado, ferrugem, poeira, mato nascendo nas rachaduras. Nada de gente, nada de sangue, nada de texto legivel.
+
+ESCALA: todas as pecas na MESMA escala relativa, como se estivessem no mesmo mapa.
+
+Sem colagem de fotos, sem texto, sem numeros, sem moldura, sem grade desenhada. Apenas as seis pecas soltas no fundo magenta.

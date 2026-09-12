@@ -16,12 +16,12 @@
      tom e a rua é a coisa mais clara da tela: a leitura fica "massa escura =
      não passa, claro = passa". */
   var PALETAS = {
-    porto:     { chao: '#5c655a', chao2: '#656e62', rua: '#7b8377', agua: '#16262b', aguaBrilho: '#294a48', entulho: '#4e5346', ruina: '#2f3429', ruinaTopo: '#394030', rocha: '#272a23', ceu: '#0d1410' },
-    costa:     { chao: '#585e66', chao2: '#616771', rua: '#767d87', agua: '#123040', aguaBrilho: '#1d4c5c', entulho: '#4a4d53', ruina: '#2c3036', ruinaTopo: '#353a41', rocha: '#24282d', ceu: '#0a1016' },
-    metropole: { chao: '#575a60', chao2: '#60636a', rua: '#767a82', entulho: '#4a4d52', agua: '#262518', aguaBrilho: '#3a3726', ruina: '#2b2d32', ruinaTopo: '#34363c', rocha: '#232529', ceu: '#0b0d12' },
-    deserto:   { chao: '#8a7757', chao2: '#948160', rua: '#a89372', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#6b5d45', ruina: '#453a29', ruinaTopo: '#51452e', rocha: '#3a3222', ceu: '#161009' },
-    ilha:      { chao: '#545c60', chao2: '#5d656a', rua: '#727b80', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#474d51', ruina: '#292f33', ruinaTopo: '#32383d', rocha: '#21262a', ceu: '#080c12' },
-    cratera:   { chao: '#6e6a58', chao2: '#777360', rua: '#8b8670', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#5b5747', ruina: '#393528', ruinaTopo: '#433e2f', rocha: '#2f2c22', ceu: '#100f0a' }
+    porto:     { chao: '#5c655a', chao2: '#656e62', rua: '#7b8377', agua: '#16262b', aguaBrilho: '#294a48', entulho: '#4e5346', ruina: '#2f3429', ruinaTopo: '#394030', rocha: '#272a23', grama: '#5f7a4e', terra: '#6b6348', ceu: '#0d1410' },
+    costa:     { chao: '#585e66', chao2: '#616771', rua: '#767d87', agua: '#123040', aguaBrilho: '#1d4c5c', entulho: '#4a4d53', ruina: '#2c3036', ruinaTopo: '#353a41', rocha: '#24282d', grama: '#5b7150', terra: '#6d6650', ceu: '#0a1016' },
+    metropole: { chao: '#575a60', chao2: '#60636a', rua: '#767a82', entulho: '#4a4d52', agua: '#262518', aguaBrilho: '#3a3726', ruina: '#2b2d32', ruinaTopo: '#34363c', rocha: '#232529', grama: '#5a6b4c', terra: '#67624f', ceu: '#0b0d12' },
+    deserto:   { chao: '#8a7757', chao2: '#948160', rua: '#a89372', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#6b5d45', ruina: '#453a29', ruinaTopo: '#51452e', rocha: '#3a3222', grama: '#8a8250', terra: '#9b8757', ceu: '#161009' },
+    ilha:      { chao: '#545c60', chao2: '#5d656a', rua: '#727b80', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#474d51', ruina: '#292f33', ruinaTopo: '#32383d', rocha: '#21262a', grama: '#57694f', terra: '#68634f', ceu: '#080c12' },
+    cratera:   { chao: '#6e6a58', chao2: '#777360', rua: '#8b8670', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#5b5747', ruina: '#393528', ruinaTopo: '#433e2f', rocha: '#2f2c22', grama: '#6e7450', terra: '#7b7154', ceu: '#100f0a' }
   };
 
   function Render(canvas, sim) {
@@ -40,6 +40,7 @@
     this.quadro = 0;
     this.escalaDPR = 1;
     this.prepararRuinas();
+    this.prepararDestrocos();
     this.prepararTerreno();
     /* No celular a câmera começa mais afastada para caber a base inteira. */
     var menor = Math.min(canvas.clientWidth || 800, canvas.clientHeight || 600);
@@ -79,6 +80,62 @@
     this.cv.width = Math.round(this.cv.clientWidth * dpr);
     this.cv.height = Math.round(this.cv.clientHeight * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+
+  /* Sucata espalhada: carro queimado, ônibus parado, viaduto partido, monte de
+     entulho. É o que tira a cara de tabuleiro — sem nada solto sobre ele, o
+     chão é uma malha de losangos iguais e a cidade não parece ter sido vivida.
+
+     Onde cada coisa cai não é decoração cega: o entulho e o prédio caído vão
+     para o ESCOMBRO, que é justamente o terreno onde não se constrói, e assim
+     a arte passa a EXPLICAR a regra em vez de brigar com ela. Os veículos vão
+     para a rua, poucos, porque rua entupida de carro esconde o corredor que a
+     rua existe para mostrar.
+
+     O sorteio é um hash da célula: a mesma partida devolve sempre a mesma
+     sucata nos mesmos lugares, e nada pisca ao repintar. */
+  var DESTROCOS_ENTULHO = [
+    { nome: 'destroco-entulho', cel: 1.5 },
+    { nome: 'destroco-predio-caido', cel: 2.0 },
+    { nome: 'destroco-poste', cel: 1.7 },
+    { nome: 'destroco-passarela', cel: 2.1 },
+    { nome: 'destroco-pilar', cel: 1.3 },
+    { nome: 'destroco-viaduto', cel: 2.2 }
+  ];
+  var DESTROCOS_RUA = [
+    { nome: 'destroco-carro', cel: 1.1 },
+    { nome: 'destroco-van', cel: 1.25 },
+    { nome: 'destroco-viatura', cel: 1.25 },
+    { nome: 'destroco-onibus', cel: 2.1 },
+    { nome: 'destroco-caminhao', cel: 1.8 },
+    { nome: 'destroco-tanque', cel: 2.1 }
+  ];
+
+  Render.prototype.prepararDestrocos = function () {
+    var w = this.sim.world, sem = this.sim.setor.semente;
+    function h(x, y, sal) {
+      var n = Math.sin(x * 127.1 + y * 311.7 + sal * 74.7 + sem * 0.113) * 43758.5453;
+      return n - Math.floor(n);
+    }
+    this.destrocos = [];
+    for (var y = 1; y < w.h - 2; y++) {
+      for (var x = 1; x < w.w - 2; x++) {
+        var i = w.idx(x, y), t = w.terreno[i];
+        var lista = null, chance = 0;
+        if (t === T.ESCOMBRO) { lista = DESTROCOS_ENTULHO; chance = 0.055; }
+        else if (t === T.ASFALTO && w.rua && w.rua[i]) { lista = DESTROCOS_RUA; chance = 0.022; }
+        if (!lista || h(x, y, 3) > chance) continue;
+        /* Nada de duas peças encostadas: uma em cima da outra vira mancha. */
+        var perto = false;
+        for (var k = this.destrocos.length - 1; k >= 0 && !perto; k--) {
+          var d = this.destrocos[k];
+          if (Math.abs(d.x - x) < 5 && Math.abs(d.y - y) < 5) perto = true;
+        }
+        if (perto) continue;
+        var e = lista[Math.floor(h(x, y, 5) * lista.length) % lista.length];
+        this.destrocos.push({ x: x, y: y, nome: e.nome, cel: e.cel });
+      }
+    }
   };
 
   /* -------------------------------------------- terreno pré-desenhado */
@@ -138,9 +195,21 @@
         else if (t === T.ESCOMBRO) cor = pal.entulho;
         else if (t === T.ROCHA) cor = pal.rocha;
         else if (ehRua[w.idx(x, y)]) cor = sombrear(pal.rua, ruido(x, y) < 0.5 ? 1 : 0.96);
-        /* Era `(x+y)%2` — um xadrez, o padrão mais fácil de o olho pegar.
-           Ruído com semente dá a mesma variação sem desenhar tabuleiro. */
-        else cor = ruido(x, y) < 0.5 ? pal.chao : pal.chao2;
+        /* Fora da via, o chão não é asfalto uniforme: é a cidade sendo comida
+           de volta pelo mato. Manchas grandes de vegetação e de terra batida,
+           sorteadas por uma escala baixa de ruído para virarem áreas e não
+           chuvisco — um pixel verde solto no meio do cinza só suja. O verde
+           também é o que dá cor ao mapa: cinza sobre cinza cansa a vista e não
+           ajuda a se orientar.
+           Era `(x+y)%2` — um xadrez, o padrão mais fácil de o olho pegar. */
+        else {
+          var manchaV = ruido(Math.floor(x / 4) * 4 + 11, Math.floor(y / 4) * 4 + 7);
+          var manchaT = ruido(Math.floor(x / 5) * 5 + 31, Math.floor(y / 5) * 5 + 19);
+          var fino = ruido(x, y);
+          if (manchaV > 0.58) cor = sombrear(pal.grama, 0.88 + fino * 0.26);
+          else if (manchaT > 0.66) cor = sombrear(pal.terra, 0.9 + fino * 0.2);
+          else cor = fino < 0.5 ? pal.chao : pal.chao2;
+        }
         var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
         this.losango(c, px, py, cor);
         if (t === T.AGUA && rand() < 0.16) this.losango(c, px, py, pal.aguaBrilho, 0.5);
@@ -459,6 +528,15 @@
       if (!sim.world.explorado[sim.world.idx(r.x, r.y)]) continue;
       lista.push({ z: r.x + r.y, dado: r, desenhar: this.desenharRuina });
     }
+    for (i = 0; this.destrocos && i < this.destrocos.length; i++) {
+      var dz = this.destrocos[i];
+      if (!this.naTela(dz.x, dz.y)) continue;
+      if (!sim.world.explorado[sim.world.idx(dz.x, dz.y)]) continue;
+      /* Construiu em cima? A sucata sai de cena: o prédio do jogador é o que
+         importa ali, e um ônibus atravessando a parede só confunde. */
+      if (sim.world.occ[sim.world.idx(dz.x, dz.y)] !== 0) continue;
+      lista.push({ z: dz.x + dz.y + 0.3, dado: dz, desenhar: this.desenharDestroco });
+    }
     for (i = 0; i < sim.world.jazidas.length; i++) {
       var j = sim.world.jazidas[i];
       if (!this.naTela(j.x, j.y)) continue;
@@ -521,34 +599,139 @@
   }
   Render.prototype.sombrear = sombrear;
 
+  /* Pinta uma face do bloco com uma textura, encaixando a imagem no
+     paralelogramo em vez de no retângulo. `drawImage` só sabe desenhar reto;
+     a face isométrica é torta. A saída é mapear o quadrado unitário da textura
+     nos dois vetores da face — o da largura e o da altura — com `transform`,
+     e recortar antes para nada vazar para o vizinho.
+     `repeticoes` existe porque esticar uma fachada de oito andares num prédio
+     de trinta deixaria janelas do tamanho de portas: a textura se repete a
+     cada tanto de altura, e o prédio alto ganha mais fileiras, não janelas
+     maiores. */
+  Render.prototype.faceTexturada = function (ctx, img, p0, vx, vy, hx, hy, repeticoes) {
+    /* Sem `clip()` de propósito: o quadrado unitário da textura cai EXATAMENTE
+       sobre o paralelogramo da face, então não há o que recortar — e recortar
+       custava mais do que todo o resto do quadro junto (82 ms contra 13 ms). */
+    ctx.save();
+    ctx.transform(vx, vy, hx, hy, p0.x, p0.y);
+    var n = Math.max(1, Math.round(repeticoes || 1));
+    for (var i = 0; i < n; i++) ctx.drawImage(img, 0, i / n, 1, 1 / n + 0.002);
+    ctx.restore();
+  };
+
+  /* Um prédio texturado é caro: são três faces, cada uma com um `transform` e
+     uma ou mais cópias da imagem. Com setecentas ruínas na tela isso levou o
+     quadro de 13 ms para 82 ms — o jogo ia a doze quadros por segundo.
+     A saída é a de sempre em jogo isométrico: o prédio não muda nunca, então
+     ele é desenhado UMA vez num canvas próprio e depois só copiado. A chave é
+     a altura arredondada em degraus de quatro pixels e um de três níveis de
+     tom; prédios diferentes que caem no mesmo degrau compartilham o mesmo
+     desenho, e ninguém percebe. */
+  Render.prototype.predioPronto = function (alt, tom, rocha) {
+    if (!this.cachePredio) this.cachePredio = {};
+    var passo = Math.max(1, Math.round(alt / 4));
+    var nivel = Math.min(2, Math.max(0, Math.round((tom - 0.78) * 3)));
+    var chave = passo + ':' + nivel + ':' + (rocha ? 'r' : 'p');
+    var pronto = this.cachePredio[chave];
+    if (pronto) return pronto;
+
+    var h = passo * 4, pal = this.pal;
+    var tomUsado = 0.82 + nivel * 0.17;
+    var margem = 2;
+    var cv = global.document.createElement('canvas');
+    cv.width = LARG + margem * 2;
+    cv.height = Math.ceil(h + ALT + margem * 2);
+    var c = cv.getContext('2d');
+    var base = rocha ? pal.rocha : pal.ruina;
+    var topoCor = rocha ? pal.rocha : pal.ruinaTopo;
+    /* cantos do losango da base, em coordenadas do canvas */
+    var bx = margem, by = margem + h;
+    var n = { x: bx + LARG / 2, y: by }, l = { x: bx + LARG, y: by + ALT / 2 };
+    var sul = { x: bx + LARG / 2, y: by + ALT }, o = { x: bx, y: by + ALT / 2 };
+
+    function face(p1, p2, cor) {
+      c.beginPath();
+      c.moveTo(p1.x, p1.y); c.lineTo(p2.x, p2.y);
+      c.lineTo(p2.x, p2.y - h); c.lineTo(p1.x, p1.y - h);
+      c.closePath(); c.fillStyle = cor; c.fill();
+    }
+    face(o, sul, sombrear(base, tomUsado * 0.52));
+    face(sul, l, sombrear(base, tomUsado * 0.78));
+    c.beginPath();
+    c.moveTo(n.x, n.y - h); c.lineTo(l.x, l.y - h);
+    c.lineTo(sul.x, sul.y - h); c.lineTo(o.x, o.y - h);
+    c.closePath(); c.fillStyle = sombrear(topoCor, tomUsado); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 1; c.stroke();
+
+    if (!rocha && UF.sprites) {
+      var fach = UF.sprites.cenario('fachada');
+      var lajeImg = UF.sprites.cenario('laje');
+      var reps = Math.max(1, h / 46);
+      if (fach) {
+        c.globalAlpha = 0.82;
+        this.faceTexturada(c, fach, { x: o.x, y: o.y - h }, sul.x - o.x, sul.y - o.y, 0, h, reps);
+        c.globalAlpha = 0.6;
+        this.faceTexturada(c, fach, { x: sul.x, y: sul.y - h }, l.x - sul.x, l.y - sul.y, 0, h, reps);
+      }
+      if (lajeImg) {
+        c.globalAlpha = 0.8;
+        this.faceTexturada(c, lajeImg, { x: n.x, y: n.y - h },
+          l.x - n.x, l.y - n.y, o.x - n.x, o.y - n.y, 1);
+      }
+      c.globalAlpha = 1;
+    }
+    pronto = { cv: cv, h: h, margem: margem, temTextura: !rocha && !!(UF.sprites && UF.sprites.cenario('fachada')) };
+    this.cachePredio[chave] = pronto;
+    return pronto;
+  };
+
   Render.prototype.desenharRuina = function (ctx, item) {
-    var r = item.dado, pal = this.pal;
-    var base = r.rocha ? pal.rocha : pal.ruina;
-    var topo = r.rocha ? pal.rocha : pal.ruinaTopo;
-    var cores = {
-      topo: sombrear(topo, r.tom),
-      esq: sombrear(base, r.tom * 0.52),
-      dir: sombrear(base, r.tom * 0.78),
-      contorno: 'rgba(0,0,0,0.3)'
-    };
-    var alt = r.alt;
-    var g = this.caixa(ctx, r.x, r.y, 1, 1, alt, cores);
-    /* Faixa de janela em prédio baixo vira listra: muito contorno, pouca
-       informação. Só entra a partir de uma altura em que o prédio já se lê. */
-    if (r.janelas && alt > 46 && this.cam.zoom > 0.55) {
-      var z = this.cam.zoom;
-      var linhas = Math.max(1, Math.floor(alt / 12));
+    var r = item.dado, pal = this.pal, z = this.cam.zoom;
+
+    /* Enquanto a textura não chegou, o cache guardaria prédios sem ela para
+       sempre. Por isso a lembrança é jogada fora na primeira vez em que a
+       imagem aparece — uma vez só, não a cada quadro. */
+    var temFachada = !!(UF.sprites && UF.sprites.cenario('fachada'));
+    if (temFachada && !this.fachadaChegou) { this.cachePredio = {}; this.fachadaChegou = true; }
+
+    var pronto = this.predioPronto(r.alt, r.tom, r.rocha);
+    var base = this.paraTela(r.x, r.y);
+    var larg = (LARG + pronto.margem * 2) * z;
+    var altPx = pronto.cv.height * z;
+    /* o canto oeste do losango da base cai no ponto (x, y) da célula */
+    ctx.drawImage(pronto.cv,
+      base.x - pronto.margem * z,
+      base.y - (pronto.h + pronto.margem) * z,
+      larg, altPx);
+
+    if (r.janelas && pronto.temTextura === false && r.alt > 46 && z > 0.55) {
+      /* Sem textura (imagem ausente), as fileiras de janela desenhadas à mão
+         continuam sendo o que dá escala ao prédio. */
+      var g = { s: this.paraTela(r.x + 1, r.y + 1), o: this.paraTela(r.x, r.y + 1),
+        l: this.paraTela(r.x + 1, r.y), h: r.alt * z };
+      var linhas = Math.max(1, Math.floor(r.alt / 12));
       for (var i = 0; i < linhas; i++) {
         var yy = g.s.y - g.h + 6 * z + i * 12 * z;
         if (yy > g.s.y - 4 * z) break;
-        /* Uma janela em cada dez ainda tem luz: a cidade não morreu inteira. */
         var acesa = ((r.x * 31 + r.y * 17 + i * 7) % 11) === 0;
         ctx.fillStyle = acesa ? 'rgba(255,208,130,0.42)' : 'rgba(10,13,18,0.38)';
         ctx.fillRect(g.o.x + 5 * z, yy, (g.s.x - g.o.x) - 10 * z, 3.4 * z);
-        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.28)' : 'rgba(10,13,18,0.28)';
-        ctx.fillRect(g.s.x + 5 * z, yy + 3.4 * z, (g.l.x - g.s.x) - 10 * z, 3.4 * z);
       }
     }
+  };
+
+  Render.prototype.desenharDestroco = function (ctx, item) {
+    var d = item.dado;
+    var img = UF.sprites && UF.sprites.cenario(d.nome);
+    if (!img) return;
+    /* Apoiado no canto SUL da célula, como as estruturas: a borda de baixo da
+       arte é a frente da peça, e é ela que tem de encostar no chão. */
+    var leste = this.paraTela(d.x + d.cel, d.y);
+    var oeste = this.paraTela(d.x, d.y + d.cel);
+    var sul = this.paraTela(d.x + d.cel, d.y + d.cel);
+    var larg = leste.x - oeste.x;
+    var alt = img.height * (larg / img.width);
+    ctx.drawImage(img, (leste.x + oeste.x) / 2 - larg / 2, sul.y - alt, larg, alt);
   };
 
   Render.prototype.desenharJazida = function (ctx, item) {
