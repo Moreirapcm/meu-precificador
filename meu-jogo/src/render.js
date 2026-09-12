@@ -16,12 +16,12 @@
      tom e a rua é a coisa mais clara da tela: a leitura fica "massa escura =
      não passa, claro = passa". */
   var PALETAS = {
-    porto:     { chao: '#5c655a', chao2: '#656e62', rua: '#7b8377', agua: '#16262b', aguaBrilho: '#294a48', entulho: '#4e5346', ruina: '#2f3429', ruinaTopo: '#394030', rocha: '#272a23', grama: '#5f7a4e', terra: '#6b6348', ceu: '#0d1410' },
-    costa:     { chao: '#585e66', chao2: '#616771', rua: '#767d87', agua: '#123040', aguaBrilho: '#1d4c5c', entulho: '#4a4d53', ruina: '#2c3036', ruinaTopo: '#353a41', rocha: '#24282d', grama: '#5b7150', terra: '#6d6650', ceu: '#0a1016' },
-    metropole: { chao: '#575a60', chao2: '#60636a', rua: '#767a82', entulho: '#4a4d52', agua: '#262518', aguaBrilho: '#3a3726', ruina: '#2b2d32', ruinaTopo: '#34363c', rocha: '#232529', grama: '#5a6b4c', terra: '#67624f', ceu: '#0b0d12' },
-    deserto:   { chao: '#8a7757', chao2: '#948160', rua: '#a89372', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#6b5d45', ruina: '#453a29', ruinaTopo: '#51452e', rocha: '#3a3222', grama: '#8a8250', terra: '#9b8757', ceu: '#161009' },
-    ilha:      { chao: '#545c60', chao2: '#5d656a', rua: '#727b80', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#474d51', ruina: '#292f33', ruinaTopo: '#32383d', rocha: '#21262a', grama: '#57694f', terra: '#68634f', ceu: '#080c12' },
-    cratera:   { chao: '#6e6a58', chao2: '#777360', rua: '#8b8670', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#5b5747', ruina: '#393528', ruinaTopo: '#433e2f', rocha: '#2f2c22', grama: '#6e7450', terra: '#7b7154', ceu: '#100f0a' }
+    porto:     { chao: '#5c655a', chao2: '#656e62', rua: '#7b8377', agua: '#16262b', aguaBrilho: '#294a48', entulho: '#4e5346', ruina: '#2f3429', ruinaTopo: '#394030', rocha: '#272a23', grama: '#556149', terra: '#6b6348', ceu: '#0d1410' },
+    costa:     { chao: '#585e66', chao2: '#616771', rua: '#767d87', agua: '#123040', aguaBrilho: '#1d4c5c', entulho: '#4a4d53', ruina: '#2c3036', ruinaTopo: '#353a41', rocha: '#24282d', grama: '#525c4a', terra: '#6d6650', ceu: '#0a1016' },
+    metropole: { chao: '#575a60', chao2: '#60636a', rua: '#767a82', entulho: '#4a4d52', agua: '#262518', aguaBrilho: '#3a3726', ruina: '#2b2d32', ruinaTopo: '#34363c', rocha: '#232529', grama: '#535b48', terra: '#67624f', ceu: '#0b0d12' },
+    deserto:   { chao: '#8a7757', chao2: '#948160', rua: '#a89372', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#6b5d45', ruina: '#453a29', ruinaTopo: '#51452e', rocha: '#3a3222', grama: '#7d7551', terra: '#9b8757', ceu: '#161009' },
+    ilha:      { chao: '#545c60', chao2: '#5d656a', rua: '#727b80', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#474d51', ruina: '#292f33', ruinaTopo: '#32383d', rocha: '#21262a', grama: '#4f5a49', terra: '#68634f', ceu: '#080c12' },
+    cratera:   { chao: '#6e6a58', chao2: '#777360', rua: '#8b8670', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#5b5747', ruina: '#393528', ruinaTopo: '#433e2f', rocha: '#2f2c22', grama: '#666a4d', terra: '#7b7154', ceu: '#100f0a' }
   };
 
   function Render(canvas, sim) {
@@ -102,6 +102,14 @@
     { nome: 'destroco-pilar', cel: 1.3 },
     { nome: 'destroco-viaduto', cel: 2.2 }
   ];
+  /* Vegetação. A cidade é tropical e está abandonada há décadas: o mato é
+     personagem, não enfeite. Vai no chão livre FORA da via — mato no meio da
+     rua esconderia o corredor. */
+  var VERDE = [
+    { nome: 'manaus-mangueira', cel: 2.2 },
+    { nome: 'manaus-palmeira', cel: 1.4 },
+    { nome: 'manaus-mangueira', cel: 1.8 }
+  ];
   var DESTROCOS_RUA = [
     { nome: 'destroco-carro', cel: 1.1 },
     { nome: 'destroco-van', cel: 1.25 },
@@ -111,6 +119,41 @@
     { nome: 'destroco-tanque', cel: 2.1 }
   ];
 
+  /* Um marco reconhecível por setor. Mapa gerado por regra é sempre igual a si
+     mesmo: sem nada que o jogador reconheça, Manaus e São Paulo são a mesma
+     grade com outro tom de cinza. O Teatro Amazonas em ruínas resolve isso com
+     uma peça só — e ele nasce EM CIMA de um quarteirão de ruína, que já
+     bloqueia passagem, para a arte não prometer um caminho que a regra nega.
+     As ruínas cobertas param de ser desenhadas: o teatro é o prédio ali. */
+  var MARCOS = { porto: { nome: 'manaus-teatro', cel: 5 } };
+
+  Render.prototype.plantarMarco = function (w) {
+    var def = MARCOS[this.sim.setor.bioma];
+    if (!def) return;
+    var lado = Math.ceil(def.cel), cx = w.w / 2, cy = w.h / 2;
+    var melhor = null, melhorD = Infinity;
+    for (var y = 2; y < w.h - lado - 2; y++) {
+      for (var x = 2; x < w.w - lado - 2; x++) {
+        var cheio = true;
+        for (var dy = 0; dy < lado && cheio; dy++) {
+          for (var dx = 0; dx < lado; dx++) {
+            if (w.terreno[w.idx(x + dx, y + dy)] !== T.RUINA) { cheio = false; break; }
+          }
+        }
+        if (!cheio) continue;
+        var d = Math.hypot(x - cx, y - cy);
+        if (d < melhorD) { melhorD = d; melhor = { x: x, y: y }; }
+      }
+    }
+    if (!melhor) return;
+    for (var ay = 0; ay < lado; ay++) {
+      for (var ax = 0; ax < lado; ax++) {
+        this.cobertas[(melhor.x + ax) + ',' + (melhor.y + ay)] = 1;
+      }
+    }
+    this.destrocos.push({ x: melhor.x, y: melhor.y, nome: def.nome, cel: def.cel });
+  };
+
   Render.prototype.prepararDestrocos = function () {
     var w = this.sim.world, sem = this.sim.setor.semente;
     function h(x, y, sal) {
@@ -118,12 +161,15 @@
       return n - Math.floor(n);
     }
     this.destrocos = [];
+    this.cobertas = {};
+    this.plantarMarco(w);
     for (var y = 1; y < w.h - 2; y++) {
       for (var x = 1; x < w.w - 2; x++) {
         var i = w.idx(x, y), t = w.terreno[i];
         var lista = null, chance = 0;
         if (t === T.ESCOMBRO) { lista = DESTROCOS_ENTULHO; chance = 0.055; }
         else if (t === T.ASFALTO && w.rua && w.rua[i]) { lista = DESTROCOS_RUA; chance = 0.022; }
+        else if (t === T.ASFALTO) { lista = VERDE; chance = 0.05; }
         if (!lista || h(x, y, 3) > chance) continue;
         /* Nada de duas peças encostadas: uma em cima da outra vira mancha. */
         var perto = false;
@@ -167,24 +213,49 @@
        e ganha o tom mais claro da paleta. Cinco células é o menor corredor que
        ainda lê como via; abaixo disso é vão entre escombros. */
     var ehRua = new Uint8Array(w.n);
+    /* 1 = corre no eixo X, 2 = no eixo Y, 3 = cruzamento. A pintura da rua
+       precisa saber a direção: faixa central atravessada é o que denuncia
+       desenho feito no olho. */
+    var eixoRua = new Uint8Array(w.n);
+
+    /* Largura da faixa livre em cada eixo, célula a célula. É o que separa RUA
+       de PRAÇA: um corredor de cinco células de comprimento também descreve o
+       meio de um descampado, e pintar faixa de trânsito no meio de um terreno
+       baldio é o tipo de detalhe que faz o mapa parecer errado sem que se saiba
+       dizer por quê. Rua é o que é COMPRIDO num eixo e ESTREITO no outro. */
+    var largX = new Uint8Array(w.n), largY = new Uint8Array(w.n);
     var eixo, a, b, ini, corrida;
     for (eixo = 0; eixo < 2; eixo++) {
       var fora = eixo ? w.w : w.h, dentro = eixo ? w.h : w.w;
+      var alvo = eixo ? largY : largX;
       for (a = 0; a < fora; a++) {
         ini = -1;
         for (b = 0; b <= dentro; b++) {
           var livre = b < dentro &&
             w.terreno[eixo ? w.idx(a, b) : w.idx(b, a)] === T.ASFALTO;
           if (livre) { if (ini < 0) ini = b; continue; }
-          if (ini >= 0 && b - ini >= 5) {
+          if (ini >= 0) {
+            var comp = Math.min(255, b - ini);
             for (corrida = ini; corrida < b; corrida++) {
-              ehRua[eixo ? w.idx(a, corrida) : w.idx(corrida, a)] = 1;
+              alvo[eixo ? w.idx(a, corrida) : w.idx(corrida, a)] = comp;
             }
           }
           ini = -1;
         }
       }
     }
+    var ESTREITO = 4, COMPRIDO = 5;
+    for (var iu = 0; iu < w.n; iu++) {
+      if (w.terreno[iu] !== T.ASFALTO) continue;
+      if (largX[iu] >= COMPRIDO && largY[iu] <= ESTREITO) eixoRua[iu] |= 1;
+      if (largY[iu] >= COMPRIDO && largX[iu] <= ESTREITO) eixoRua[iu] |= 2;
+      /* cruzamento: comprido nos dois, mas não largo nos dois */
+      if (largX[iu] >= COMPRIDO && largY[iu] >= COMPRIDO &&
+        Math.min(largX[iu], largY[iu]) <= ESTREITO + 2) eixoRua[iu] = 3;
+      if (eixoRua[iu]) ehRua[iu] = 1;
+    }
+    this.ehRua = ehRua;
+    this.eixoRua = eixoRua;
 
     for (var y = 0; y < w.h; y++) {
       for (var x = 0; x < w.w; x++) {
@@ -206,8 +277,8 @@
           var manchaV = ruido(Math.floor(x / 4) * 4 + 11, Math.floor(y / 4) * 4 + 7);
           var manchaT = ruido(Math.floor(x / 5) * 5 + 31, Math.floor(y / 5) * 5 + 19);
           var fino = ruido(x, y);
-          if (manchaV > 0.58) cor = sombrear(pal.grama, 0.88 + fino * 0.26);
-          else if (manchaT > 0.66) cor = sombrear(pal.terra, 0.9 + fino * 0.2);
+          if (manchaV > 0.7) cor = sombrear(pal.grama, 0.86 + fino * 0.3);
+          else if (manchaT > 0.72) cor = sombrear(pal.terra, 0.9 + fino * 0.22);
           else cor = fino < 0.5 ? pal.chao : pal.chao2;
         }
         var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
@@ -229,7 +300,8 @@
     }
     c.globalAlpha = 1;
     this.suavizarBordas(c, w, dx, dy, pal);
-    this.texturarTerreno(c, w, dx, dy);
+    this.texturarTerreno(c, w, dx, dy, ehRua);
+    this.pintarRuas(c, w, dx, dy, ehRua, eixoRua);
     this.escurecerJuntoAosPredios(c, w, dx, dy);
     this.cvTerreno = off;
     this.terrenoSemTextura = !(UF.sprites && UF.sprites.chaoPronto());
@@ -241,6 +313,77 @@
      que a sombra projetada daria — o volume assenta no chão e as massas se
      separam umas das outras. Quanto mais lados bloqueados, mais fundo o poço.
      Vai no canvas do terreno, desenhado uma vez só: não custa nada por quadro. */
+  /* Pintura de rua: faixa central tracejada no meio da via, faixa de pedestre
+     nos cruzamentos e meio-fio claro onde a rua encosta no quarteirão.
+
+     Isto não é enfeite. A rua já estava mais clara que o resto, mas "mais
+     clara" o olho lê como mancha; o que faz um traçado virar RUA é a pintura
+     em cima dele. Com a faixa, dá para ver de onde o inimigo vem e por onde a
+     tropa passa sem contar célula por célula.
+
+     O tracejado segue o EIXO da via (guardado em eixoRua), porque faixa
+     atravessada denuncia na hora que o desenho foi feito no olho. */
+  Render.prototype.pintarRuas = function (c, w, dx, dy, ehRua, eixoRua) {
+    var meiaL = LARG / 2, meiaA = ALT / 2;
+    c.save();
+    c.lineCap = 'round';
+    for (var y = 0; y < w.h; y++) {
+      for (var x = 0; x < w.w; x++) {
+        var i = w.idx(x, y);
+        if (!ehRua[i]) continue;
+        var cx = (x - y) * meiaL + dx, cy = (x + y) * meiaA + dy + meiaA;
+        var eixos = eixoRua[i];
+        var cruz = eixos === 3;
+
+        /* meio-fio: lado que encosta em quarteirão ganha uma borda clara */
+        c.strokeStyle = 'rgba(226,222,208,0.3)';
+        c.lineWidth = 2;
+        var lados = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        for (var k = 0; k < 4; k++) {
+          var nx = x + lados[k][0], ny = y + lados[k][1];
+          if (!w.dentro(nx, ny)) continue;
+          if (ehRua[w.idx(nx, ny)]) continue;
+          var tv = w.terreno[w.idx(nx, ny)];
+          if (tv === T.AGUA) continue;
+          /* a aresta compartilhada com o vizinho, em coordenadas de tela */
+          var ex = lados[k][0] * meiaL - lados[k][1] * meiaL;
+          var ey = lados[k][0] * meiaA + lados[k][1] * meiaA;
+          c.beginPath();
+          c.moveTo(cx + ex / 2 - ey / 2 * 0, cy + ey / 2);
+          c.lineTo(cx + ex, cy + ey);
+          c.stroke();
+        }
+
+        if (cruz) {
+          /* faixa de pedestre: barras curtas atravessando o cruzamento */
+          c.strokeStyle = 'rgba(236,232,216,0.34)';
+          c.lineWidth = 2.4;
+          for (var f = -1; f <= 1; f++) {
+            c.beginPath();
+            c.moveTo(cx - meiaL * 0.55 + f * 8, cy - meiaA * 0.55 + f * 4);
+            c.lineTo(cx + meiaL * 0.05 + f * 8, cy + meiaA * 0.35 + f * 4);
+            c.stroke();
+          }
+          continue;
+        }
+        /* faixa central tracejada, só em uma célula sim outra não */
+        if ((x + y) % 2) continue;
+        c.strokeStyle = 'rgba(236,228,196,0.42)';
+        c.lineWidth = 2.2;
+        c.beginPath();
+        if (eixos & 1) {           /* corre no eixo X: +x na tela é (+L/2, +A/2) */
+          c.moveTo(cx - meiaL * 0.42, cy - meiaA * 0.42);
+          c.lineTo(cx + meiaL * 0.42, cy + meiaA * 0.42);
+        } else {                   /* eixo Y: +y na tela é (-L/2, +A/2) */
+          c.moveTo(cx + meiaL * 0.42, cy - meiaA * 0.42);
+          c.lineTo(cx - meiaL * 0.42, cy + meiaA * 0.42);
+        }
+        c.stroke();
+      }
+    }
+    c.restore();
+  };
+
   Render.prototype.escurecerJuntoAosPredios = function (c, w, dx, dy) {
     var lados = [[1, 0], [-1, 0], [0, 1], [0, -1]];
     c.save();
@@ -318,10 +461,11 @@
      Uma passada por tipo de terreno — recorta todos os losângos daquele tipo de
      uma vez e preenche com o padrão — em vez de uma por célula, que em mapa de
      4 mil células custaria caro sem melhorar nada. */
-  Render.prototype.texturarTerreno = function (c, w, dx, dy) {
+  Render.prototype.texturarTerreno = function (c, w, dx, dy, ehRua) {
     if (!UF.sprites || !UF.sprites.chaoPronto()) return;
     var grupos = [
-      { nome: 'chao-pavimento', aceita: function (t) { return t === T.ASFALTO; }, alfa: 0.34 },
+      { nome: 'asfalto', aceita: function (t, i) { return t === T.ASFALTO && ehRua[i]; }, alfa: 0.62 },
+      { nome: 'chao-pavimento', aceita: function (t, i) { return t === T.ASFALTO && !ehRua[i]; }, alfa: 0.34 },
       { nome: 'chao-entulho', aceita: function (t) { return t === T.ESCOMBRO || t === T.ROCHA || t === T.RUINA; }, alfa: 0.55 },
       { nome: 'chao-agua', aceita: function (t) { return t === T.AGUA; }, alfa: 0.45 }
     ];
@@ -343,7 +487,7 @@
       var achou = false;
       for (var y = 0; y < w.h; y++) {
         for (var x = 0; x < w.w; x++) {
-          if (!grupos[g].aceita(w.terreno[w.idx(x, y)])) continue;
+          if (!grupos[g].aceita(w.terreno[w.idx(x, y)], w.idx(x, y))) continue;
           var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
           c.moveTo(px, py);
           c.lineTo(px + LARG / 2, py + ALT / 2);
@@ -526,6 +670,7 @@
       var r = this.ruinas[i];
       if (!this.naTela(r.x, r.y)) continue;
       if (!sim.world.explorado[sim.world.idx(r.x, r.y)]) continue;
+      if (this.cobertas && this.cobertas[r.x + ',' + r.y]) continue;
       lista.push({ z: r.x + r.y, dado: r, desenhar: this.desenharRuina });
     }
     for (i = 0; this.destrocos && i < this.destrocos.length; i++) {

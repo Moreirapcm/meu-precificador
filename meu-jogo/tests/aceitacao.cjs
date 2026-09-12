@@ -450,12 +450,24 @@ teste('Salvar sob ataque e carregar restaura estado coerente, sem duplicar nada'
 teste('Ocupação da grade continua coerente depois de carregar', function () {
   var sim = partida();
   sim.jogador.m = 2000;
+  /* Procura uma faixa de chão livre em volta da Central em vez de apostar numa
+     linha fixa. Com um mapa maior a Central nasce em outro lugar e a linha
+     antiga caía dentro de um quarteirão: o teste falhava por terreno, não por
+     regra. O que ele mede — ocupação coerente depois de carregar — não depende
+     de ONDE os muros ficam. */
   var criadas = [];
-  for (var i = 1; i <= 6; i++) {
-    var x = sim.central.x + 5 + i, y = sim.central.y + 3;
-    revelarE(sim, x, y);
-    var res = sim.construir('muro', x, y);
-    if (res.ok) criadas.push({ x: x, y: y, id: res.id });
+  var lados = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+  for (var d = 0; d < lados.length && criadas.length < 3; d++) {
+    for (var dist = 3; dist <= 9 && criadas.length < 3; dist++) {
+      criadas = [];
+      for (var i = 0; i < 6; i++) {
+        var x = sim.central.x + lados[d][0] * dist + (lados[d][0] ? 0 : i);
+        var y = sim.central.y + lados[d][1] * dist + (lados[d][1] ? 0 : i);
+        revelarE(sim, x, y);
+        var res = sim.construir('muro', x, y);
+        if (res.ok) criadas.push({ x: x, y: y, id: res.id });
+      }
+    }
   }
   ok(criadas.length >= 3, 'poucos muros criados para o teste');
   UF.Salvar.gravar(sim);
