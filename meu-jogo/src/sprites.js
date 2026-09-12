@@ -39,6 +39,27 @@
     return null;
   }
 
+  /* Uma TIRA de quadros: várias poses do mesmo boneco numa imagem só, lado a
+     lado. Foi o único jeito que deu certo de gerar quadros por IA — pedidos um
+     a um, cada boneco sai um pouco diferente do anterior e a sequência pisca;
+     pedidos de uma vez, na mesma imagem, o modelo mantém a figura.
+     `quadros` diz em quantas partes iguais a largura se divide. */
+  var TIRAS = {
+    'unidades/operario-minerar': 4,
+    'unidades/operario-andar-leste': 4,
+    'unidades/operario-andar-norte': 4,
+    'unidades/operario-andar-sul': 4,
+    'unidades/operario-andar-sudeste': 4,
+    'unidades/operario-andar-nordeste': 4
+  };
+
+  function tira(chave) {
+    var img = imagem(chave);
+    if (!img) return null;
+    var n = TIRAS[chave] || 1;
+    return { img: img, n: n, larg: img.width / n, alt: img.height };
+  }
+
   function estrutura(tipo) { return imagem('estruturas/' + tipo); }
   function unidade(tipo) { return imagem('unidades/' + tipo); }
   function inimigo(tipo) { return imagem('inimigos/' + tipo); }
@@ -56,6 +77,7 @@
   UF.sprites = {
     imagem: imagem,
     estrutura: estrutura,
+    tira: tira,
     unidade: unidade,
     inimigo: inimigo,
     cenario: cenario,

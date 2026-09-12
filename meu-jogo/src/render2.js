@@ -12,11 +12,14 @@
     central:    { cor: '#4f7fb5', alt: 46, teto: '#7fb6e8' },
     alojamento: { cor: '#55707f', alt: 24, teto: '#7fa3b5' },
     gerador:    { cor: '#6a5f86', alt: 26, teto: '#a68fd8' },
+    eolica:     { cor: '#8a8f96', alt: 52, teto: '#e8eef4' },
+    nuclear:    { cor: '#6e7266', alt: 34, teto: '#cfe0c8' },
+    fusao:      { cor: '#5a6272', alt: 38, teto: '#bfe8ff' },
     deposito:   { cor: '#6b6a4f', alt: 22, teto: '#a9a578' },
     quartel:    { cor: '#5c6b4c', alt: 30, teto: '#8fa878' },
     oficina:    { cor: '#6b5b45', alt: 32, teto: '#a88f6b' },
     pesquisa:   { cor: '#4c6472', alt: 30, teto: '#84b8cc' },
-    extrator:   { cor: '#3f6a72', alt: 24, teto: '#6fd4dd' },
+    extrator:   { cor: '#46505c', alt: 24, teto: '#e8a33d' },
     radar:      { cor: '#4a5a6b', alt: 22, teto: '#8fb0cc' },
     muro:       { cor: '#6e6a60', alt: 20, teto: '#8c877a' },
     portao:     { cor: '#7a6a4a', alt: 20, teto: '#b39a62' },
@@ -212,10 +215,9 @@
       ctx.fillStyle = 'rgba(160,220,255,0.8)';
       ctx.beginPath(); ctx.arc(c.x + Math.cos(this.quadro / 12) * 8 * z, topoY - 6 * z + Math.sin(this.quadro / 12) * 4 * z, 2 * z, 0, 6.283); ctx.fill();
     } else if (b.tipo === 'extrator') {
-      ctx.fillStyle = 'rgba(120,230,240,' + (0.4 + 0.4 * Math.sin(this.quadro / 7)) + ')';
-      ctx.beginPath();
-      ctx.moveTo(c.x, topoY - 16 * z); ctx.lineTo(c.x + 5 * z, topoY - 2 * z);
-      ctx.lineTo(c.x - 5 * z, topoY - 2 * z); ctx.closePath(); ctx.fill();
+      /* era o cristal ciano brotando; virou o visor âmbar do tanque de óleo */
+      ctx.fillStyle = 'rgba(232,163,61,' + (0.45 + 0.35 * Math.sin(this.quadro / 7)) + ')';
+      ctx.fillRect(c.x - 6 * z, topoY - 4 * z, 12 * z, 3 * z);
     } else if (b.portao) {
       ctx.fillStyle = b.portaoAberto ? 'rgba(140,224,127,0.8)' : 'rgba(255,180,90,0.85)';
       ctx.fillRect(c.x - 8 * z, topoY - 3 * z, 16 * z, 2.6 * z);
@@ -263,14 +265,125 @@
   /* Altura do sprite na tela, em células (uma célula = ALT px de fundo). É
      separado do `raio` de propósito: raio é colisão, e tanque e soldado têm o
      mesmo raio sem ter nada parecido de altura. Quem não está aqui usa 1.3. */
-  var ALTURA_SPRITE = {
-    operario: 2.2, fuzileiro: 2.2, incendiario: 2.2, medico: 2.15,
-    lanceiro: 2.4, tanque: 1.7, drone: 1.5,
-    /* Nos invasores a altura acompanha o `raio` de data.js, que é a escala que a
-       simulação já usa: o Titã e a Matriarca precisam ocupar a tela como ocupam
-       o campo, senão o chefe chega e não assusta ninguém. */
-    predador: 1.6, corredor: 1.4, cuspidor: 1.6, detonador: 1.7,
-    couracado: 1.7, asa: 1.8, tita: 2.9, matriarca: 4
+  /* A altura de cada corpo mora em anima.js, porque a animação precisa dela
+     tanto quanto o desenho: é dela que sai o comprimento da perna, e é o
+     comprimento da perna que decide o tamanho do passo. */
+  var ALTURA_SPRITE = UF.Anima.ALTURA;
+
+  /* Desenha o sprite da unidade com a postura que `anima` calculou e devolve o
+     topo em tela, para os avisos flutuarem no lugar certo.
+     A altura vem de ALTURA_SPRITE, em células, e não do `raio`: raio é medida de
+     colisão, e um tanque e um soldado com o mesmo raio não têm de forma alguma a
+     mesma altura na tela. O giro acontece em torno do PÉ, não do centro — girar
+     pelo meio faria a figura afundar no chão e depois flutuar. */
+  R.spriteUnidade = function (ctx, u, img, p, raio, voo, z, sim) {
+    var pose = this.anima ? this.anima.postura(u, z, this.sim)
+      : { espelhar: false, giro: 0, subir: 0, desviaX: 0, desviaY: 0, escalaY: 1, alfa: 1 };
+    var alt = (ALTURA_SPRITE[u.tipo] || 1.3) * ALT * z * pose.escalaY;
+    var larg = img.width * ((ALTURA_SPRITE[u.tipo] || 1.3) * ALT * z / img.height);
+    var pe = p.y - voo + raio * 0.2 - pose.subir + pose.desviaY;
+
+    ctx.save();
+    if (pose.alfa < 1) ctx.globalAlpha = pose.alfa;
+    ctx.translate(p.x + pose.desviaX, pe);
+    if (pose.giro) ctx.rotate(pose.giro);
+    if (pose.espelhar) ctx.scale(-1, 1);
+
+    /* Trabalhando, o operário troca de QUADRO em vez de ser deformado: aqui
+       existem quatro poses desenhadas do golpe, e desenho de verdade ganha de
+       qualquer giro que eu calcule. O ritmo vem do relógio da tarefa, então a
+       picareta bate no compasso em que ele de fato extrai. */
+    /* Quadros desenhados, quando existem para o que a unidade está fazendo.
+       Andando, QUEM ESCOLHE O QUADRO é a fase da passada — a mesma que anda por
+       distância percorrida, não por relógio. Assim o quadro de pé-no-chão cai
+       quando o pé está de fato no chão, e a unidade não patina. Trocar quadro
+       por tempo traria o deslizamento de volta pela porta dos fundos. */
+    var t = null, q = 0;
+    if (pose.golpe) {
+      t = UF.sprites.tira('unidades/' + u.tipo + '-minerar');
+      if (t) q = Math.floor(((sim ? sim.t : 0) * 6 + (u.animacao || 0)) % t.n);
+    } else if (u.rota && this.anima) {
+      var d = this.anima.direcao(u, sim);
+      t = UF.sprites.tira('unidades/' + u.tipo + '-andar-' + d.nome);
+      var fase = this.anima.passo[u.id];
+      if (t && fase !== undefined) {
+        q = Math.floor(fase / 6.283 * t.n) % t.n;
+        /* o espelho já veio de `pose.espelhar`; aqui só corrige quando a
+           direção escolhida não quer espelho (frente e costas) */
+        if (!d.espelhar && pose.espelhar) ctx.scale(-1, 1);
+        else if (d.espelhar && !pose.espelhar) ctx.scale(-1, 1);
+      } else t = null;
+    }
+    if (t) {
+      var altT = (ALTURA_SPRITE[u.tipo] || 1.3) * ALT * z;
+      var largT = t.larg * (altT / t.alt);
+      /* O sobe-e-desce do corpo JÁ ESTÁ no desenho: o quadro de pernas abertas
+         é mais curto que o de perna esticada, e recortados rente os dois se
+         apoiam no mesmo pé. Somar aqui o bob calculado aplicaria o movimento
+         duas vezes — e o boneco passa a pular em vez de andar. */
+      ctx.translate(0, -pose.subir);
+      ctx.drawImage(t.img, q * t.larg, 0, t.larg, t.alt,
+        -largT / 2, -altT, largT, altT);
+      ctx.restore();
+      return pe - altT;
+    }
+
+    var frac = UF.Anima && UF.Anima.PERNAS[u.tipo];
+    var chao = this.anima ? this.anima.passada(u) : 0;
+    if (frac && chao) this.caminhada(ctx, img, larg, alt, frac, chao, this.anima.passadaAr(u));
+    else if (frac && pose.golpe) this.caminhada(ctx, img, larg, alt, frac, 0, 0, pose.golpe);
+    else ctx.drawImage(img, -larg / 2, -alt, larg, alt);
+
+    ctx.restore();
+    return pe - alt;
+  };
+
+  /* Caminhada de gente com UMA imagem só: a metade de baixo é desenhada duas
+     vezes, girando no quadril para lados opostos — uma perna vai enquanto a
+     outra volta. A de trás sai escurecida, senão as duas se confundem num
+     borrão. O torso contra-balança de leve, que é o que o corpo faz de verdade.
+     É animação recortada, a mesma ideia de boneco de papel articulado. */
+  R.caminhada = function (ctx, img, larg, alt, frac, angChao, angAr, golpe) {
+    var quadril = -alt * frac;          /* origem: o pé está em 0 */
+    var alturaPerna = alt * frac;
+    /* A faixa da perna sobe um pouco ACIMA do quadril e o tronco desce um pouco
+       ABAIXO: as duas metades dividem essa faixa. Cortadas na mesma linha exata,
+       a rotação abre uma fenda bem no meio da cintura. */
+    var costura = alt * 0.05;
+
+    function perna(a, escurecer) {
+      ctx.save();
+      ctx.translate(0, quadril);
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.rect(-larg / 2, -costura, larg, alturaPerna + costura + 1);
+      ctx.clip();
+      ctx.drawImage(img, -larg / 2, -alt * (1 - frac), larg, alt);
+      if (escurecer) {
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillStyle = 'rgba(0,0,0,0.38)';
+        ctx.fillRect(-larg / 2, -costura, larg, alturaPerna + costura + 1);
+      }
+      ctx.restore();
+    }
+
+    /* O SINAL importa e não se confere no olho: com a perna plantada invertida,
+       o pé anda para a frente junto com o corpo em vez de ficar cravado — medi e
+       ele andava o DOBRO da velocidade do corpo, o que é pior do que não animar.
+       A plantada é a que vai de +A a −A: é assim que sen(θ) decresce na mesma
+       taxa em que o corpo avança, e o pé fica parado. */
+    perna(angAr, true);                 /* a do ar, desenhada atrás e escurecida */
+    perna(angChao, false);              /* a plantada, por cima */
+
+    ctx.save();                         /* tronco, cabeça e braços, por cima */
+    ctx.translate(0, quadril);
+    ctx.rotate(golpe || -angChao * 0.18);
+    ctx.beginPath();
+    ctx.rect(-larg / 2, -alt * (1 - frac), larg, alt * (1 - frac) + costura);
+    ctx.clip();
+    ctx.drawImage(img, -larg / 2, -alt * (1 - frac), larg, alt);
+    ctx.restore();
+
   };
 
   R.desenharUnidade = function (ctx, item) {
@@ -281,7 +394,11 @@
     var raio = (u.def.raio || 0.3) * LARG * 0.5 * z;
     var voo = u.voa ? 26 * z : 0;
 
+    var img = UF.sprites && (inimigo ? UF.sprites.inimigo(u.tipo) : UF.sprites.unidade(u.tipo));
+
     if (u.morta) {
+      /* Com sprite o corpo TOMBA e afunda; sem ele, continua a mancha de antes. */
+      if (img && this.anima) { this.spriteUnidade(ctx, u, img, p, raio, voo, z, this.sim); return; }
       ctx.globalAlpha = 0.45;
       ctx.fillStyle = inimigo ? '#5a2a2a' : '#40464e';
       ctx.beginPath(); ctx.ellipse(p.x, p.y, raio * 1.2, raio * 0.6, 0, 0, 6.283); ctx.fill();
@@ -298,16 +415,8 @@
     var balanco = u.rota ? Math.sin(this.quadro / 4 + u.animacao) * 1.4 * z : 0;
     var topo = p.y - voo - raio * 1.5 - balanco;
 
-    /* Sprite no lugar do losango. A altura vem de ALTURA_SPRITE, em células, e
-       não do `raio`: raio é medida de colisão, e um tanque e um soldado com o
-       mesmo raio não têm de forma alguma a mesma altura na tela. */
-    var img = UF.sprites && (inimigo ? UF.sprites.inimigo(u.tipo) : UF.sprites.unidade(u.tipo));
     if (img) {
-      var altSp = (ALTURA_SPRITE[u.tipo] || 1.3) * ALT * z;
-      var largSp = img.width * (altSp / img.height);
-      var pe = p.y - voo + raio * 0.2 - balanco;      /* onde o pé toca o chão */
-      ctx.drawImage(img, p.x - largSp / 2, pe - altSp, largSp, altSp);
-      topo = pe - altSp;
+      topo = this.spriteUnidade(ctx, u, img, p, raio, voo, z, this.sim);
       this.avisosUnidade(ctx, u, p, topo, raio, voo, inimigo, z);
       return;
     }
@@ -353,7 +462,7 @@
       ctx.beginPath(); ctx.arc(p.x, p.y - voo, raio * 2.1, 0, 6.283); ctx.stroke();
     }
 
-    if (u.carga > 0) this.icone(ctx, p.x, topo - 5 * z, u.cargaTipo === 'cristal' ? '#7ee0ff' : '#ffd479', '◆');
+    if (u.carga > 0) this.icone(ctx, p.x, topo - 5 * z, u.cargaTipo === 'petroleo' ? '#e8a33d' : '#ffd479', '◆');
     if (u.tarefa && u.tarefa.tipo === 'fugindo') this.icone(ctx, p.x, topo - 5 * z, '#ff9a6b', '!');
     else if (u.bloqueado) this.icone(ctx, p.x, topo - 5 * z, '#ff7a6b', '⊘');
     else if (u.operario && u.tarefa && u.tarefa.tipo === 'ocioso') this.icone(ctx, p.x, topo - 5 * z, '#9aa6b5', 'z');
@@ -399,7 +508,7 @@
         var q = this.paraTela(e.x, e.y);
         this.efeitos.push({ tipo: 'faisca', x: q.x, y: q.y - 10, cor: e.cor, vida: 0.25, max: 0.25 });
       } else if (e.tipo === 'entrega') {
-        this.marcadores.push({ texto: '+' + e.qtd, cor: e.tipo === 'cristal' ? '#7ee0ff' : '#ffd479', vida: 1 });
+        this.marcadores.push({ texto: '+' + e.qtd, cor: e.recurso === 'petroleo' ? '#e8a33d' : '#ffd479', vida: 1 });
       } else if (e.tipo === 'estruturaDestruida') {
         var r = this.paraTela(e.x + e.w / 2, e.y + e.h / 2);
         this.efeitos.push({ tipo: 'explosao', x: r.x, y: r.y, raio: 26 * (e.w || 1), vida: 0.7, max: 0.7 });
@@ -630,7 +739,7 @@
     for (i2 = 0; i2 < w.jazidas.length; i2++) {
       var j = w.jazidas[i2];
       if (!w.explorado[w.idx(j.x, j.y)] || j.estoque <= 0) continue;
-      ctx.fillStyle = j.tipo === 'cristal' ? '#7ee0ff' : '#d8b26a';
+      ctx.fillStyle = j.tipo === 'petroleo' ? '#e8a33d' : '#d8b26a';
       ctx.fillRect(j.x * esc, j.y * esc, esc * 2, esc * 2);
     }
     for (i2 = 0; i2 < this.sim.listaEstruturas.length; i2++) {

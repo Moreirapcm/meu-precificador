@@ -14,6 +14,13 @@ destino="${1:?uso: gerar-lote.sh <pasta-destino> <nome>...}"
 shift
 mkdir -p "$raiz/arte/$destino" "$raiz/arte/origem"
 
+# Conversa nova antes do lote. A janela do Gemini é compartilhada com outras
+# sessões, e o coletor pega "a última imagem grande da página": num lote rodado
+# sobre uma conversa alheia, uma captura de tela que outra pessoa anexou foi
+# salva como se fosse arte do jogo. Começar limpo evita isso.
+node "$S/reset_ia.mjs" >/dev/null 2>&1
+sleep 3
+
 for nome in "$@"; do
   prompt="$raiz/arte/prompts/$nome.txt"
   [ -f "$prompt" ] || { echo "== $nome: sem prompt, pulei"; continue; }
