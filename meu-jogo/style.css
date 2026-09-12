@@ -237,6 +237,14 @@ button { cursor: pointer; border: 0; background: none; }
 
 /* modal */
 .modal[hidden] { display: none; }
+
+/* `hidden` é atributo, não classe: qualquer regra com id ou com display
+   explícito ganha dele e o elemento continua na tela. Era o caso do painel de
+   modo — `#modoHud { display: flex }` vencia o `hidden`, e o botão Cancelar
+   ficava flutuando no meio do mapa a partida inteira, por cima do painel de
+   escolha da Central. O !important existe para que esconder por atributo
+   funcione sempre, sem depender de quem tem mais peso. */
+[hidden] { display: none !important; }
 .modal { position: fixed; inset: 0; background: rgba(4,7,12,.82); display: flex; align-items: center; justify-content: center; z-index: 40; padding: 18px; }
 .modal-caixa { width: min(520px, 100%); max-height: 86vh; overflow-y: auto; background: var(--painel); border: 1px solid var(--borda); border-radius: 14px; padding: 20px; }
 .modal-caixa h2 { margin: 6px 0 10px; font-family: var(--hud); font-size: 21px; font-weight: 700; text-wrap: balance; }

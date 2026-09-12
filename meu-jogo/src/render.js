@@ -8,13 +8,20 @@
   var LARG = 64, ALT = 32;          /* losango base de uma célula, em zoom 1 */
 
   /* Paleta por cidade: cada setor tem a cor do seu chão, da sua água e das ruínas. */
+  /* O que BLOQUEIA é escuro; onde se ANDA é claro. A primeira versão fazia o
+     contrário — ruína bege clara sobre chão verde escuro — e o olho ia direto
+     para o obstáculo, não para o espaço jogável. Num mapa com quase seiscentas
+     células de ruína, isso vira um tapete de blocos claros onde não se enxerga
+     rua nenhuma. Aqui a ruína e a rocha viram silhueta escura, o chão sobe de
+     tom e a rua é a coisa mais clara da tela: a leitura fica "massa escura =
+     não passa, claro = passa". */
   var PALETAS = {
-    porto:     { chao: '#414a41', chao2: '#4a534a', rua: '#555e55', agua: '#1c2a2b', aguaBrilho: '#2f4746', entulho: '#5b5a4c', ruina: '#736c58', ruinaTopo: '#877e68', rocha: '#4a4a42', ceu: '#0d1410' },
-    costa:     { chao: '#464a50', chao2: '#4f545a', rua: '#585d63', agua: '#12303c', aguaBrilho: '#1d4c5c', entulho: '#5b5750', ruina: '#78716a', ruinaTopo: '#8a8279', rocha: '#3f4247', ceu: '#0a1016' },
-    metropole: { chao: '#42454a', chao2: '#4a4d52', rua: '#54585e', agua: '#2b2a20', aguaBrilho: '#3e3b2b', entulho: '#57555a', ruina: '#6e6e74', ruinaTopo: '#808088', rocha: '#3c3e42', ceu: '#0b0d12' },
-    deserto:   { chao: '#6b5c42', chao2: '#75654a', rua: '#7d6e53', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#7a6a4f', ruina: '#8d7c5e', ruinaTopo: '#a08d6c', rocha: '#5d5340', ceu: '#161009' },
-    ilha:      { chao: '#3f4348', chao2: '#474b51', rua: '#51565c', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#53565b', ruina: '#697077', ruinaTopo: '#7b838a', rocha: '#383c41', ceu: '#080c12' },
-    cratera:   { chao: '#5d5a4c', chao2: '#666254', rua: '#6f6b5c', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#6b6555', ruina: '#847c67', ruinaTopo: '#978e77', rocha: '#4f4b3e', ceu: '#100f0a' }
+    porto:     { chao: '#5c655a', chao2: '#656e62', rua: '#7b8377', agua: '#16262b', aguaBrilho: '#294a48', entulho: '#4e5346', ruina: '#2f3429', ruinaTopo: '#394030', rocha: '#272a23', ceu: '#0d1410' },
+    costa:     { chao: '#585e66', chao2: '#616771', rua: '#767d87', agua: '#123040', aguaBrilho: '#1d4c5c', entulho: '#4a4d53', ruina: '#2c3036', ruinaTopo: '#353a41', rocha: '#24282d', ceu: '#0a1016' },
+    metropole: { chao: '#575a60', chao2: '#60636a', rua: '#767a82', entulho: '#4a4d52', agua: '#262518', aguaBrilho: '#3a3726', ruina: '#2b2d32', ruinaTopo: '#34363c', rocha: '#232529', ceu: '#0b0d12' },
+    deserto:   { chao: '#8a7757', chao2: '#948160', rua: '#a89372', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#6b5d45', ruina: '#453a29', ruinaTopo: '#51452e', rocha: '#3a3222', ceu: '#161009' },
+    ilha:      { chao: '#545c60', chao2: '#5d656a', rua: '#727b80', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#474d51', ruina: '#292f33', ruinaTopo: '#32383d', rocha: '#21262a', ceu: '#080c12' },
+    cratera:   { chao: '#6e6a58', chao2: '#777360', rua: '#8b8670', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#5b5747', ruina: '#393528', ruinaTopo: '#433e2f', rocha: '#2f2c22', ceu: '#100f0a' }
   };
 
   function Render(canvas, sim) {
@@ -95,6 +102,33 @@
       return n - Math.floor(n);
     }
 
+    /* A cidade É uma grade de ruas e quarteirões — a simulação sabe disso ao
+       erguê-la, mas o desenho pintava rua e terreno solto da mesma cor e a
+       malha sumia. Sem ver a rua, o jogador não vê por onde o inimigo vem nem
+       onde cabe a base: o mapa vira um campo de blocos sem direção.
+       Aqui a rua é reconhecida pelo que ela é — corredor longo de chão livre —
+       e ganha o tom mais claro da paleta. Cinco células é o menor corredor que
+       ainda lê como via; abaixo disso é vão entre escombros. */
+    var ehRua = new Uint8Array(w.n);
+    var eixo, a, b, ini, corrida;
+    for (eixo = 0; eixo < 2; eixo++) {
+      var fora = eixo ? w.w : w.h, dentro = eixo ? w.h : w.w;
+      for (a = 0; a < fora; a++) {
+        ini = -1;
+        for (b = 0; b <= dentro; b++) {
+          var livre = b < dentro &&
+            w.terreno[eixo ? w.idx(a, b) : w.idx(b, a)] === T.ASFALTO;
+          if (livre) { if (ini < 0) ini = b; continue; }
+          if (ini >= 0 && b - ini >= 5) {
+            for (corrida = ini; corrida < b; corrida++) {
+              ehRua[eixo ? w.idx(a, corrida) : w.idx(corrida, a)] = 1;
+            }
+          }
+          ini = -1;
+        }
+      }
+    }
+
     for (var y = 0; y < w.h; y++) {
       for (var x = 0; x < w.w; x++) {
         var t = w.terreno[w.idx(x, y)];
@@ -103,13 +137,13 @@
         if (t === T.AGUA) cor = pal.agua;
         else if (t === T.ESCOMBRO) cor = pal.entulho;
         else if (t === T.ROCHA) cor = pal.rocha;
+        else if (ehRua[w.idx(x, y)]) cor = sombrear(pal.rua, ruido(x, y) < 0.5 ? 1 : 0.96);
         /* Era `(x+y)%2` — um xadrez, o padrão mais fácil de o olho pegar.
            Ruído com semente dá a mesma variação sem desenhar tabuleiro. */
         else cor = ruido(x, y) < 0.5 ? pal.chao : pal.chao2;
         var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
         this.losango(c, px, py, cor);
         if (t === T.AGUA && rand() < 0.16) this.losango(c, px, py, pal.aguaBrilho, 0.5);
-        if (t === T.ASFALTO && rand() < 0.05) this.losango(c, px, py, pal.rua, 0.5);
       }
     }
     /* Faixas de rua: linhas claras no meio das vias longas. */
@@ -127,8 +161,38 @@
     c.globalAlpha = 1;
     this.suavizarBordas(c, w, dx, dy, pal);
     this.texturarTerreno(c, w, dx, dy);
+    this.escurecerJuntoAosPredios(c, w, dx, dy);
     this.cvTerreno = off;
     this.terrenoSemTextura = !(UF.sprites && UF.sprites.chaoPronto());
+  };
+
+  /* Oclusão: o chão encosta no pé do prédio sem nenhuma transição, e a cidade
+     inteira fica parecendo blocos apoiados em cima de um papel. Escurecer as
+     células livres que fazem fronteira com ruína ou rocha custa um laço e dá o
+     que a sombra projetada daria — o volume assenta no chão e as massas se
+     separam umas das outras. Quanto mais lados bloqueados, mais fundo o poço.
+     Vai no canvas do terreno, desenhado uma vez só: não custa nada por quadro. */
+  Render.prototype.escurecerJuntoAosPredios = function (c, w, dx, dy) {
+    var lados = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    c.save();
+    for (var y = 0; y < w.h; y++) {
+      for (var x = 0; x < w.w; x++) {
+        var t = w.terreno[w.idx(x, y)];
+        if (t === T.RUINA || t === T.ROCHA || t === T.AGUA) continue;
+        var perto = 0;
+        for (var k = 0; k < 4; k++) {
+          var nx = x + lados[k][0], ny = y + lados[k][1];
+          if (!w.dentro(nx, ny)) continue;
+          var tv = w.terreno[w.idx(nx, ny)];
+          if (tv === T.RUINA || tv === T.ROCHA) perto++;
+        }
+        if (!perto) continue;
+        var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
+        c.globalAlpha = 0.1 + perto * 0.075;
+        this.losango(c, px, py, '#05080c');
+      }
+    }
+    c.restore();
   };
 
   /* Onde dois terrenos se encostam, o corte é um losango duro e o olho lê a
@@ -188,7 +252,7 @@
   Render.prototype.texturarTerreno = function (c, w, dx, dy) {
     if (!UF.sprites || !UF.sprites.chaoPronto()) return;
     var grupos = [
-      { nome: 'chao-pavimento', aceita: function (t) { return t === T.ASFALTO; }, alfa: 0.5 },
+      { nome: 'chao-pavimento', aceita: function (t) { return t === T.ASFALTO; }, alfa: 0.34 },
       { nome: 'chao-entulho', aceita: function (t) { return t === T.ESCOMBRO || t === T.ROCHA || t === T.RUINA; }, alfa: 0.55 },
       { nome: 'chao-agua', aceita: function (t) { return t === T.AGUA; }, alfa: 0.45 }
     ];
@@ -276,9 +340,13 @@
       var arrasado = !rocha && rand() < 0.34;          /* prédio que veio abaixo */
       predios.push({
         celulas: celulas, rocha: rocha, arrasado: arrasado,
-        alt: rocha ? 9 + rand() * 14
-          : arrasado ? 10 + rand() * 16
-            : 26 + porte * 62 + rand() * 26,
+        /* A amplitude é grande de propósito. Com o intervalo antigo quase todo
+           prédio caía entre 45 e 70 e a cidade virava um tapete de cubos da
+           mesma altura — nada de silhueta, nada para se orientar. Agora o
+           quarteirão grande sobe de verdade e o pequeno fica rente ao chão. */
+        alt: rocha ? 8 + rand() * 12
+          : arrasado ? 8 + rand() * 12
+            : 18 + porte * 108 + rand() * 22,
         tom: 0.78 + rand() * 0.34,
         janelas: !rocha && !arrasado
       });
@@ -465,7 +533,9 @@
     };
     var alt = r.alt;
     var g = this.caixa(ctx, r.x, r.y, 1, 1, alt, cores);
-    if (r.janelas && this.cam.zoom > 0.55) {
+    /* Faixa de janela em prédio baixo vira listra: muito contorno, pouca
+       informação. Só entra a partir de uma altura em que o prédio já se lê. */
+    if (r.janelas && alt > 46 && this.cam.zoom > 0.55) {
       var z = this.cam.zoom;
       var linhas = Math.max(1, Math.floor(alt / 12));
       for (var i = 0; i < linhas; i++) {
@@ -473,9 +543,9 @@
         if (yy > g.s.y - 4 * z) break;
         /* Uma janela em cada dez ainda tem luz: a cidade não morreu inteira. */
         var acesa = ((r.x * 31 + r.y * 17 + i * 7) % 11) === 0;
-        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.5)' : 'rgba(14,18,24,0.6)';
+        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.42)' : 'rgba(10,13,18,0.38)';
         ctx.fillRect(g.o.x + 5 * z, yy, (g.s.x - g.o.x) - 10 * z, 3.4 * z);
-        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.34)' : 'rgba(14,18,24,0.45)';
+        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.28)' : 'rgba(10,13,18,0.28)';
         ctx.fillRect(g.s.x + 5 * z, yy + 3.4 * z, (g.l.x - g.s.x) - 10 * z, 3.4 * z);
       }
     }

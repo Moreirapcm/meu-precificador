@@ -249,6 +249,14 @@ button { cursor: pointer; border: 0; background: none; }
 
 /* modal */
 .modal[hidden] { display: none; }
+
+/* `hidden` é atributo, não classe: qualquer regra com id ou com display
+   explícito ganha dele e o elemento continua na tela. Era o caso do painel de
+   modo — `#modoHud { display: flex }` vencia o `hidden`, e o botão Cancelar
+   ficava flutuando no meio do mapa a partida inteira, por cima do painel de
+   escolha da Central. O !important existe para que esconder por atributo
+   funcione sempre, sem depender de quem tem mais peso. */
+[hidden] { display: none !important; }
 .modal { position: fixed; inset: 0; background: rgba(4,7,12,.82); display: flex; align-items: center; justify-content: center; z-index: 40; padding: 18px; }
 .modal-caixa { width: min(520px, 100%); max-height: 86vh; overflow-y: auto; background: var(--painel); border: 1px solid var(--borda); border-radius: 14px; padding: 20px; }
 .modal-caixa h2 { margin: 6px 0 10px; font-family: var(--hud); font-size: 21px; font-weight: 700; text-wrap: balance; }
@@ -936,6 +944,12 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     this.explorado = new Uint8Array(this.n);
     this.visivel = new Uint8Array(this.n);
     this.jazidas = [];
+    /* Quais células são via pública. A cidade é gerada em quarteirões, e com
+       quarteirões sólidos a rua vira o ÚNICO corredor: uma jazida plantada em
+       cima dela tapa a passagem e deixa metade do mapa sem rota. Guardar isso
+       aqui é o que permite plantar jazida dentro do quarteirão aberto, que é
+       também onde ela faz sentido — no vão da quadra, não no meio da avenida. */
+    this.rua = new Uint8Array(this.n);
     this.entradas = [];
     this.versaoRota = 1;                      /* muda quando o terreno navegável muda */
     this.gerar(cfg.semente);
@@ -1032,6 +1046,7 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
 
     this.removerIlhas();
     this.plantarJazidas(rand);
+    this.abrirPassagemAoRedorDasJazidas();
     this.definirEntradas(rand);
   };
 
@@ -1113,7 +1128,19 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
   };
 
   /* Malha urbana arruinada: avenidas e ruas em grade, quarteirões com prédios
-     de pé (bloqueiam), prédios desabados (entulho) e quadras abertas por bombardeio. */
+     de pé (bloqueiam), prédios desabados (entulho) e quadras abertas por
+     bombardeio.
+
+     O estado é sorteado POR QUARTEIRÃO, não por célula. Sorteando célula a
+     célula — como era antes — a grade existia no papel mas sumia na tela: cada
+     quadra virava confete de ruína, entulho e asfalto misturados, sem massa e
+     sem silhueta, e o jogador não conseguia ler onde passava uma rua nem onde
+     cabia a base. Cidade de verdade é quarteirão cheio separado por rua vazia;
+     é isso que dá orientação a quem olha o mapa de cima.
+
+     O sorteio é um hash de (quadra, semente), não `rand()`: assim ele não
+     depende da ordem em que as células são visitadas, e o mesmo setor devolve
+     sempre a mesma cidade. */
   World.prototype.erguerCidade = function (rand) {
     var w = this.w, h = this.h;
     var quadra = this.cfg.quadra || 7;
@@ -1121,13 +1148,16 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     var girado = rand() < 0.5;               /* algumas cidades têm a grade inclinada */
     var avenidaX = 3 + Math.floor(rand() * quadra);
     var avenidaY = 3 + Math.floor(rand() * quadra);
+    var sem = this.cfg.semente || 1;
 
-    /* Quadras vazias: crateras de bombardeio e praças que sobraram. */
-    var limpas = {};
-    var quantasLimpas = Math.floor((w / quadra) * (h / quadra) * 0.22);
-    for (var q = 0; q < quantasLimpas; q++) {
-      limpas[Math.floor(rand() * (w / quadra)) + ':' + Math.floor(rand() * (h / quadra))] = 1;
+    function hash(a, b, sal) {
+      var n = Math.sin(a * 127.1 + b * 311.7 + sal * 74.7 + sem * 0.113) * 43758.5453;
+      return n - Math.floor(n);
     }
+
+    var larguraRua = this.cfg.rua || 1;
+    var pPredio = densidade * 0.62;          /* quarteirão que continua de pé */
+    var pArrasado = pPredio + 0.2;          /* veio abaixo: vira entulho */
 
     for (var y = 0; y < h; y++) {
       for (var x = 0; x < w; x++) {
@@ -1137,20 +1167,35 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
         var ux = x, uy = y;
         if (girado) { ux = x + ((y % (quadra * 2) < quadra) ? 0 : Math.floor(quadra / 2)); }
 
-        var larguraRua = this.cfg.rua || 1;
-        var dentroRuaX = ((ux + avenidaX) % quadra) < larguraRua;
-        var dentroRuaY = ((uy + avenidaY) % quadra) < larguraRua;
+        var ax = ux + avenidaX, ay = uy + avenidaY;
+        var dentroRuaX = (ax % quadra) < larguraRua;
+        var dentroRuaY = (ay % quadra) < larguraRua;
         /* Avenidas largas de tempos em tempos: rotas principais e campo de tiro. */
-        var avenida = ((ux + avenidaX) % (quadra * 3)) < larguraRua + 2 ||
-          ((uy + avenidaY) % (quadra * 3)) < larguraRua + 2;
-        if (dentroRuaX || dentroRuaY || avenida) { this.terreno[i] = T.ASFALTO; continue; }
+        var avenida = (ax % (quadra * 3)) < larguraRua + 2 ||
+          (ay % (quadra * 3)) < larguraRua + 2;
+        if (dentroRuaX || dentroRuaY || avenida) {
+          this.terreno[i] = T.ASFALTO; this.rua[i] = 1; continue;
+        }
 
-        var chave = Math.floor(x / quadra) + ':' + Math.floor(y / quadra);
-        if (limpas[chave]) { this.terreno[i] = rand() < 0.35 ? T.ESCOMBRO : T.ASFALTO; continue; }
+        var qx = Math.floor(ax / quadra), qy = Math.floor(ay / quadra);
+        var estado = hash(qx, qy, 1);
+        /* Posição dentro do quarteirão, para mastigar as bordas: um retângulo
+           perfeito de ruína lê como parede, não como quarteirão bombardeado. */
+        var ix = ax % quadra, iy = ay % quadra;
+        var naBorda = ix === larguraRua || ix === quadra - 1 ||
+          iy === larguraRua || iy === quadra - 1;
+        var celula = hash(x + 0.5, y + 0.5, 2);
 
-        var r = rand();
-        this.terreno[i] = r < densidade * 0.78 ? T.RUINA
-          : r < densidade * 0.78 + 0.16 ? T.ESCOMBRO : T.ASFALTO;
+        if (estado < pPredio) {
+          this.terreno[i] = naBorda && celula < 0.32
+            ? (celula < 0.12 ? T.ASFALTO : T.ESCOMBRO)
+            : T.RUINA;
+        } else if (estado < pArrasado) {
+          this.terreno[i] = celula < 0.22 ? T.RUINA
+            : celula < 0.86 ? T.ESCOMBRO : T.ASFALTO;
+        } else {
+          this.terreno[i] = celula < 0.14 ? T.ESCOMBRO : T.ASFALTO;
+        }
       }
     }
   };
@@ -1213,6 +1258,55 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
         continue;
       }
       this.escavarVau(grupo, comp, i);
+    }
+    this.recalcularAlcance();
+  };
+
+  /* A jazida ocupa duas por duas células e o caminho não passa por cima dela.
+     Numa cidade de quarteirões sólidos a rua costuma ser o único corredor, e
+     uma jazida plantada ali tapa a passagem: metade do mapa fica sem rota até
+     o centro, e a zona de invasão do outro lado nunca chega. Aqui o mapa é
+     percorrido de novo, agora contando as jazidas como obstáculo, e todo
+     pedaço grande que ficou ilhado ganha um vão aberto na ruína ao lado.
+     Fazer isto DEPOIS de plantar é o que garante a invariante; antes, a
+     jazida ainda não existia para bloquear nada. */
+  World.prototype.abrirPassagemAoRedorDasJazidas = function () {
+    var w = this.w, n = this.n, self = this;
+    function preso(x, y) {
+      return self.solido(x, y) || self.recurso[self.idx(x, y)] !== 0;
+    }
+    for (var volta = 0; volta < 4; volta++) {
+      var comp = new Int32Array(n).fill(-1), grupos = [], i;
+      for (i = 0; i < n; i++) {
+        if (comp[i] !== -1 || preso(i % w, (i / w) | 0)) continue;
+        var id = grupos.length, celulas = [], fila = [i];
+        comp[i] = id;
+        while (fila.length) {
+          var c = fila.pop(); celulas.push(c);
+          var cx = c % w, cy = (c / w) | 0;
+          for (var k = 0; k < 4; k++) {
+            var nx = cx + [1, -1, 0, 0][k], ny = cy + [0, 0, 1, -1][k];
+            if (!this.dentro(nx, ny)) continue;
+            var j = ny * w + nx;
+            if (comp[j] !== -1 || preso(nx, ny)) continue;
+            comp[j] = id; fila.push(j);
+          }
+        }
+        grupos.push(celulas);
+      }
+      if (grupos.length < 2) break;
+      grupos.sort(function (a, b) { return b.length - a.length; });
+      comp.fill(-1);
+      for (i = 0; i < grupos.length; i++) {
+        for (var q = 0; q < grupos[i].length; q++) comp[grupos[i][q]] = i;
+      }
+      var abriu = false;
+      for (i = 1; i < grupos.length; i++) {
+        if (grupos[i].length < 12) continue;
+        this.escavarVau(grupos[i], comp, i);
+        abriu = true;
+      }
+      if (!abriu) break;
     }
     this.recalcularAlcance();
   };
@@ -1281,6 +1375,15 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     this.alcancavel = alc;
   };
 
+  World.prototype.tocaRua = function (x, y, w, h) {
+    for (var dy = 0; dy < h; dy++) {
+      for (var dx = 0; dx < w; dx++) {
+        if (this.dentro(x + dx, y + dy) && this.rua[this.idx(x + dx, y + dy)]) return true;
+      }
+    }
+    return false;
+  };
+
   World.prototype.areaLivre = function (x, y, w, h) {
     for (var dy = 0; dy < h; dy++) {
       for (var dx = 0; dx < w; dx++) if (!this.construivel(x + dx, y + dy)) return false;
@@ -1302,6 +1405,9 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
       if (x < 2 || y < 2 || x > this.w - 4 || y > this.h - 4) continue;
       if (!this.areaLivre(x, y, 2, 2)) continue;
       if (!this.temAcessoPorRua(x, y, 2, 2)) continue;
+      /* Nas primeiras tentativas a jazida só nasce fora da via. Depois o filtro
+         cai, porque ficar sem jazida é pior do que estreitar uma rua. */
+      if (tentativas < 4000 && this.tocaRua(x, y, 2, 2)) continue;
       var perto = false;
       for (var p = 0; p < postos.length; p++) {
         if (Math.hypot(postos[p].x - x, postos[p].y - y) < 7) { perto = true; break; }
@@ -1660,6 +1766,10 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
       if (x < 2 || y < 2 || x + def.w > w.w - 2 || y + def.h > w.h - 2) continue;
       if (!w.areaLivre(x, y, def.w, def.h)) continue;
       if (!w.temAcessoPorRua(x, y, def.w, def.h)) continue;
+      /* Fora da via, enquanto houver onde. O posto abandonado é uma estrutura
+         de verdade e bloqueia rota: plantado em cima da rua de um quarteirão
+         fechado, ele corta o mapa em dois antes de a partida começar. */
+      if (tentativas < 2500 && w.tocaRua && w.tocaRua(x, y, def.w, def.h)) continue;
       var muitoPerto = false;
       for (var i = 0; i < this.listaEstruturas.length; i++) {
         var b = this.listaEstruturas[i];
@@ -3898,13 +4008,20 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
   var LARG = 64, ALT = 32;          /* losango base de uma célula, em zoom 1 */
 
   /* Paleta por cidade: cada setor tem a cor do seu chão, da sua água e das ruínas. */
+  /* O que BLOQUEIA é escuro; onde se ANDA é claro. A primeira versão fazia o
+     contrário — ruína bege clara sobre chão verde escuro — e o olho ia direto
+     para o obstáculo, não para o espaço jogável. Num mapa com quase seiscentas
+     células de ruína, isso vira um tapete de blocos claros onde não se enxerga
+     rua nenhuma. Aqui a ruína e a rocha viram silhueta escura, o chão sobe de
+     tom e a rua é a coisa mais clara da tela: a leitura fica "massa escura =
+     não passa, claro = passa". */
   var PALETAS = {
-    porto:     { chao: '#414a41', chao2: '#4a534a', rua: '#555e55', agua: '#1c2a2b', aguaBrilho: '#2f4746', entulho: '#5b5a4c', ruina: '#736c58', ruinaTopo: '#877e68', rocha: '#4a4a42', ceu: '#0d1410' },
-    costa:     { chao: '#464a50', chao2: '#4f545a', rua: '#585d63', agua: '#12303c', aguaBrilho: '#1d4c5c', entulho: '#5b5750', ruina: '#78716a', ruinaTopo: '#8a8279', rocha: '#3f4247', ceu: '#0a1016' },
-    metropole: { chao: '#42454a', chao2: '#4a4d52', rua: '#54585e', agua: '#2b2a20', aguaBrilho: '#3e3b2b', entulho: '#57555a', ruina: '#6e6e74', ruinaTopo: '#808088', rocha: '#3c3e42', ceu: '#0b0d12' },
-    deserto:   { chao: '#6b5c42', chao2: '#75654a', rua: '#7d6e53', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#7a6a4f', ruina: '#8d7c5e', ruinaTopo: '#a08d6c', rocha: '#5d5340', ceu: '#161009' },
-    ilha:      { chao: '#3f4348', chao2: '#474b51', rua: '#51565c', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#53565b', ruina: '#697077', ruinaTopo: '#7b838a', rocha: '#383c41', ceu: '#080c12' },
-    cratera:   { chao: '#5d5a4c', chao2: '#666254', rua: '#6f6b5c', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#6b6555', ruina: '#847c67', ruinaTopo: '#978e77', rocha: '#4f4b3e', ceu: '#100f0a' }
+    porto:     { chao: '#5c655a', chao2: '#656e62', rua: '#7b8377', agua: '#16262b', aguaBrilho: '#294a48', entulho: '#4e5346', ruina: '#2f3429', ruinaTopo: '#394030', rocha: '#272a23', ceu: '#0d1410' },
+    costa:     { chao: '#585e66', chao2: '#616771', rua: '#767d87', agua: '#123040', aguaBrilho: '#1d4c5c', entulho: '#4a4d53', ruina: '#2c3036', ruinaTopo: '#353a41', rocha: '#24282d', ceu: '#0a1016' },
+    metropole: { chao: '#575a60', chao2: '#60636a', rua: '#767a82', entulho: '#4a4d52', agua: '#262518', aguaBrilho: '#3a3726', ruina: '#2b2d32', ruinaTopo: '#34363c', rocha: '#232529', ceu: '#0b0d12' },
+    deserto:   { chao: '#8a7757', chao2: '#948160', rua: '#a89372', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#6b5d45', ruina: '#453a29', ruinaTopo: '#51452e', rocha: '#3a3222', ceu: '#161009' },
+    ilha:      { chao: '#545c60', chao2: '#5d656a', rua: '#727b80', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#474d51', ruina: '#292f33', ruinaTopo: '#32383d', rocha: '#21262a', ceu: '#080c12' },
+    cratera:   { chao: '#6e6a58', chao2: '#777360', rua: '#8b8670', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#5b5747', ruina: '#393528', ruinaTopo: '#433e2f', rocha: '#2f2c22', ceu: '#100f0a' }
   };
 
   function Render(canvas, sim) {
@@ -3985,6 +4102,33 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
       return n - Math.floor(n);
     }
 
+    /* A cidade É uma grade de ruas e quarteirões — a simulação sabe disso ao
+       erguê-la, mas o desenho pintava rua e terreno solto da mesma cor e a
+       malha sumia. Sem ver a rua, o jogador não vê por onde o inimigo vem nem
+       onde cabe a base: o mapa vira um campo de blocos sem direção.
+       Aqui a rua é reconhecida pelo que ela é — corredor longo de chão livre —
+       e ganha o tom mais claro da paleta. Cinco células é o menor corredor que
+       ainda lê como via; abaixo disso é vão entre escombros. */
+    var ehRua = new Uint8Array(w.n);
+    var eixo, a, b, ini, corrida;
+    for (eixo = 0; eixo < 2; eixo++) {
+      var fora = eixo ? w.w : w.h, dentro = eixo ? w.h : w.w;
+      for (a = 0; a < fora; a++) {
+        ini = -1;
+        for (b = 0; b <= dentro; b++) {
+          var livre = b < dentro &&
+            w.terreno[eixo ? w.idx(a, b) : w.idx(b, a)] === T.ASFALTO;
+          if (livre) { if (ini < 0) ini = b; continue; }
+          if (ini >= 0 && b - ini >= 5) {
+            for (corrida = ini; corrida < b; corrida++) {
+              ehRua[eixo ? w.idx(a, corrida) : w.idx(corrida, a)] = 1;
+            }
+          }
+          ini = -1;
+        }
+      }
+    }
+
     for (var y = 0; y < w.h; y++) {
       for (var x = 0; x < w.w; x++) {
         var t = w.terreno[w.idx(x, y)];
@@ -3993,13 +4137,13 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
         if (t === T.AGUA) cor = pal.agua;
         else if (t === T.ESCOMBRO) cor = pal.entulho;
         else if (t === T.ROCHA) cor = pal.rocha;
+        else if (ehRua[w.idx(x, y)]) cor = sombrear(pal.rua, ruido(x, y) < 0.5 ? 1 : 0.96);
         /* Era `(x+y)%2` — um xadrez, o padrão mais fácil de o olho pegar.
            Ruído com semente dá a mesma variação sem desenhar tabuleiro. */
         else cor = ruido(x, y) < 0.5 ? pal.chao : pal.chao2;
         var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
         this.losango(c, px, py, cor);
         if (t === T.AGUA && rand() < 0.16) this.losango(c, px, py, pal.aguaBrilho, 0.5);
-        if (t === T.ASFALTO && rand() < 0.05) this.losango(c, px, py, pal.rua, 0.5);
       }
     }
     /* Faixas de rua: linhas claras no meio das vias longas. */
@@ -4017,8 +4161,38 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     c.globalAlpha = 1;
     this.suavizarBordas(c, w, dx, dy, pal);
     this.texturarTerreno(c, w, dx, dy);
+    this.escurecerJuntoAosPredios(c, w, dx, dy);
     this.cvTerreno = off;
     this.terrenoSemTextura = !(UF.sprites && UF.sprites.chaoPronto());
+  };
+
+  /* Oclusão: o chão encosta no pé do prédio sem nenhuma transição, e a cidade
+     inteira fica parecendo blocos apoiados em cima de um papel. Escurecer as
+     células livres que fazem fronteira com ruína ou rocha custa um laço e dá o
+     que a sombra projetada daria — o volume assenta no chão e as massas se
+     separam umas das outras. Quanto mais lados bloqueados, mais fundo o poço.
+     Vai no canvas do terreno, desenhado uma vez só: não custa nada por quadro. */
+  Render.prototype.escurecerJuntoAosPredios = function (c, w, dx, dy) {
+    var lados = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    c.save();
+    for (var y = 0; y < w.h; y++) {
+      for (var x = 0; x < w.w; x++) {
+        var t = w.terreno[w.idx(x, y)];
+        if (t === T.RUINA || t === T.ROCHA || t === T.AGUA) continue;
+        var perto = 0;
+        for (var k = 0; k < 4; k++) {
+          var nx = x + lados[k][0], ny = y + lados[k][1];
+          if (!w.dentro(nx, ny)) continue;
+          var tv = w.terreno[w.idx(nx, ny)];
+          if (tv === T.RUINA || tv === T.ROCHA) perto++;
+        }
+        if (!perto) continue;
+        var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
+        c.globalAlpha = 0.1 + perto * 0.075;
+        this.losango(c, px, py, '#05080c');
+      }
+    }
+    c.restore();
   };
 
   /* Onde dois terrenos se encostam, o corte é um losango duro e o olho lê a
@@ -4078,7 +4252,7 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
   Render.prototype.texturarTerreno = function (c, w, dx, dy) {
     if (!UF.sprites || !UF.sprites.chaoPronto()) return;
     var grupos = [
-      { nome: 'chao-pavimento', aceita: function (t) { return t === T.ASFALTO; }, alfa: 0.5 },
+      { nome: 'chao-pavimento', aceita: function (t) { return t === T.ASFALTO; }, alfa: 0.34 },
       { nome: 'chao-entulho', aceita: function (t) { return t === T.ESCOMBRO || t === T.ROCHA || t === T.RUINA; }, alfa: 0.55 },
       { nome: 'chao-agua', aceita: function (t) { return t === T.AGUA; }, alfa: 0.45 }
     ];
@@ -4166,9 +4340,13 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
       var arrasado = !rocha && rand() < 0.34;          /* prédio que veio abaixo */
       predios.push({
         celulas: celulas, rocha: rocha, arrasado: arrasado,
-        alt: rocha ? 9 + rand() * 14
-          : arrasado ? 10 + rand() * 16
-            : 26 + porte * 62 + rand() * 26,
+        /* A amplitude é grande de propósito. Com o intervalo antigo quase todo
+           prédio caía entre 45 e 70 e a cidade virava um tapete de cubos da
+           mesma altura — nada de silhueta, nada para se orientar. Agora o
+           quarteirão grande sobe de verdade e o pequeno fica rente ao chão. */
+        alt: rocha ? 8 + rand() * 12
+          : arrasado ? 8 + rand() * 12
+            : 18 + porte * 108 + rand() * 22,
         tom: 0.78 + rand() * 0.34,
         janelas: !rocha && !arrasado
       });
@@ -4355,7 +4533,9 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     };
     var alt = r.alt;
     var g = this.caixa(ctx, r.x, r.y, 1, 1, alt, cores);
-    if (r.janelas && this.cam.zoom > 0.55) {
+    /* Faixa de janela em prédio baixo vira listra: muito contorno, pouca
+       informação. Só entra a partir de uma altura em que o prédio já se lê. */
+    if (r.janelas && alt > 46 && this.cam.zoom > 0.55) {
       var z = this.cam.zoom;
       var linhas = Math.max(1, Math.floor(alt / 12));
       for (var i = 0; i < linhas; i++) {
@@ -4363,9 +4543,9 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
         if (yy > g.s.y - 4 * z) break;
         /* Uma janela em cada dez ainda tem luz: a cidade não morreu inteira. */
         var acesa = ((r.x * 31 + r.y * 17 + i * 7) % 11) === 0;
-        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.5)' : 'rgba(14,18,24,0.6)';
+        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.42)' : 'rgba(10,13,18,0.38)';
         ctx.fillRect(g.o.x + 5 * z, yy, (g.s.x - g.o.x) - 10 * z, 3.4 * z);
-        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.34)' : 'rgba(14,18,24,0.45)';
+        ctx.fillStyle = acesa ? 'rgba(255,208,130,0.28)' : 'rgba(10,13,18,0.28)';
         ctx.fillRect(g.s.x + 5 * z, yy + 3.4 * z, (g.l.x - g.s.x) - 10 * z, 3.4 * z);
       }
     }

@@ -176,8 +176,19 @@ teste('Construtor morto pausa a obra; outro operário retoma', function () {
   var sim = partida();
   var b = construirPerto(sim, 'sentinela', 5, 11);
   ok(b, 'não consegui iniciar a obra');
-  avancar(sim, 12);
-  var construtor = sim.unidades.filter(function (u) { return u.tarefa && u.tarefa.tipo === 'construir' && u.tarefa.alvo === b.id; })[0];
+  /* Avança até FLAGRAR alguém construindo, em vez de esperar um tempo fixo.
+     Com tempo fixo o teste passa a depender de quanto o operário demora a
+     atravessar o mapa: quando as ruas ficaram desobstruídas, a obra passou a
+     terminar antes dos doze segundos e não havia mais construtor para matar —
+     o teste falhava sem que nada da regra tivesse mudado. */
+  var construtor = null;
+  for (var t = 0; t < 420 && !construtor; t++) {
+    sim.atualizar(1 / 30);
+    if (b.obra <= 0 || b.construida) continue;
+    construtor = sim.unidades.filter(function (u) {
+      return u.tarefa && u.tarefa.tipo === 'construir' && u.tarefa.alvo === b.id;
+    })[0];
+  }
   ok(construtor, 'nenhum operário assumiu a obra');
   var progresso = b.obra;
   ok(progresso > 0, 'a obra não avançou antes da morte do construtor');

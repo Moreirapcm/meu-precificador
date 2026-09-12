@@ -16,6 +16,12 @@
     this.explorado = new Uint8Array(this.n);
     this.visivel = new Uint8Array(this.n);
     this.jazidas = [];
+    /* Quais células são via pública. A cidade é gerada em quarteirões, e com
+       quarteirões sólidos a rua vira o ÚNICO corredor: uma jazida plantada em
+       cima dela tapa a passagem e deixa metade do mapa sem rota. Guardar isso
+       aqui é o que permite plantar jazida dentro do quarteirão aberto, que é
+       também onde ela faz sentido — no vão da quadra, não no meio da avenida. */
+    this.rua = new Uint8Array(this.n);
     this.entradas = [];
     this.versaoRota = 1;                      /* muda quando o terreno navegável muda */
     this.gerar(cfg.semente);
@@ -112,6 +118,7 @@
 
     this.removerIlhas();
     this.plantarJazidas(rand);
+    this.abrirPassagemAoRedorDasJazidas();
     this.definirEntradas(rand);
   };
 
@@ -193,7 +200,19 @@
   };
 
   /* Malha urbana arruinada: avenidas e ruas em grade, quarteirões com prédios
-     de pé (bloqueiam), prédios desabados (entulho) e quadras abertas por bombardeio. */
+     de pé (bloqueiam), prédios desabados (entulho) e quadras abertas por
+     bombardeio.
+
+     O estado é sorteado POR QUARTEIRÃO, não por célula. Sorteando célula a
+     célula — como era antes — a grade existia no papel mas sumia na tela: cada
+     quadra virava confete de ruína, entulho e asfalto misturados, sem massa e
+     sem silhueta, e o jogador não conseguia ler onde passava uma rua nem onde
+     cabia a base. Cidade de verdade é quarteirão cheio separado por rua vazia;
+     é isso que dá orientação a quem olha o mapa de cima.
+
+     O sorteio é um hash de (quadra, semente), não `rand()`: assim ele não
+     depende da ordem em que as células são visitadas, e o mesmo setor devolve
+     sempre a mesma cidade. */
   World.prototype.erguerCidade = function (rand) {
     var w = this.w, h = this.h;
     var quadra = this.cfg.quadra || 7;
@@ -201,13 +220,16 @@
     var girado = rand() < 0.5;               /* algumas cidades têm a grade inclinada */
     var avenidaX = 3 + Math.floor(rand() * quadra);
     var avenidaY = 3 + Math.floor(rand() * quadra);
+    var sem = this.cfg.semente || 1;
 
-    /* Quadras vazias: crateras de bombardeio e praças que sobraram. */
-    var limpas = {};
-    var quantasLimpas = Math.floor((w / quadra) * (h / quadra) * 0.22);
-    for (var q = 0; q < quantasLimpas; q++) {
-      limpas[Math.floor(rand() * (w / quadra)) + ':' + Math.floor(rand() * (h / quadra))] = 1;
+    function hash(a, b, sal) {
+      var n = Math.sin(a * 127.1 + b * 311.7 + sal * 74.7 + sem * 0.113) * 43758.5453;
+      return n - Math.floor(n);
     }
+
+    var larguraRua = this.cfg.rua || 1;
+    var pPredio = densidade * 0.62;          /* quarteirão que continua de pé */
+    var pArrasado = pPredio + 0.2;          /* veio abaixo: vira entulho */
 
     for (var y = 0; y < h; y++) {
       for (var x = 0; x < w; x++) {
@@ -217,20 +239,35 @@
         var ux = x, uy = y;
         if (girado) { ux = x + ((y % (quadra * 2) < quadra) ? 0 : Math.floor(quadra / 2)); }
 
-        var larguraRua = this.cfg.rua || 1;
-        var dentroRuaX = ((ux + avenidaX) % quadra) < larguraRua;
-        var dentroRuaY = ((uy + avenidaY) % quadra) < larguraRua;
+        var ax = ux + avenidaX, ay = uy + avenidaY;
+        var dentroRuaX = (ax % quadra) < larguraRua;
+        var dentroRuaY = (ay % quadra) < larguraRua;
         /* Avenidas largas de tempos em tempos: rotas principais e campo de tiro. */
-        var avenida = ((ux + avenidaX) % (quadra * 3)) < larguraRua + 2 ||
-          ((uy + avenidaY) % (quadra * 3)) < larguraRua + 2;
-        if (dentroRuaX || dentroRuaY || avenida) { this.terreno[i] = T.ASFALTO; continue; }
+        var avenida = (ax % (quadra * 3)) < larguraRua + 2 ||
+          (ay % (quadra * 3)) < larguraRua + 2;
+        if (dentroRuaX || dentroRuaY || avenida) {
+          this.terreno[i] = T.ASFALTO; this.rua[i] = 1; continue;
+        }
 
-        var chave = Math.floor(x / quadra) + ':' + Math.floor(y / quadra);
-        if (limpas[chave]) { this.terreno[i] = rand() < 0.35 ? T.ESCOMBRO : T.ASFALTO; continue; }
+        var qx = Math.floor(ax / quadra), qy = Math.floor(ay / quadra);
+        var estado = hash(qx, qy, 1);
+        /* Posição dentro do quarteirão, para mastigar as bordas: um retângulo
+           perfeito de ruína lê como parede, não como quarteirão bombardeado. */
+        var ix = ax % quadra, iy = ay % quadra;
+        var naBorda = ix === larguraRua || ix === quadra - 1 ||
+          iy === larguraRua || iy === quadra - 1;
+        var celula = hash(x + 0.5, y + 0.5, 2);
 
-        var r = rand();
-        this.terreno[i] = r < densidade * 0.78 ? T.RUINA
-          : r < densidade * 0.78 + 0.16 ? T.ESCOMBRO : T.ASFALTO;
+        if (estado < pPredio) {
+          this.terreno[i] = naBorda && celula < 0.32
+            ? (celula < 0.12 ? T.ASFALTO : T.ESCOMBRO)
+            : T.RUINA;
+        } else if (estado < pArrasado) {
+          this.terreno[i] = celula < 0.22 ? T.RUINA
+            : celula < 0.86 ? T.ESCOMBRO : T.ASFALTO;
+        } else {
+          this.terreno[i] = celula < 0.14 ? T.ESCOMBRO : T.ASFALTO;
+        }
       }
     }
   };
@@ -293,6 +330,55 @@
         continue;
       }
       this.escavarVau(grupo, comp, i);
+    }
+    this.recalcularAlcance();
+  };
+
+  /* A jazida ocupa duas por duas células e o caminho não passa por cima dela.
+     Numa cidade de quarteirões sólidos a rua costuma ser o único corredor, e
+     uma jazida plantada ali tapa a passagem: metade do mapa fica sem rota até
+     o centro, e a zona de invasão do outro lado nunca chega. Aqui o mapa é
+     percorrido de novo, agora contando as jazidas como obstáculo, e todo
+     pedaço grande que ficou ilhado ganha um vão aberto na ruína ao lado.
+     Fazer isto DEPOIS de plantar é o que garante a invariante; antes, a
+     jazida ainda não existia para bloquear nada. */
+  World.prototype.abrirPassagemAoRedorDasJazidas = function () {
+    var w = this.w, n = this.n, self = this;
+    function preso(x, y) {
+      return self.solido(x, y) || self.recurso[self.idx(x, y)] !== 0;
+    }
+    for (var volta = 0; volta < 4; volta++) {
+      var comp = new Int32Array(n).fill(-1), grupos = [], i;
+      for (i = 0; i < n; i++) {
+        if (comp[i] !== -1 || preso(i % w, (i / w) | 0)) continue;
+        var id = grupos.length, celulas = [], fila = [i];
+        comp[i] = id;
+        while (fila.length) {
+          var c = fila.pop(); celulas.push(c);
+          var cx = c % w, cy = (c / w) | 0;
+          for (var k = 0; k < 4; k++) {
+            var nx = cx + [1, -1, 0, 0][k], ny = cy + [0, 0, 1, -1][k];
+            if (!this.dentro(nx, ny)) continue;
+            var j = ny * w + nx;
+            if (comp[j] !== -1 || preso(nx, ny)) continue;
+            comp[j] = id; fila.push(j);
+          }
+        }
+        grupos.push(celulas);
+      }
+      if (grupos.length < 2) break;
+      grupos.sort(function (a, b) { return b.length - a.length; });
+      comp.fill(-1);
+      for (i = 0; i < grupos.length; i++) {
+        for (var q = 0; q < grupos[i].length; q++) comp[grupos[i][q]] = i;
+      }
+      var abriu = false;
+      for (i = 1; i < grupos.length; i++) {
+        if (grupos[i].length < 12) continue;
+        this.escavarVau(grupos[i], comp, i);
+        abriu = true;
+      }
+      if (!abriu) break;
     }
     this.recalcularAlcance();
   };
@@ -361,6 +447,15 @@
     this.alcancavel = alc;
   };
 
+  World.prototype.tocaRua = function (x, y, w, h) {
+    for (var dy = 0; dy < h; dy++) {
+      for (var dx = 0; dx < w; dx++) {
+        if (this.dentro(x + dx, y + dy) && this.rua[this.idx(x + dx, y + dy)]) return true;
+      }
+    }
+    return false;
+  };
+
   World.prototype.areaLivre = function (x, y, w, h) {
     for (var dy = 0; dy < h; dy++) {
       for (var dx = 0; dx < w; dx++) if (!this.construivel(x + dx, y + dy)) return false;
@@ -382,6 +477,9 @@
       if (x < 2 || y < 2 || x > this.w - 4 || y > this.h - 4) continue;
       if (!this.areaLivre(x, y, 2, 2)) continue;
       if (!this.temAcessoPorRua(x, y, 2, 2)) continue;
+      /* Nas primeiras tentativas a jazida só nasce fora da via. Depois o filtro
+         cai, porque ficar sem jazida é pior do que estreitar uma rua. */
+      if (tentativas < 4000 && this.tocaRua(x, y, 2, 2)) continue;
       var perto = false;
       for (var p = 0; p < postos.length; p++) {
         if (Math.hypot(postos[p].x - x, postos[p].y - y) < 7) { perto = true; break; }

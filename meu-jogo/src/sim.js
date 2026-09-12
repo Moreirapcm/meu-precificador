@@ -74,6 +74,10 @@
       if (x < 2 || y < 2 || x + def.w > w.w - 2 || y + def.h > w.h - 2) continue;
       if (!w.areaLivre(x, y, def.w, def.h)) continue;
       if (!w.temAcessoPorRua(x, y, def.w, def.h)) continue;
+      /* Fora da via, enquanto houver onde. O posto abandonado é uma estrutura
+         de verdade e bloqueia rota: plantado em cima da rua de um quarteirão
+         fechado, ele corta o mapa em dois antes de a partida começar. */
+      if (tentativas < 2500 && w.tocaRua && w.tocaRua(x, y, def.w, def.h)) continue;
       var muitoPerto = false;
       for (var i = 0; i < this.listaEstruturas.length; i++) {
         var b = this.listaEstruturas[i];
