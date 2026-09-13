@@ -276,7 +276,13 @@
         this.danoEmArea(alvo.x, alvo.y, alvo.def.arma.area, alvo.def.arma.dano, alvo.lado, { perfura: false });
         this.emitir('explosao', { x: alvo.x, y: alvo.y, raio: alvo.def.arma.area });
       }
-      this.emitir('unidadeMorta', { id: alvo.id, x: alvo.x, y: alvo.y, lado: alvo.lado, tipo: alvo.tipo });
+      /* `angulo` vai junto porque o cadáver fica deitado para o lado em que a
+         unidade estava virada, e depois de removida da lista não há mais como
+         saber. */
+      this.emitir('unidadeMorta', {
+        id: alvo.id, x: alvo.x, y: alvo.y, lado: alvo.lado,
+        tipo: alvo.tipo, angulo: alvo.angulo
+      });
     }
   };
 

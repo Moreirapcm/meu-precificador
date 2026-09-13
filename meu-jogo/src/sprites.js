@@ -81,7 +81,12 @@
     'inimigos/predador-atacar-sudeste': 1,
     'inimigos/cuspidor-atacar-leste': 1,
     'inimigos/cuspidor-atacar-nordeste': 1,
-    'inimigos/cuspidor-atacar-sudeste': 1
+    'inimigos/cuspidor-atacar-sudeste': 1,
+    /* corpo caído: uma imagem só, sem direção. Um corpo deitado lê igual de
+       qualquer ângulo — o que muda é para que lado ele está virado, e isso o
+       desenho resolve espelhando. */
+    'inimigos/corredor-morto': 1,
+    'inimigos/predador-morto': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não

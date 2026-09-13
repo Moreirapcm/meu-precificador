@@ -659,6 +659,14 @@
     lista.sort(function (a, b) { return a.z - b.z; });
     for (var i = 0; i < lista.length; i++) lista[i].desenhar.call(this, ctx, lista[i]);
 
+    /* o cadáver envelhece com o quadro, não com a simulação: pausar o jogo não
+       deve fazer o campo de batalha limpar sozinho */
+    if (this.cadaveres) {
+      for (var ic = this.cadaveres.length - 1; ic >= 0; ic--) {
+        this.cadaveres[ic].vida -= dt;
+        if (this.cadaveres[ic].vida <= 0) this.cadaveres.splice(ic, 1);
+      }
+    }
     this.desenharVultos(ctx);
     this.desenharProjeteis(ctx);
     this.desenharEfeitos(ctx, dt);
@@ -753,6 +761,14 @@
       if (!sim.world.explorado[sim.world.idx(r.x, r.y)]) continue;
       if (this.cobertas && this.cobertas[r.x + ',' + r.y]) continue;
       lista.push({ z: r.x + r.y, dado: r, desenhar: this.desenharRuina });
+    }
+    for (i = 0; this.cadaveres && i < this.cadaveres.length; i++) {
+      var cad = this.cadaveres[i];
+      if (!this.naTela(cad.x, cad.y)) continue;
+      if (!sim.world.explorado[sim.world.idx(Math.floor(cad.x), Math.floor(cad.y))]) continue;
+      /* z um pouco ABAIXO do vivo na mesma célula: quem está de pé passa por
+         cima de quem caiu */
+      lista.push({ z: cad.x + cad.y + 0.1, dado: cad, desenhar: this.desenharCadaver });
     }
     for (i = 0; this.destrocos && i < this.destrocos.length; i++) {
       var dz = this.destrocos[i];

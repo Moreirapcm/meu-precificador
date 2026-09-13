@@ -331,6 +331,62 @@
       s.cv.width * esc, s.cv.height * esc);
   };
 
+  /* O CAMPO DE BATALHA GUARDA OS MORTOS.
+     A unidade morta é removida da simulação 1,2 s depois do último dano, e com
+     ela sumia qualquer vestígio da luta: o chão voltava a ficar limpo como se
+     nada tivesse acontecido. No Age of Empires II o cadáver ficava cerca de
+     trinta segundos — é isso que faz uma investida parecer que custou caro.
+
+     O cadáver vive SÓ NO DESENHO. A simulação não precisa saber dele: não
+     bloqueia, não é alvo, não entra em rota. Mantê-lo fora dela é o que permite
+     guardá-lo por meio minuto sem custo de regra nenhum, e sem mexer em
+     nenhuma invariante que os testes protegem. */
+  var TEMPO_CADAVER = 26;
+
+  R.deitarCadaver = function (e) {
+    if (!this.cadaveres) this.cadaveres = [];
+    this.cadaveres.push({
+      x: e.x, y: e.y, tipo: e.tipo, lado: e.lado,
+      angulo: e.angulo === undefined ? 0 : e.angulo,
+      vida: TEMPO_CADAVER, max: TEMPO_CADAVER
+    });
+    /* teto: uma partida longa, com muitas ondas, não pode acumular sem fim */
+    if (this.cadaveres.length > 160) this.cadaveres.splice(0, this.cadaveres.length - 160);
+  };
+
+  R.desenharCadaver = function (ctx, item) {
+    var c = item.dado, z = this.cam.zoom;
+    var p = this.paraTela(c.x, c.y);
+    var pasta = c.lado === 'inimigo' ? 'inimigos/' : 'unidades/';
+    var t = UF.sprites.tira(pasta + c.tipo + '-morto');
+    /* últimos três segundos: some devagar, para o sumiço não ser um piscar */
+    var alfa = c.vida > 3 ? 1 : Math.max(0, c.vida / 3);
+
+    ctx.save();
+    ctx.globalAlpha = alfa * 0.92;
+    if (t) {
+      /* Corpo deitado escala pela LARGURA, não pela altura. A altura de sprite
+         é feita para a figura EM PÉ; usada num corpo deitado — que é largo e
+         baixo — ela estica a largura e o bicho morto sai maior que o vivo.
+         O que se mede num cadáver é o quanto ele ocupa do chão. */
+      var larg = (ALTURA_SPRITE[c.tipo] || 1.3) * ALT * z * 1.15;
+      var alt = t.alt * (larg / t.larg);
+      /* deitado aponta para onde a unidade estava virada; espelha para a
+         esquerda como todo o resto do jogo */
+      var paraDireita = Math.cos(c.angulo) - Math.sin(c.angulo) >= 0;
+      ctx.translate(p.x, p.y);
+      if (!paraDireita) ctx.scale(-1, 1);
+      this.imagemComSilhueta(ctx, t.img, -larg / 2, -alt * 0.62, larg, alt);
+    } else {
+      /* sem arte de corpo caído: uma mancha escura, que já é melhor que nada */
+      ctx.fillStyle = c.lado === 'inimigo' ? 'rgba(60,28,24,0.5)' : 'rgba(28,32,40,0.5)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, 11 * z, 5.5 * z, 0, 0, 6.283);
+      ctx.fill();
+    }
+    ctx.restore();
+  };
+
   /* Vizinha mais próxima quando a direção exata não foi desenhada.
      Nem toda unidade vai ter as cinco. O gerador de imagem faz a folha de cinco
      poses para humanoide, mas para CRIATURA ele muda a postura do bicho em vez
@@ -753,6 +809,7 @@
       } else if (e.tipo === 'unidadeMorta') {
         this.efeitoMundo('fumaca', e.x, e.y, { vida: 0.9, tam: 6 });
         this.lancarCacos(e.x, e.y, 4, 1.4, e.lado === 'inimigo' ? '#8fbf5a' : '#b08f6a');
+        this.deitarCadaver(e);
       } else if (e.tipo === 'estruturaDestruida') {
         var cx = e.x + e.w / 2, cy = e.y + e.h / 2;
         this.efeitoMundo('explosao', cx, cy, { raio: 26 * (e.w || 1), vida: 0.7, grande: true });
