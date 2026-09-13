@@ -75,7 +75,13 @@
        vizinha, em `R.tiraDaDirecao`. */
     'inimigos/corredor-atacar-leste': 1,
     'inimigos/corredor-atacar-nordeste': 1,
-    'inimigos/corredor-atacar-sudeste': 1
+    'inimigos/corredor-atacar-sudeste': 1,
+    'inimigos/predador-atacar-leste': 1,
+    'inimigos/predador-atacar-nordeste': 1,
+    'inimigos/predador-atacar-sudeste': 1,
+    'inimigos/cuspidor-atacar-leste': 1,
+    'inimigos/cuspidor-atacar-nordeste': 1,
+    'inimigos/cuspidor-atacar-sudeste': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não
