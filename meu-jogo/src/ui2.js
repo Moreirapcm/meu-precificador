@@ -108,7 +108,7 @@
   var CASAS_TROPA = {
     mover: 0, parar: 1, atacar: 2,
     patrulhar: 3, recuar: 4, base: 5,
-    minerar: 6, reparar: 7
+    minerar: 6, reparar: 7, construir: 8
   };
   /* Prédio PRONTO. O prédio em obra não entra nesta tabela: ele é outro
      estado, com outra carta curta, como no StarCraft — construção em
@@ -121,7 +121,18 @@
   };
   var CASAS_GLOBAL = {
     operario: 0, distribuir: 1, recolher: 2,
-    linha: 3, bombardeio: 4
+    linha: 3, bombardeio: 4, construir: 5
+  };
+
+  /* Um símbolo por estrutura. Não é enfeite: no painel a figura é o que o olho
+     acha primeiro, e o nome só confirma. Sem ícone a página de construção vira
+     uma lista de palavras do mesmo tamanho, que é o pior caso para achar
+     depressa. */
+  var ICONE_ESTRUTURA = {
+    alojamento: '⌂', gerador: '☀', eolica: '✾', nuclear: '☢', fusao: '✦',
+    deposito: '▣', quartel: '⚔', oficina: '⚙', pesquisa: '⚗', extrator: '⬢',
+    radar: '◉', muro: '▬', portao: '◫', torreMuralha: '⊓', bastiao: '⛨',
+    sentinela: '↑', gelo: '❄', artilharia: '◎', plasma: 'ϟ'
   };
 
   function botao(rotulo, icone, sub, aoClicar, opcoes) {
@@ -207,6 +218,14 @@
   UI.atualizarAcoes = function () {
     var self = this, sim = this.sim, cx = $('acoesContexto');
     cx.innerHTML = '';
+    if (this.paginaAcoes === 'construir') {
+      $('selNome').textContent = 'Construir';
+      $('selVida').hidden = true;
+      $('selDetalhe').textContent = 'Escolha a estrutura. Apagada é o que ainda não dá.';
+      this.filaNaBarra(null);
+      this.paginaConstruir(cx);
+      return;
+    }
     var sel = this.selecionado ? sim.alvoPorId(this.selecionado) : null;
     var tropas = this.unidadesSelecionadas();
 
@@ -272,6 +291,7 @@
     casas[CASAS_GLOBAL.bombardeio] = botao('Bombardear', '◎', D.REGRAS.custoBombardeio + ' ◉',
       function () { self.iniciarHabilidade('bombardeio'); },
       { desativado: sim.jogador.energia < D.REGRAS.custoBombardeio, tecla: 'q' });
+    casas[CASAS_GLOBAL.construir] = this.botaoConstruir();
     montarCasas(cx, casas);
   };
 
@@ -308,12 +328,66 @@
         });
         self.mostrarAviso('Operários voltaram à mineração.', 'info');
       }, { tecla: 'g' });
+      casas[CASAS_TROPA.construir] = this.botaoConstruir();
     }
     return casas;
   };
 
   UI.acoesDeTropa = function (cx, tropas) {
     montarCasas(cx, this.casasDeTropa(tropas));
+  };
+
+  /* SEGUNDA PÁGINA DO PAINEL — a "Build" do StarCraft.
+     Lá o operário tem "Build" na grade, e tocar troca a grade inteira pela
+     lista de construções, com Cancelar no canto. É o desenho certo para um
+     painel pequeno: em vez de espremer vinte comandos, troca-se a página.
+
+     O que o Pedro pediu — "mostrar as construções que ele já pode fazer" —
+     resolve-se mostrando TODAS, sempre na mesma ordem, e apagando as que ainda
+     não dá: some a cor, fica o motivo. Estrutura que aparece e some conforme o
+     minério sobe e desce faz a mesma coisa que a casa que anda — tira do
+     jogador a chance de decorar onde as coisas estão. */
+  UI.botaoConstruir = function () {
+    var self = this;
+    return botao('Construir', '⚒', 'estruturas', function () {
+      self.paginaAcoes = 'construir';
+      self.atualizarAcoes();
+    }, { tecla: 'b' });
+  };
+
+  UI.paginaConstruir = function (cx) {
+    var self = this, sim = this.sim;
+    cx.appendChild(botao('Voltar', '↩', 'fecha a lista', function () {
+      self.paginaAcoes = null;
+      self.atualizarAcoes();
+    }, { tecla: 'esc' }));
+
+    CATEGORIAS.forEach(function (cat) {
+      var tipos = Object.keys(ESTR).filter(function (t) {
+        return ESTR[t].cat === cat.id && t !== 'central';
+      });
+      if (!tipos.length) return;
+      var risco = doc.createElement('span');
+      risco.className = 'divisor-acao';
+      risco.dataset.grupo = cat.nome;
+      cx.appendChild(risco);
+
+      tipos.forEach(function (tipo) {
+        var def = ESTR[tipo];
+        var falta = sim.requisitoFaltante(def);
+        /* Recurso que falta NÃO desabilita: o preço já está escrito no botão e
+           daqui a dez segundos ele dá. Requisito de tecnologia, sim — esse não
+           muda sozinho, e o jogador precisa saber o que destrava. */
+        var b = botao(def.nome, ICONE_ESTRUTURA[tipo] || '▪', self.precoDe(def), function () {
+          var impede = sim.requisitoFaltante(def);
+          if (impede) { self.mostrarAviso(impede, 'atencao'); UF.audio.evento('negado'); return; }
+          self.paginaAcoes = null;
+          self.iniciarConstrucao(tipo);
+        }, { desativado: !!falta, motivo: falta || def.desc });
+        if (!falta && !sim.temRecurso(sim.custoDe(def))) b.classList.add('sem-recurso');
+        cx.appendChild(b);
+      });
+    });
   };
 
   UI.acoesDeUnidade = function (cx, u) {

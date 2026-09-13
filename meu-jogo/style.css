@@ -218,6 +218,25 @@ button { cursor: pointer; border: 0; background: none; }
 .sel-vida .trilho i.baixa { background: var(--perigo); }
 .sel-vida em { font-style: normal; font-size: 9.5px; color: var(--suave); }
 
+/* Risco que separa os grupos na página de construção — o nome da categoria
+   vai no próprio risco, de pé, para não gastar uma casa inteira. */
+.divisor-acao {
+  flex-shrink: 0; width: 1px; height: 44px; background: var(--borda);
+  margin: 0 6px; position: relative;
+}
+.divisor-acao::after {
+  content: attr(data-grupo); position: absolute; left: 3px; top: 50%;
+  transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl;
+  font-family: var(--hud); font-size: 7.5px; letter-spacing: .5px;
+  color: var(--suave); opacity: .6; white-space: nowrap;
+}
+
+/* Dá para construir, mas o minério ainda não chegou: o botão continua CLICÁVEL
+   e só perde a cor. Preço é coisa que muda sozinha em dez segundos — apagar o
+   botão por causa dele faria a lista piscar enquanto o jogador olha. */
+.acao.sem-recurso { opacity: .62; }
+.acao.sem-recurso small { color: var(--perigo); }
+
 /* FILA DE PRODUÇÃO na própria barra, visível enquanto o prédio está
    selecionado. Cada item É o botão de cancelar, como no Age of Empires II. */
 .fila-barra { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }

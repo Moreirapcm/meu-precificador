@@ -181,7 +181,10 @@
       var k = e.key.toLowerCase();
       if (k === ' ') { e.preventDefault(); self.jogo.alternarPausa(); return; }
       if (k === 'escape') { self.cancelarModo(); return; }
-      if (k === 'b') { self.abrirGaveta('construir', true); return; }
+      /* `b` abre a lista de construções NO PAINEL, que é onde o StarCraft a
+         põe. A gaveta continua existindo pela aba, com a descrição inteira de
+         cada estrutura — o painel é para quem já sabe o que quer. */
+      if (k === 'b') { self.paginaAcoes = 'construir'; self.atualizarAcoes(); return; }
       if (k === 'm') { self.iniciarOrdem('mover'); return; }
       if (k === 'a') { self.iniciarOrdem('moverAtacando'); return; }
       /* `r` é REPARAR, como nos dois clássicos, e passa a agir sobre a
@@ -272,6 +275,9 @@
 
   UI.prototype.selecionar = function (ent) {
     this.grupoSelecionado = null;
+    /* Trocar de seleção fecha a segunda página: a lista de construções era do
+       operário que estava selecionado, não da torre em que se acabou de tocar. */
+    this.paginaAcoes = null;
     if (!ent) { this.selecionado = 0; this.render.selecao = []; this.atualizarTudo(); return; }
     if (ent.ehJazida) { this.selecionado = 0; this.render.selecao = []; this.jazidaSelecionada = ent; }
     else { this.jazidaSelecionada = null; this.selecionado = ent.id; this.render.selecao = [ent.id]; }
@@ -578,6 +584,7 @@
 
   UI.prototype.cancelarModo = function () {
     this.modo = null;
+    this.paginaAcoes = null;
     this.render.previa = null;
     this.render.tracado = null;
     $('modoHud').hidden = true;
