@@ -4210,6 +4210,29 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       r.escalaY = 1 - Math.abs(ang) * 0.03;
     }
 
+    /* RESPIRAÇÃO DA UNIDADE PARADA.
+       Unidade que não se mexe não parece calma: parece congelada, e um mapa
+       com trinta estátuas parece um jogo travado. O ganho é enorme para o
+       custo, que é um seno.
+
+       Três cuidados que fazem a diferença entre respirar e pulsar:
+       - a FASE vem do id da unidade. Sem isso o pelotão inteiro inflaria e
+         esvaziaria junto, como um coração só — que é pior que estátua;
+       - o ritmo é o de um corpo em repouso — dezessete ciclos por minuto, que é
+         o meio da faixa de quinze a vinte que a referência de animação dá para
+         alguém relaxado — e não o da animação de andar;
+       - o corpo ESTICA para cima e encolhe de volta; ele não sobe. Subir e
+         descer é pulo, e a unidade parada não pula.
+       Vale só para quem está mesmo parado: andando, atacando ou morrendo há
+       movimento demais para caber mais um. */
+    if (noChao && !u.rota && !u.morta && !u.alvo) {
+      var respira = Math.sin((sim ? sim.t : 0) * 1.78 + (u.id % 17) * 0.41);
+      r.escalaY *= 1 + respira * 0.012;
+      /* o ombro sobe um triz junto com o peito, senão a figura parece esticar
+         a partir do chão em vez de inflar */
+      r.subir += respira * 0.35 * z;
+    }
+
     /* Galope: vale para quem NÃO tem pernas recortadas. Quem tem já anda pela
        perna; somar o salto por cima faria o bípede quicar. */
     var gal = Anima.GALOPE[u.tipo];

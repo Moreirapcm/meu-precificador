@@ -227,11 +227,17 @@ espelho, sem espelhar frente e costas. No render: `R.caminhada`, `R.spriteUnidad
 `R.golpeDePerto`, `R.canhaoDeVeiculo`. `UF.sprites.tira` + tabela `TIRAS`:
 operário com 4 quadros em 5 direções, pose de tiro de 1 quadro nos soldados.
 
-**Falta.** Tira `-morrer-` e pose deitada (DT/DD): só existe o tombo calculado, e
-é o maior retorno por quadro desenhado. **Idle**: parada, a unidade congela —
-`passo` é apagado e `postura()` não respira (custo zero). **Ataque**: `-atirar-`
-tem `n = 1`, e com `n > 1` o quadro sai do relógio (`sim.t * 10`), não do disparo.
-**Caminhada** só do operário; invasores (`inimigos/`) não têm tira nenhuma.
+**Feito depois desta pesquisa** (13/09/2026). **Pose deitada**: existe, como
+sprite `-morto` por unidade, e o corpo fica 26 s no chão com poça de sangue —
+`R.deitarCadaver`/`R.desenharCadaver`, fora da simulação. **Idle**: `postura()`
+respira, dezessete ciclos por minuto, com a fase tirada do id da unidade, como
+esta seção recomenda. **Quadrúpede**: `Anima.GALOPE` dá salto, balanço e squash
+pela distância percorrida — antes os bichos deslizavam.
+
+**Falta.** Tira `-morrer-` de verdade (a transição entre o vivo e o caído ainda
+é o tombo calculado). **Ataque**: `-atirar-` tem `n = 1`, e com `n > 1` o quadro
+sai do relógio (`sim.t * 10`), não do disparo. **Caminhada** só do operário.
+**Fidget** ocasional, o *2nd Standing Graphic* do AoE2: não existe.
 
 ## Fontes
 
