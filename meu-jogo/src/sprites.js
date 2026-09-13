@@ -107,7 +107,12 @@
     'unidades/tanque-caindo1': 1,
     'unidades/drone-caindo1': 1,
     'unidades/tanque-morto': 1,
-    'unidades/drone-morto': 1
+    'unidades/drone-morto': 1,
+    'inimigos/couracado-morto': 1,
+    'inimigos/asa-morto': 1,
+    'inimigos/tita-morto': 1,
+    'inimigos/detonador-morto': 1,
+    'inimigos/matriarca-morto': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não
