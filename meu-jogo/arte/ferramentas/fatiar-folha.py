@@ -20,14 +20,55 @@ prefixo = pathlib.Path(sys.argv[2])
 minimo = 4000
 if '--min' in sys.argv:
     minimo = int(sys.argv[sys.argv.index('--min') + 1])
+colunas = 0
+if '--colunas' in sys.argv:
+    colunas = int(sys.argv[sys.argv.index('--colunas') + 1])
 
 img = Image.open(entrada).convert('RGBA')
 L, A = img.size
 alfa = img.getchannel('A').load()
+
+
+def por_colunas(n):
+    """Corta em N faixas verticais, acertando o corte no VALE mais vazio.
+
+    A separação por ilha de pixels falha quando as peças se encostam — e elas
+    se encostam sempre que uma tem fogo, fumaça ou uma arma comprida saindo
+    para o lado. Aqui o corte é guiado pelo perfil de opacidade: soma-se o alfa
+    de cada coluna e procura-se, perto de onde a divisão ideal cairia, a coluna
+    de menor soma. É onde o desenho é mais fino, que é onde doer menos.
+    """
+    perfil = []
+    for x in range(L):
+        soma = 0
+        for y in range(0, A, 3):
+            soma += alfa[x, y]
+        perfil.append(soma)
+    cortes = [0]
+    janela = max(6, L // (n * 6))
+    for i in range(1, n):
+        ideal = i * L // n
+        ini = max(1, ideal - janela)
+        fim = min(L - 1, ideal + janela)
+        melhor = min(range(ini, fim), key=lambda x: perfil[x])
+        cortes.append(melhor)
+    cortes.append(L)
+    caixas = []
+    for i in range(n):
+        faixa = img.crop((cortes[i], 0, cortes[i + 1], A))
+        caixa = faixa.getbbox()
+        if not caixa:
+            continue
+        caixas.append((cortes[i] + caixa[0], caixa[1],
+                       cortes[i] + caixa[2], caixa[3], 0))
+    return caixas
 visto = bytearray(L * A)
 caixas = []
 
-for y0 in range(A):
+if colunas:
+    caixas = por_colunas(colunas)
+
+for y0 in range(A) if not colunas else []:
     for x0 in range(L):
         if visto[y0 * L + x0] or alfa[x0, y0] < 40:
             continue
@@ -50,7 +91,8 @@ for y0 in range(A):
             caixas.append((xi, yi, xa + 1, ya + 1, n))
 
 # ordem de leitura: linha de cima para baixo, esquerda para direita
-caixas.sort(key=lambda c: (round(c[1] / 120), c[0]))
+if not colunas:
+    caixas.sort(key=lambda c: (round(c[1] / 120), c[0]))
 prefixo.parent.mkdir(parents=True, exist_ok=True)
 for i, (xi, yi, xa, ya, n) in enumerate(caixas, 1):
     peca = img.crop((xi, yi, xa, ya))

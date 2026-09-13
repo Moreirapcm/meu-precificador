@@ -59,7 +59,17 @@
     'unidades/fuzileiro-atirar-nordeste': 1,
     'unidades/fuzileiro-atirar-norte': 1,
     'unidades/fuzileiro-atirar-sudeste': 1,
-    'unidades/fuzileiro-atirar-sul': 1
+    'unidades/fuzileiro-atirar-sul': 1,
+    'unidades/lanceiro-atirar-leste': 1,
+    'unidades/lanceiro-atirar-nordeste': 1,
+    'unidades/lanceiro-atirar-norte': 1,
+    'unidades/lanceiro-atirar-sudeste': 1,
+    'unidades/lanceiro-atirar-sul': 1,
+    'unidades/incendiario-atirar-leste': 1,
+    'unidades/incendiario-atirar-nordeste': 1,
+    'unidades/incendiario-atirar-norte': 1,
+    'unidades/incendiario-atirar-sudeste': 1,
+    'unidades/incendiario-atirar-sul': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não

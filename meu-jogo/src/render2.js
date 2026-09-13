@@ -482,7 +482,11 @@
      que cinco desenhos nunca dariam.
      Vale só para quem tem `torreta` em ALTURA_SPRITE-style: hoje o tanque. */
   var TORRETA = {
-    tanque: { pivo: 0.56, comp: 13, grossura: 3.0, cor: '#5d6650', cano: '#454d3a' }
+    tanque: { pivo: 0.56, comp: 13, grossura: 3.0, cor: '#5d6650', cano: '#454d3a' },
+    /* O drone é pequeno e voa: desenhar cinco poses dele seria caro para o que
+       se enxerga. Dois canos curtos girando embaixo do corpo dizem a mesma
+       coisa e custam nada. */
+    drone: { pivo: 0.34, comp: 7, grossura: 1.8, cor: '#41586b', cano: '#2e3f4e', duplo: 2.6 }
   };
 
   R.canhaoDeVeiculo = function (ctx, u, p, z, alturaTela) {
@@ -506,7 +510,12 @@
     ctx.translate(cx, cy);
     ctx.rotate(ang);
     ctx.fillStyle = t.cano;
-    ctx.fillRect(0, -t.grossura / 2 * z, t.comp * z, t.grossura * z);
+    if (t.duplo) {
+      ctx.fillRect(0, (-t.duplo - t.grossura / 2) * z, t.comp * z, t.grossura * z);
+      ctx.fillRect(0, (t.duplo - t.grossura / 2) * z, t.comp * z, t.grossura * z);
+    } else {
+      ctx.fillRect(0, -t.grossura / 2 * z, t.comp * z, t.grossura * z);
+    }
     ctx.restore();
     /* a base do cano é pequena: ela existe para o cano não parecer colado no
        nada, não para virar um disco em cima do tanque */
