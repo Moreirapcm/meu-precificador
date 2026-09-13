@@ -5510,6 +5510,61 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
      colisão, e um tanque e um soldado com o mesmo raio não têm de forma alguma a
      mesma altura na tela. O giro acontece em torno do PÉ, não do centro — girar
      pelo meio faria a figura afundar no chão e depois flutuar. */
+  /* Contorno de silhueta, no tamanho em que a figura APARECE.
+     É o passo que o Age of Empires II tinha e nós não: depois de renderizar o
+     3D, um especialista 2D abria quadro a quadro no Photoshop e "afiava o
+     detalhe e suavizava a borda das formas irregulares", porque o sprite tem
+     algumas dezenas de pixels na tela e, reduzido cru, se dissolve no chão.
+
+     Fazer isso no ARQUIVO não resolve: o contorno seria reduzido junto e
+     sumiria. Tem de ser na medida da tela — e como o jogo tem zoom, a medida
+     muda. Daí o cache por (imagem, altura arredondada): o contorno é desenhado
+     uma vez por tamanho e depois só copiado, do mesmo jeito que os prédios.
+
+     O desenho é o clássico: a figura em preto deslocada para os oito lados,
+     com a figura de verdade por cima. */
+  R.spriteContornado = function (img, largPx, altPx) {
+    if (!this.cacheContorno) { this.cacheContorno = {}; this.cacheContornoN = 0; }
+    var a = Math.max(8, Math.round(altPx / 3) * 3);      /* degraus de 3 px */
+    var l = Math.max(4, Math.round(largPx * a / altPx));
+    if (!img.uf_id) { img.uf_id = ++this.cacheContornoN; }
+    var chave = img.uf_id + ':' + a;
+    var pronto = this.cacheContorno[chave];
+    if (pronto) return pronto;
+
+    var m = 2;                                           /* margem do contorno */
+    var cv = global.document.createElement('canvas');
+    cv.width = l + m * 2; cv.height = a + m * 2;
+    var c = cv.getContext('2d');
+    var lados = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
+    for (var i = 0; i < lados.length; i++) {
+      c.drawImage(img, m + lados[i][0], m + lados[i][1], l, a);
+    }
+    c.globalCompositeOperation = 'source-in';
+    c.fillStyle = '#0c0f14';
+    c.fillRect(0, 0, cv.width, cv.height);
+    c.globalCompositeOperation = 'source-over';
+    c.drawImage(img, m, m, l, a);
+
+    pronto = { cv: cv, m: m, l: l, a: a };
+    /* teto: cada zoom novo cria um tamanho novo, e sem limite isso cresce sem
+       parar durante uma partida com muito zoom */
+    var chaves = Object.keys(this.cacheContorno);
+    if (chaves.length > 260) delete this.cacheContorno[chaves[0]];
+    this.cacheContorno[chave] = pronto;
+    return pronto;
+  };
+
+  /* Desenha com contorno quando a figura está pequena o bastante para precisar
+     dele. Grande, o contorno vira uma borda grossa e feia. */
+  R.imagemComSilhueta = function (ctx, img, x, y, larg, alt) {
+    if (alt > 150 || alt < 8) { ctx.drawImage(img, x, y, larg, alt); return; }
+    var s = this.spriteContornado(img, larg, alt);
+    var esc = alt / s.a;
+    ctx.drawImage(s.cv, x - s.m * esc, y - s.m * esc,
+      s.cv.width * esc, s.cv.height * esc);
+  };
+
   R.spriteUnidade = function (ctx, u, img, p, raio, voo, z, sim) {
     var pose = this.anima ? this.anima.postura(u, z, this.sim)
       : { espelhar: false, giro: 0, subir: 0, desviaX: 0, desviaY: 0, escalaY: 1, alfa: 1 };
@@ -5577,8 +5632,14 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
          apoiam no mesmo pé. Somar aqui o bob calculado aplicaria o movimento
          duas vezes — e o boneco passa a pular em vez de andar. */
       ctx.translate(0, -pose.subir);
-      ctx.drawImage(t.img, q * t.larg, 0, t.larg, t.alt,
-        -largT / 2, -altT, largT, altT);
+      /* quadro de tira: recorta primeiro, contorna depois — o contorno tem de
+         ser da POSE, não da folha inteira */
+      if (t.n === 1) {
+        this.imagemComSilhueta(ctx, t.img, -largT / 2, -altT, largT, altT);
+      } else {
+        ctx.drawImage(t.img, q * t.larg, 0, t.larg, t.alt,
+          -largT / 2, -altT, largT, altT);
+      }
       ctx.restore();
       return pe - altT;
     }
@@ -5587,7 +5648,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var chao = this.anima ? this.anima.passada(u) : 0;
     if (frac && chao) this.caminhada(ctx, img, larg, alt, frac, chao, this.anima.passadaAr(u));
     else if (frac && pose.golpe) this.caminhada(ctx, img, larg, alt, frac, 0, 0, pose.golpe);
-    else ctx.drawImage(img, -larg / 2, -alt, larg, alt);
+    else this.imagemComSilhueta(ctx, img, -larg / 2, -alt, larg, alt);
 
     ctx.restore();
     return pe - alt;

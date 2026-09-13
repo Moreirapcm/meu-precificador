@@ -4,13 +4,19 @@
  * depende de rede para jogar; o que faltava era o navegador guardar os
  * arquivos. Aqui eles são baixados uma vez e servidos do cache depois.
  *
- * Estratégia: cache primeiro, rede como reserva. É o certo para um jogo —
- * nada aqui muda sozinho, e esperar a rede a cada partida só adia o começo.
- * Quando sai versão nova, o VERSAO muda, o cache velho é apagado inteiro e os
- * arquivos voltam a ser buscados. Sem isso, uma correção publicada nunca
- * chegaria a quem já instalou.
+ * Estratégia DIVIDIDA, e a divisão foi aprendida doendo:
+ *
+ *  - CÓDIGO (html, js, css, json): REDE PRIMEIRO, cache como reserva. A
+ *    primeira versão deste arquivo usava cache primeiro para tudo, e o
+ *    navegador passou a servir o jogo de ontem: publiquei correção, recarreguei
+ *    com força, e continuava vindo a versão velha. Um service worker que
+ *    guarda o código é um jogo que nunca mais é atualizado.
+ *  - ARTE (webp, png): CACHE PRIMEIRO. Imagem não muda sem mudar de nome, é o
+ *    grosso do peso, e é o que faz valer a pena jogar sem internet.
+ *
+ * Sem rede, os dois caem no cache — que é o ponto de instalar no celular.
  */
-var VERSAO = 'uf-v1';
+var VERSAO = 'uf-v2';
 
 /* A lista é gerada à mão de propósito: o jogo não tem etapa de build que possa
    montá-la, e um `import` a mais sem entrada aqui só apareceria como tela preta
@@ -47,20 +53,28 @@ self.addEventListener('activate', function (e) {
   }).then(function () { return self.clients.claim(); }));
 });
 
+function guardar(req, resp) {
+  if (resp && resp.status === 200 && resp.type === 'basic') {
+    var copia = resp.clone();
+    caches.open(VERSAO).then(function (c) { c.put(req, copia); });
+  }
+  return resp;
+}
+
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+  var url = e.request.url;
+  var arte = /\.(webp|png|jpg|jpeg|gif|svg|woff2?|mp3|ogg)(\?|$)/i.test(url);
+
+  if (arte) {
+    e.respondWith(caches.match(e.request).then(function (achou) {
+      return achou || fetch(e.request).then(function (r) { return guardar(e.request, r); });
+    }));
+    return;
+  }
+  /* código: rede primeiro */
   e.respondWith(
-    caches.match(e.request).then(function (achou) {
-      if (achou) return achou;
-      return fetch(e.request).then(function (resp) {
-        /* guarda o que veio da rede — as imagens de arte entram por aqui, sem
-           precisar estar na lista acima */
-        if (resp && resp.status === 200 && resp.type === 'basic') {
-          var copia = resp.clone();
-          caches.open(VERSAO).then(function (c) { c.put(e.request, copia); });
-        }
-        return resp;
-      }).catch(function () { return achou; });
-    })
+    fetch(e.request).then(function (r) { return guardar(e.request, r); })
+      .catch(function () { return caches.match(e.request); })
   );
 });
