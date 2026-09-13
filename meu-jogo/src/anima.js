@@ -209,13 +209,25 @@
 
     var morto = this.morte[u.id];
     if (morto !== undefined) {
-      /* Tomba em meio segundo e afunda: o corpo vira parte do chão em vez de
-         sumir de um quadro para o outro. */
-      var t = Math.min(1, morto / 0.5);
-      r.giro = (r.espelhar ? -1 : 1) * 1.45 * t;
-      r.escalaY = 1 - 0.25 * t;
-      r.desviaY = 5 * z * t;
-      r.alfa = Math.max(0, 1 - Math.max(0, morto - 1.2) / 1.2);
+      /* A MORTE EM TRÊS TEMPOS, e cada um resolve uma coisa:
+
+         1. IMPACTO (até 0,12 s): a figura é jogada para trás e encolhe um
+            pouco. Sem isso a unidade começa a tombar como quem se deita, e o
+            tiro que a matou não aparece em lugar nenhum.
+         2. QUEDA (até 0,55 s): tomba de lado e afunda. A curva é acelerada —
+            `t²` — porque corpo que cai ganha velocidade; linear parece que
+            alguém está deitando o boneco com a mão.
+         3. ENTREGA (a partir de 0,9 s): some devagar enquanto o corpo caído
+            desenhado entra no lugar. É a costura entre a queda calculada e o
+            cadáver com arte própria. */
+      var imp = Math.max(0, 1 - morto / 0.12);
+      var t = Math.min(1, Math.max(0, morto - 0.06) / 0.49);
+      var queda = t * t;
+      r.giro = (r.espelhar ? -1 : 1) * 1.45 * queda;
+      r.escalaY = 1 - 0.25 * queda - imp * 0.1;
+      r.desviaY = 5 * z * queda;
+      r.desviaX = (r.espelhar ? 1 : -1) * imp * 4.5 * z;
+      r.alfa = Math.max(0, 1 - Math.max(0, morto - 0.9) / 0.25);
       return r;
     }
 

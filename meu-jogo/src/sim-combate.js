@@ -282,9 +282,14 @@
       /* `angulo` vai junto porque o cadáver fica deitado para o lado em que a
          unidade estava virada, e depois de removida da lista não há mais como
          saber. */
+      /* `unidade`, e não `tipo`: `emitir()` grava o NOME DO EVENTO em `dados.tipo`,
+         então qualquer campo chamado assim é sobrescrito na saída. Foi o mesmo
+         defeito que fazia o "+8" da entrega nunca aparecer âmbar, e aqui ele
+         deitava um cadáver do tipo "unidadeMorta" — que não tem sprite nenhum,
+         e por isso o corpo caído nunca aparecia. */
       this.emitir('unidadeMorta', {
         id: alvo.id, x: alvo.x, y: alvo.y, lado: alvo.lado,
-        tipo: alvo.tipo, angulo: alvo.angulo
+        unidade: alvo.tipo, angulo: alvo.angulo
       });
     }
   };

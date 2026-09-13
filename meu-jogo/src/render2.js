@@ -342,12 +342,19 @@
      guardá-lo por meio minuto sem custo de regra nenhum, e sem mexer em
      nenhuma invariante que os testes protegem. */
   var TEMPO_CADAVER = 26;
+  var ATRASO_CADAVER = 1.1;      /* o tanto que o tombo leva na simulação */
 
   R.deitarCadaver = function (e) {
     if (!this.cadaveres) this.cadaveres = [];
     this.cadaveres.push({
-      x: e.x, y: e.y, tipo: e.tipo, lado: e.lado,
+      x: e.x, y: e.y, tipo: e.unidade, lado: e.lado,
       angulo: e.angulo === undefined ? 0 : e.angulo,
+      /* O corpo tomba primeiro. A unidade morta continua na simulação por 1,2 s
+         fazendo o tombo, e o cadáver só entra quando ela sai — senão os dois
+         aparecem juntos no mesmo lugar, e havia MESMO dois corpos sobrepostos
+         durante mais de um segundo. O atraso é o que costura as duas metades da
+         morte: a queda, que é calculada, e o corpo no chão, que é desenhado. */
+      atraso: ATRASO_CADAVER,
       vida: TEMPO_CADAVER, max: TEMPO_CADAVER
     });
     /* teto: uma partida longa, com muitas ondas, não pode acumular sem fim */
@@ -362,6 +369,7 @@
 
   R.desenharCadaver = function (ctx, item) {
     var c = item.dado, z = this.cam.zoom;
+    if (c.atraso > 0) return;              /* ainda tombando: quem desenha é a unidade */
     var p = this.paraTela(c.x, c.y);
     var pasta = c.lado === 'inimigo' ? 'inimigos/' : 'unidades/';
     var t = UF.sprites.tira(pasta + c.tipo + '-morto');

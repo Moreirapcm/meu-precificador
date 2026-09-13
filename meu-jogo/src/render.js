@@ -663,8 +663,10 @@
        deve fazer o campo de batalha limpar sozinho */
     if (this.cadaveres) {
       for (var ic = this.cadaveres.length - 1; ic >= 0; ic--) {
-        this.cadaveres[ic].vida -= dt;
-        if (this.cadaveres[ic].vida <= 0) this.cadaveres.splice(ic, 1);
+        var cd = this.cadaveres[ic];
+        if (cd.atraso > 0) { cd.atraso -= dt; continue; }   /* espera o tombo acabar */
+        cd.vida -= dt;
+        if (cd.vida <= 0) this.cadaveres.splice(ic, 1);
       }
     }
     this.desenharVultos(ctx);
