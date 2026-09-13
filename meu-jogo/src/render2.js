@@ -354,6 +354,12 @@
     if (this.cadaveres.length > 160) this.cadaveres.splice(0, this.cadaveres.length - 160);
   };
 
+  /* Sangue. A cor separa os dois lados sem precisar de legenda: verde-ácido
+     para a colmeia, vermelho escuro para gente. É o mesmo truque de sempre —
+     quem olha o campo de batalha de cima sabe de quem foi a perda pela cor da
+     mancha, sem ter de identificar o corpo. */
+  var SANGUE = { inimigo: 'rgba(126,186,46,', aliado: 'rgba(122,26,24,' };
+
   R.desenharCadaver = function (ctx, item) {
     var c = item.dado, z = this.cam.zoom;
     var p = this.paraTela(c.x, c.y);
@@ -361,6 +367,27 @@
     var t = UF.sprites.tira(pasta + c.tipo + '-morto');
     /* últimos três segundos: some devagar, para o sumiço não ser um piscar */
     var alfa = c.vida > 3 ? 1 : Math.max(0, c.vida / 3);
+    var idade = 1 - c.vida / c.max;
+
+    /* A POÇA cresce nos primeiros segundos e depois fica. Ela vem ANTES do
+       corpo, porque escorre por baixo dele, e some mais devagar do que ele: o
+       corpo o jogo recolhe, a mancha no chão fica. */
+    var base = SANGUE[c.lado === 'inimigo' ? 'inimigo' : 'aliado'];
+    var cresce = Math.min(1, idade * 9);
+    var rx = (9 + 7 * cresce) * z, ry = rx * 0.45;
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.5, alfa * 0.5) * cresce;
+    ctx.fillStyle = base + '1)';
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y + 1 * z, rx, ry, 0, 0, 6.283);
+    ctx.fill();
+    /* dois respingos fora da poça, para a mancha não ser um oval perfeito */
+    var h1 = (c.x * 37 + c.y * 91) % 100 / 100, h2 = (c.x * 13 + c.y * 57) % 100 / 100;
+    ctx.beginPath();
+    ctx.ellipse(p.x + (h1 - 0.5) * rx * 2.4, p.y + (h2 - 0.5) * ry * 2.2,
+      rx * 0.3, ry * 0.32, 0, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
 
     ctx.save();
     ctx.globalAlpha = alfa * 0.92;
@@ -808,7 +835,9 @@
         this.efeitoMundo('clarao', e.x, e.y, { cor: e.cor, vida: 0.09, alto: 12 });
       } else if (e.tipo === 'unidadeMorta') {
         this.efeitoMundo('fumaca', e.x, e.y, { vida: 0.9, tam: 6 });
-        this.lancarCacos(e.x, e.y, 4, 1.4, e.lado === 'inimigo' ? '#8fbf5a' : '#b08f6a');
+        /* o jorro da morte: mais e mais forte que o respingo de um tiro */
+        this.lancarCacos(e.x, e.y, 9, 2.4,
+          e.lado === 'inimigo' ? '#7eba2e' : '#7a1a18');
         this.deitarCadaver(e);
       } else if (e.tipo === 'estruturaDestruida') {
         var cx = e.x + e.w / 2, cy = e.y + e.h / 2;
@@ -824,7 +853,10 @@
             (e.alvoX - e.x) - (e.alvoY - e.y)),
           cor: e.cor, vida: 0.18
         });
-        this.lancarCacos(e.alvoX, e.alvoY, 2, 1.1, e.cor || '#ffd7a0');
+        /* o respingo sai do ALVO e tem a cor do sangue de quem apanhou, não a
+           da garra de quem bateu */
+        this.lancarCacos(e.alvoX, e.alvoY, 3, 1.3,
+          e.ladoAlvo === 'inimigo' ? '#7eba2e' : '#7a1a18');
       } else if (e.tipo === 'cura') {
         this.efeitoMundo('cura', e.x, e.y, { vida: 0.5 });
       } else if (e.tipo === 'entrega') {

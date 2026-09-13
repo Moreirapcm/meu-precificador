@@ -141,7 +141,10 @@
       });
       this.emitir('golpe', {
         x: centroO.x, y: centroO.y, alvoX: centroA.x, alvoY: centroA.y,
-        cor: (origem.def && origem.def.cor) || arma.cor, id: origem.id
+        cor: (origem.def && origem.def.cor) || arma.cor, id: origem.id,
+        /* de que LADO é quem apanhou: o respingo tem a cor do sangue de quem
+           levou o golpe, não a da garra de quem bateu */
+        ladoAlvo: alvo.lado
       });
       if (origem.def && origem.def.suicida) this.aplicarDano(origem, origem.hp + 1, { silencioso: true });
       return;

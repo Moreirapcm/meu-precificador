@@ -86,7 +86,11 @@
        qualquer ângulo — o que muda é para que lado ele está virado, e isso o
        desenho resolve espelhando. */
     'inimigos/corredor-morto': 1,
-    'inimigos/predador-morto': 1
+    'inimigos/predador-morto': 1,
+    'inimigos/cuspidor-morto': 1,
+    'unidades/fuzileiro-morto': 1,
+    'unidades/lanceiro-morto': 1,
+    'unidades/incendiario-morto': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não
