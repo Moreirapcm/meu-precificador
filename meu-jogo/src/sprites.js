@@ -95,7 +95,15 @@
     'unidades/operario-morto': 1,
     /* os dois quadros da QUEDA: o instante do impacto e o do meio do caminho */
     'unidades/fuzileiro-caindo1': 1,
-    'unidades/fuzileiro-caindo2': 1
+    'unidades/fuzileiro-caindo2': 1,
+    'unidades/lanceiro-caindo1': 1,
+    'unidades/lanceiro-caindo2': 1,
+    'unidades/incendiario-caindo1': 1,
+    'unidades/incendiario-caindo2': 1,
+    'unidades/medico-caindo1': 1,
+    'unidades/medico-caindo2': 1,
+    'unidades/operario-caindo1': 1,
+    'unidades/operario-caindo2': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não
