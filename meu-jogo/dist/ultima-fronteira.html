@@ -4030,6 +4030,29 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     medico: 0.47, lanceiro: 0.46, tita: 0.44
   };
 
+  /* GALOPE DOS QUADRÚPEDES.
+     Cortar um bicho de quatro patas na cintura e girar as metades não quer
+     dizer nada — a perna dianteira e a traseira fazem coisas diferentes, e o
+     resultado é o bicho se partindo ao meio. Sem isso, eles simplesmente
+     DESLIZAVAM pelo chão, que é o defeito mais visível que sobrou no jogo.
+
+     O que resolve com uma imagem só é o que a animação limitada sempre fez:
+     o corpo inteiro SOBE E DESCE e o eixo dele BALANÇA, no ritmo da passada.
+     Um quadrúpede em galope tem DOIS impulsos por ciclo — daí o seno em
+     dobro no salto — e joga o peso para a frente e para trás, que é a
+     inclinação. O squash no aterrissar é o que dá o peso.
+
+     `salto` em pixels, `balanco` em radianos, `peso` é o squash. Bicho pesado
+     salta pouco e afunda muito; bicho leve salta alto e quase não afunda. */
+  Anima.GALOPE = {
+    corredor:  { salto: 3.4, balanco: 0.07, peso: 0.05 },
+    predador:  { salto: 2.2, balanco: 0.05, peso: 0.06 },
+    cuspidor:  { salto: 1.3, balanco: 0.03, peso: 0.07 },
+    couracado: { salto: 1.1, balanco: 0.025, peso: 0.08 },
+    detonador: { salto: 2.6, balanco: 0.06, peso: 0.05 },
+    matriarca: { salto: 1.4, balanco: 0.03, peso: 0.07 }
+  };
+
   /* BRAÇO SOLTO: tentado e descartado, e fica registrado para ninguém tentar de
      novo do mesmo jeito. Recortar uma janela retangular sobre a lateral do corpo
      e girá-la no ombro funciona com a perna, mas não com o braço: a perna está
@@ -4186,11 +4209,27 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
        Eu tinha feito o contrário, subindo o corpo na abertura, e era metade da
        sensação de flutuar: o pé de apoio saía do chão e nunca mais encostava.
        São duas descidas por passada, uma por perna, que é o balanço certo. */
-    var ang = this.passada(u);
+    /* Só para quem tem perna recortada: a conta abaixo é do quadril de um
+       BÍPEDE girando sobre o pé de apoio. Aplicada a um quadrúpede, ela afunda
+       o bicho quase seis pixels por passada, porque o modelo não é o dele. */
+    var ang = Anima.PERNAS[u.tipo] ? this.passada(u) : 0;
     if (ang && noChao) {
       var L = pernaEm(u.tipo, z);
       r.subir = -L * (1 - Math.cos(ang));
       r.escalaY = 1 - Math.abs(ang) * 0.03;
+    }
+
+    /* Galope: vale para quem NÃO tem pernas recortadas. Quem tem já anda pela
+       perna; somar o salto por cima faria o bípede quicar. */
+    var gal = Anima.GALOPE[u.tipo];
+    if (gal && !Anima.PERNAS[u.tipo] && u.rota && noChao) {
+      var fase = this.passo[u.id] || 0;
+      var dobro = Math.sin(fase * 2);              /* dois impulsos por ciclo */
+      var alto = Math.max(0, dobro);               /* só sobe; não afunda no chão */
+      r.subir += alto * gal.salto * z;
+      r.giro += Math.sin(fase) * gal.balanco * (r.espelhar ? -1 : 1);
+      /* achata ao tocar o chão e estica no ar — squash and stretch */
+      r.escalaY *= 1 + (alto - 0.5) * gal.peso;
     }
 
     /* Inclinação para a frente enquanto corre: quanto mais rápida, mais deitada. */
