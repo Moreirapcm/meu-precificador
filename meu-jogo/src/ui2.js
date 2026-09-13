@@ -52,6 +52,7 @@
   /* ================================================= barra superior ====== */
   UI.atualizarHud = function () {
     var sim = this.sim, j = sim.jogador;
+    this.atualizarVivos();
     $('hudM').textContent = U.num(j.m);
     $('hudC').textContent = U.num(j.c);
     var pop = j.popUsada + j.popReservada;
@@ -93,16 +94,115 @@
   };
 
   /* ============================================ ações contextuais ======= */
+  /* CASAS FIXAS.
+     No StarCraft a grade de comandos é 3x3 e a casa de cada comando NÃO muda:
+     Mover é sempre a primeira, Parar a segunda, Atacar a terceira. Comando que
+     não se aplica deixa a casa VAZIA — nunca empurra o vizinho para o lado.
+
+     Era a nossa maior distância dos clássicos, e não se via olhando uma tela
+     só: "Recuar" era o 3.o botão num soldado, o 4.o num grupo com operário e o
+     2.o num operário sozinho. O dedo nunca decorava lugar nenhum, e num jogo de
+     celular decorar o lugar é a única forma de agir rápido.
+
+     A casa é do COMANDO, não da unidade: por isso as três tabelas abaixo. */
+  var CASAS_TROPA = {
+    mover: 0, parar: 1, atacar: 2,
+    patrulhar: 3, recuar: 4, base: 5,
+    minerar: 6, reparar: 7
+  };
+  /* Prédio PRONTO. O prédio em obra não entra nesta tabela: ele é outro
+     estado, com outra carta curta, como no StarCraft — construção em
+     andamento mostra um botão só. Fosse pela mesma tabela, todo prédio pronto
+     começaria com duas casas vazias na frente, e num celular isso é espaço
+     roubado sem ensinar nada. */
+  var CASAS_ESTRUTURA = {
+    produzir: 0, encontro: 1, reparar: 2,
+    portao: 3, energia: 4, vender: 5
+  };
+  var CASAS_GLOBAL = {
+    operario: 0, distribuir: 1, recolher: 2,
+    linha: 3, bombardeio: 4
+  };
+
   function botao(rotulo, icone, sub, aoClicar, opcoes) {
     opcoes = opcoes || {};
     var b = doc.createElement('button');
     b.className = 'acao' + (opcoes.ligado ? ' ligado' : '') + (opcoes.perigo ? ' perigo' : '');
-    b.innerHTML = '<i>' + icone + '</i><b>' + rotulo + '</b>' + (sub ? '<small>' + sub + '</small>' : '');
+    /* A letra de atalho vai DENTRO do botão, como nos dois clássicos — no
+       StarCraft ela aparece em amarelo no meio do próprio rótulo. Os atalhos
+       já existiam em `ui.js` e não apareciam em lugar nenhum da tela: quem não
+       leu o manual nunca soube que existiam. */
+    b.innerHTML = '<i>' + icone + '</i><b>' + rotulo + '</b>' +
+      (sub ? '<small>' + sub + '</small>' : '') +
+      (opcoes.tecla ? '<u>' + opcoes.tecla.toUpperCase() + '</u>' : '');
     if (opcoes.motivo) b.title = opcoes.motivo;
     b.disabled = !!opcoes.desativado;
     b.onclick = aoClicar;
     return b;
   }
+
+  /* Põe cada botão na sua casa e preenche os buracos. As casas vazias DEPOIS
+     do último botão são cortadas: a barra rola de lado, e caixa vazia no fim
+     só rouba espaço sem ensinar nada — o que precisa de lugar fixo é o que vem
+     antes do último comando, não o vazio do fim. */
+  function montarCasas(cx, casas) {
+    var ultima = -1, i;
+    for (i = 0; i < casas.length; i++) if (casas[i]) ultima = i;
+    for (i = 0; i <= ultima; i++) {
+      if (casas[i]) { cx.appendChild(casas[i]); continue; }
+      var vazia = doc.createElement('span');
+      vazia.className = 'acao vazia';
+      cx.appendChild(vazia);
+    }
+  }
+
+  /* O que MUDA sozinho, atualizado sem refazer a barra.
+     `atualizarAcoes` remonta o HTML inteiro e só roda a cada 0,9 s; vida caindo
+     e barra de produção subindo precisam de passo mais curto que isso, e
+     remontar o DOM a cada 0,2 s ainda perderia o dedo apoiado no botão. Aqui
+     só os números vivos são reescritos, nos elementos que já existem. */
+  UI.atualizarVivos = function () {
+    var sim = this.sim;
+    var barra = $('selVida');
+    if (barra && !barra.hidden) {
+      var alvo = this.selecionado ? sim.alvoPorId(this.selecionado) : null;
+      if (alvo && alvo.hpMax) {
+        var frac = Math.max(0, Math.min(1, alvo.hp / alvo.hpMax));
+        $('selVidaBarra').style.width = (frac * 100).toFixed(1) + '%';
+        $('selVidaBarra').className = frac > 0.6 ? 'cheia' : frac > 0.3 ? 'media' : 'baixa';
+        $('selVidaNum').textContent = Math.ceil(alvo.hp) + '/' + alvo.hpMax;
+      }
+    }
+    var faixa = $('filaBarra');
+    if (faixa && !faixa.hidden && faixa.firstChild) {
+      var b = this.selecionado ? sim.estruturas[this.selecionado] : null;
+      var item = b && b.fila && b.fila[0];
+      var traco = faixa.firstChild.querySelector('i');
+      /* Quantidade de itens mudou (nasceu um, cancelaram outro): aí sim remonta,
+         porque o que mudou foi a lista e não o número dentro dela. */
+      if (!item || !b.fila || b.fila.length !== faixa.children.length) this.filaNaBarra(b);
+      else if (traco) traco.style.width = Math.round((item.progresso || 0) * 100) + '%';
+    }
+  };
+
+  /* Campos de POSIÇÃO FIXA no lugar de uma linha de texto corrida.
+     Antes saía "38/40 · minerando · carga 8 · SEM ROTA" — a mesma informação,
+     mas o olho tinha de LER para achar cada pedaço. Nos dois clássicos vida,
+     nome e estado têm cada um o seu lugar, e lugar fixo o olho acha sem ler. */
+  UI.mostrarSelecao = function (nome, hp, hpMax, estado) {
+    $('selNome').textContent = nome;
+    var barra = $('selVida');
+    if (hpMax) {
+      var frac = Math.max(0, Math.min(1, hp / hpMax));
+      barra.hidden = false;
+      $('selVidaBarra').style.width = (frac * 100).toFixed(1) + '%';
+      $('selVidaBarra').className = frac > 0.6 ? 'cheia' : frac > 0.3 ? 'media' : 'baixa';
+      $('selVidaNum').textContent = Math.ceil(hp) + '/' + hpMax;
+    } else {
+      barra.hidden = true;
+    }
+    $('selDetalhe').textContent = estado;
+  };
 
   UI.atualizarAcoes = function () {
     var self = this, sim = this.sim, cx = $('acoesContexto');
@@ -156,40 +256,64 @@
   };
 
   UI.acoesGlobais = function (cx) {
-    var self = this, sim = this.sim;
-    cx.appendChild(botao('Operário', '👷', this.precoTexto(sim.custoDe(UNID.operario)), function () {
+    var self = this, sim = this.sim, casas = [];
+    casas[CASAS_GLOBAL.operario] = botao('Operário', '👷', this.precoTexto(sim.custoDe(UNID.operario)), function () {
       var r = sim.produzirOperario();
       if (!r.ok) { self.mostrarAviso(r.motivo, 'atencao'); UF.audio.evento('negado'); }
       else self.mostrarAviso('Operário na fila da Central.', 'info');
       self.atualizarTudo();
-    }));
-    cx.appendChild(botao('Distribuir', '⛏', 'todos à mineração', function () { sim.distribuirMineracao(); self.atualizarTudo(); }));
-    cx.appendChild(botao('Recolher', '🏠', 'operários à Central', function () { sim.recolherTodos(); self.atualizarTudo(); }));
-    cx.appendChild(botao('Reparar linha', '✚', 'reserva ' + sim.reparoAuto.reserva + ' ◆',
-      function () { self.acaoRepararLinha(); }, { ligado: sim.reparoAuto.ativo }));
-    cx.appendChild(botao('Bombardear', '◎', D.REGRAS.custoBombardeio + ' ◉', function () { self.iniciarHabilidade('bombardeio'); },
-      { desativado: sim.jogador.energia < D.REGRAS.custoBombardeio }));
+    });
+    casas[CASAS_GLOBAL.distribuir] = botao('Distribuir', '⛏', 'todos à mineração',
+      function () { sim.distribuirMineracao(); self.atualizarTudo(); });
+    casas[CASAS_GLOBAL.recolher] = botao('Recolher', '🏠', 'operários à Central',
+      function () { sim.recolherTodos(); self.atualizarTudo(); });
+    casas[CASAS_GLOBAL.linha] = botao('Reparar linha', '✚', 'reserva ' + sim.reparoAuto.reserva + ' ◆',
+      function () { self.acaoRepararLinha(); }, { ligado: sim.reparoAuto.ativo, tecla: 'l' });
+    casas[CASAS_GLOBAL.bombardeio] = botao('Bombardear', '◎', D.REGRAS.custoBombardeio + ' ◉',
+      function () { self.iniciarHabilidade('bombardeio'); },
+      { desativado: sim.jogador.energia < D.REGRAS.custoBombardeio, tecla: 'q' });
+    montarCasas(cx, casas);
   };
 
-  UI.acoesDeTropa = function (cx, tropas) {
-    var self = this;
+  /* Devolve as casas da tropa em vez de despejar botões: quem chama decide se
+     acrescenta comando próprio antes de montar a grade. */
+  UI.casasDeTropa = function (tropas) {
+    var self = this, casas = [];
     var temOperario = tropas.some(function (u) { return u.operario; });
-    cx.appendChild(botao('Mover', '→', 'sem perseguir', function () { self.iniciarOrdem('mover'); }));
+    casas[CASAS_TROPA.mover] = botao('Mover', '→', 'sem perseguir',
+      function () { self.iniciarOrdem('mover'); }, { tecla: 'm' });
+    /* PARAR estava só no teclado. É um dos três comandos que toda unidade tem
+       no StarCraft, e num jogo de toque sem teclado ele simplesmente não
+       existia — a tropa mandada para o lugar errado não tinha como ser detida. */
+    casas[CASAS_TROPA.parar] = botao('Parar', '■', 'cancela a ordem',
+      function () { self.pararSelecionados(); }, { tecla: 's' });
     if (!temOperario) {
-      cx.appendChild(botao('Atacar', '⚔', 'avança atacando', function () { self.iniciarOrdem('moverAtacando'); }));
-      cx.appendChild(botao('Patrulhar', '↔', 'entre dois pontos', function () { self.iniciarOrdem('patrulhar'); }));
+      casas[CASAS_TROPA.atacar] = botao('Atacar', '⚔', 'avança atacando',
+        function () { self.iniciarOrdem('moverAtacando'); }, { tecla: 'a' });
+      casas[CASAS_TROPA.patrulhar] = botao('Patrulhar', '↔', 'entre dois pontos',
+        function () { self.iniciarOrdem('patrulhar'); }, { tecla: 'p' });
     }
-    cx.appendChild(botao('Recuar', '⇤', 'preserva tropas', function () { self.iniciarOrdem('recuar'); }));
+    casas[CASAS_TROPA.recuar] = botao('Recuar', '⇤', 'preserva tropas',
+      function () { self.iniciarOrdem('recuar'); }, { tecla: 'c' });
+    /* Centra a câmera na Central — é o "home" do Age of Empires, não uma ordem
+       de recuo. O rótulo diz isso: mandar a tropa para casa é "Recuar". */
+    casas[CASAS_TROPA.base] = botao('Central', '🏠', 'centra a câmera',
+      function () { self.voltarParaBase(); }, { tecla: 'h' });
     if (temOperario) {
-      cx.appendChild(botao('Minerar', '⛏', 'jazida mais próxima', function () {
+      casas[CASAS_TROPA.minerar] = botao('Minerar', '⛏', 'jazida mais próxima', function () {
         tropas.forEach(function (u) {
           if (!u.operario) return;
           var j = self.sim.jazidaLivreMaisProxima(u.x, u.y);
           if (j) self.sim.darTarefa(u, { tipo: 'minerar', jazida: j.id }, false);
         });
         self.mostrarAviso('Operários voltaram à mineração.', 'info');
-      }));
+      }, { tecla: 'g' });
     }
+    return casas;
+  };
+
+  UI.acoesDeTropa = function (cx, tropas) {
+    montarCasas(cx, this.casasDeTropa(tropas));
   };
 
   UI.acoesDeUnidade = function (cx, u) {
@@ -200,27 +324,26 @@
       mover: 'a caminho', fugindo: 'fugindo do combate', defender: 'defendendo a área',
       moverAtacando: 'avançando', patrulhar: 'patrulhando', recuar: 'recuando', focar: 'fogo concentrado'
     }[tarefa] || tarefa;
-    $('selNome').textContent = u.def.nome;
-    $('selDetalhe').textContent = Math.ceil(u.hp) + '/' + u.hpMax + ' · ' + rotuloTarefa +
-      (u.carga ? ' · carga ' + u.carga : '') + (u.bloqueado ? ' · SEM ROTA' : '');
-    this.acoesDeTropa(cx, [u]);
+    this.mostrarSelecao(u.def.nome, u.hp, u.hpMax, rotuloTarefa +
+      (u.carga ? ' · carga ' + u.carga : '') + (u.bloqueado ? ' · SEM ROTA' : ''));
+    var casas = this.casasDeTropa([u]);
     if (u.operario) {
-      cx.appendChild(botao('Reparar', '✚', 'estrutura ferida', function () {
+      casas[CASAS_TROPA.reparar] = botao('Reparar', '✚', 'estrutura ferida', function () {
         var alvo = sim.estruturaMaisFeridaProxima(u.x, u.y);
         if (!alvo) { self.mostrarAviso('Nada danificado por perto.', 'atencao'); return; }
         sim.darTarefa(u, { tipo: 'reparar', alvo: alvo.id }, true);
         self.mostrarAviso('Reparando ' + alvo.def.nome + '.', 'info');
-      }));
+      }, { tecla: 'r' });
     }
+    montarCasas(cx, casas);
   };
 
   UI.acoesDeEstrutura = function (cx, b) {
     var self = this, sim = this.sim;
     var estado = !b.construida ? (b.abandonado ? 'posto abandonado' : 'em obra ' + Math.round(b.obra * 100) + '%')
       : b.semEnergia ? 'sem energia' : 'operando';
-    $('selNome').textContent = b.def.nome + (b.abandonado && !b.construida ? ' (abandonado)' : '');
-    $('selDetalhe').textContent = Math.ceil(b.hp) + '/' + b.hpMax + ' · ' + estado +
-      (b.construtores ? ' · ' + b.construtores + ' operário(s)' : '');
+    this.mostrarSelecao(b.def.nome + (b.abandonado && !b.construida ? ' (abandonado)' : ''),
+      b.hp, b.hpMax, estado + (b.construtores ? ' · ' + b.construtores + ' operário(s)' : ''));
 
     if (!b.construida) {
       cx.appendChild(botao(b.abandonado ? 'Reativar' : 'Acelerar obra', '🔧', 'enviar operário', function () {
@@ -229,42 +352,79 @@
         sim.darTarefa(op, { tipo: 'construir', alvo: b.id }, true);
         self.mostrarAviso('Operário a caminho da obra.', 'info');
       }));
+      this.filaNaBarra(null);
+      return;
     }
+
+    var casas = [];
     if (b.hp < b.hpMax) {
-      cx.appendChild(botao('Reparar', '✚', 'operário mais próximo', function () {
+      casas[CASAS_ESTRUTURA.reparar] = botao('Reparar', '✚', 'operário mais próximo', function () {
         var op = sim.operarioLivreMaisProximo(b.x, b.y);
         if (!op) { self.mostrarAviso('Nenhum operário livre.', 'atencao'); return; }
         sim.darTarefa(op, { tipo: 'reparar', alvo: b.id }, true);
-      }));
+      }, { tecla: 'r' });
     }
-    if (b.def.produz && b.construida) {
-      cx.appendChild(botao('Produzir', '▲', 'abrir fila', function () { self.abrirGaveta('tropas', true); self.estruturaProducao = b.id; self.desenharGaveta(); }));
-      cx.appendChild(botao('Encontro', '⚑', 'ponto de reunião', function () {
+    if (b.def.produz) {
+      casas[CASAS_ESTRUTURA.produzir] = botao('Produzir', '▲', 'abrir fila', function () {
+        self.abrirGaveta('tropas', true); self.estruturaProducao = b.id; self.desenharGaveta();
+      });
+      casas[CASAS_ESTRUTURA.encontro] = botao('Encontro', '⚑', 'ponto de reunião', function () {
         self.modo = { tipo: 'rally', estrutura: b.id };
         self.mostrarModo('Toque onde as novas unidades devem se reunir');
-      }));
+      });
     }
     if (b.portao) {
       var proximos = { auto: 'aberto', aberto: 'fechado', fechado: 'auto' };
       var rot = { auto: 'Automático', aberto: 'Sempre aberto', fechado: 'Sempre fechado' };
-      cx.appendChild(botao(rot[b.portaoModo], b.portaoAberto ? '◻' : '◼', 'tocar para trocar', function () {
+      casas[CASAS_ESTRUTURA.portao] = botao(rot[b.portaoModo], b.portaoAberto ? '◻' : '◼', 'tocar para trocar', function () {
         b.portaoModo = proximos[b.portaoModo];
         self.atualizarAcoes();
-      }, { ligado: b.portaoModo !== 'fechado' }));
+      }, { ligado: b.portaoModo !== 'fechado' });
     }
-    if (b.torre && b.construida) {
-      cx.appendChild(botao(b.desligada ? 'Ligar' : 'Desligar', 'ϟ', 'poupa energia', function () {
+    if (b.torre) {
+      casas[CASAS_ESTRUTURA.energia] = botao(b.desligada ? 'Ligar' : 'Desligar', 'ϟ', 'poupa energia', function () {
         b.desligada = !b.desligada; self.atualizarAcoes();
-      }, { ligado: !b.desligada }));
+      }, { ligado: !b.desligada });
     }
-    if (b !== sim.central && b.construida) {
+    if (b !== sim.central) {
       var volta = Math.round((b.custo.m || 0) * D.REGRAS.reembolso);
-      cx.appendChild(botao('Vender', '↩', '+' + volta + ' ◆', function () {
+      casas[CASAS_ESTRUTURA.vender] = botao('Vender', '↩', '+' + volta + ' ◆', function () {
         sim.devolver(b.custo, D.REGRAS.reembolso);
         sim.matar(b, { silencioso: true });
         self.selecionar(null);
         self.mostrarAviso('Estrutura vendida por ' + volta + ' minerais.', 'info');
-      }, { perigo: true }));
+      }, { perigo: true });
+    }
+    montarCasas(cx, casas);
+    this.filaNaBarra(b);
+  };
+
+  /* A FILA DE PRODUÇÃO na faixa de baixo, não escondida na gaveta.
+     A nossa gaveta já desenhava a fila com cancelamento por item — que é
+     exatamente o desenho do Age of Empires II, onde o item da fila É o botão de
+     cancelar. Só que ela aparecia depois de tocar em "Produzir" e abrir a
+     gaveta, ou seja: o jogador não via o que estava sendo produzido enquanto
+     jogava. No AoE II a fila mora na barra, visível o tempo todo em que o
+     prédio está selecionado. */
+  UI.filaNaBarra = function (b) {
+    var faixa = $('filaBarra');
+    if (!faixa) return;
+    var fila = b && b.fila && b.fila.length ? b.fila : null;
+    faixa.hidden = !fila;
+    faixa.innerHTML = '';
+    if (!fila) return;
+    var self = this, sim = this.sim;
+    for (var i = 0; i < fila.length; i++) {
+      (function (indice, item) {
+        var def = UNID[item.tipo] || {};
+        var el = doc.createElement('button');
+        el.className = 'fila-item' + (indice === 0 ? ' fazendo' : '');
+        el.title = (def.nome || item.tipo) + ' — tocar para cancelar';
+        el.innerHTML = '<b>' + (def.nome || item.tipo).slice(0, 3).toUpperCase() + '</b>' +
+          (indice === 0 ? '<i style="width:' + Math.round((item.progresso || 0) * 100) + '%"></i>' : '');
+        el.onclick = function () { sim.cancelarEncomenda(b.id, indice); self.atualizarAcoes(); };
+        faixa.appendChild(el);
+      }(i, fila[i]));
     }
   };
 

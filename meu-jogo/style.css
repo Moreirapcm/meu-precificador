@@ -183,6 +183,54 @@ button { cursor: pointer; border: 0; background: none; }
 .acao.ligado { border-color: var(--bom); background: #17301f; }
 .acao.perigo { border-color: var(--perigo); }
 
+/* A LETRA DE ATALHO, dentro do botão e no canto — é onde o StarCraft e o Age
+   of Empires a punham, em destaque de cor. Sem ela o teclado existe e ninguém
+   descobre. `position` no botão para o canto ter referência. */
+.acao { position: relative; }
+.acao u {
+  position: absolute; top: 3px; right: 5px; text-decoration: none;
+  font-family: var(--hud); font-size: 9px; font-weight: 700; color: var(--acento);
+  opacity: .85; pointer-events: none;
+}
+.acao:disabled u { opacity: .35; }
+
+/* CASA VAZIA. O comando que não se aplica deixa o buraco em vez de puxar o
+   vizinho para o lado: é o que faz "Recuar" cair sempre no mesmo lugar, seja
+   a seleção um soldado, um operário ou os dois juntos. */
+.acao.vazia {
+  min-width: 62px; height: 58px; border-radius: 10px; flex-shrink: 0;
+  border: 1px dashed var(--borda); opacity: .3; background: none;
+}
+
+/* Campos de posição fixa da seleção: a vida é gráfico e número, sempre no
+   mesmo lugar, em vez de dois algarismos no meio de uma frase. */
+.sel-vida { display: flex; align-items: center; gap: 5px; margin: 2px 0 1px; }
+.sel-vida[hidden] { display: none; }
+.sel-vida .trilho {
+  display: block; width: 56px; height: 5px; border-radius: 3px;
+  background: #2a2f27; overflow: hidden; flex: 0 0 auto;
+}
+.sel-vida .trilho i {
+  display: block; height: 100%; background: var(--bom);
+  transition: width .18s linear;
+}
+.sel-vida .trilho i.media { background: var(--atencao, #d8a13a); }
+.sel-vida .trilho i.baixa { background: var(--perigo); }
+.sel-vida em { font-style: normal; font-size: 9.5px; color: var(--suave); }
+
+/* FILA DE PRODUÇÃO na própria barra, visível enquanto o prédio está
+   selecionado. Cada item É o botão de cancelar, como no Age of Empires II. */
+.fila-barra { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
+.fila-barra[hidden] { display: none; }
+.fila-item {
+  position: relative; width: 34px; height: 34px; border-radius: 8px; overflow: hidden;
+  background: var(--painel2); border: 1px solid var(--borda);
+  display: flex; align-items: center; justify-content: center;
+}
+.fila-item b { font-family: var(--hud); font-size: 9px; font-weight: 700; }
+.fila-item.fazendo { border-color: var(--acento); }
+.fila-item i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--acento); }
+
 /* abas e gaveta */
 #abas { display: flex; background: var(--painel); border-top: 1px solid var(--borda); position: relative; z-index: 21; }
 #abas button { flex: 1; font-family: var(--hud); font-size: 12px; font-weight: 600; letter-spacing: .6px; color: var(--suave); border-top: 2px solid transparent; }

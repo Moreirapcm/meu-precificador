@@ -184,7 +184,16 @@
       if (k === 'b') { self.abrirGaveta('construir', true); return; }
       if (k === 'm') { self.iniciarOrdem('mover'); return; }
       if (k === 'a') { self.iniciarOrdem('moverAtacando'); return; }
-      if (k === 'r') { self.acaoRepararLinha(); return; }
+      /* `r` é REPARAR, como nos dois clássicos, e passa a agir sobre a
+         seleção; o reparo automático da linha, que é ajuste estratégico e não
+         comando de unidade, mudou para `l`. Trocar foi mais honesto que
+         inventar uma letra ruim para o comando que todo jogador de RTS já
+         procura em `r`. */
+      if (k === 'r') { self.repararComSelecionado(); return; }
+      if (k === 'l') { self.acaoRepararLinha(); return; }
+      if (k === 'p') { self.iniciarOrdem('patrulhar'); return; }
+      if (k === 'c') { self.iniciarOrdem('recuar'); return; }
+      if (k === 'g') { self.minerarComSelecionados(); return; }
       if (k === 'e') { self.jogo.alternarVelocidade(); return; }
       if (k === 'q') { self.iniciarHabilidade('bombardeio'); return; }
       if (k === 'w') { self.iniciarHabilidade('escudo'); return; }
@@ -363,6 +372,35 @@
       us[i].rota = null;
     }
     this.mostrarAviso(us.length + ' unidade(s) pararam.', 'info');
+    this.atualizarTudo();
+  };
+
+  /* Os dois comandos que só existiam como botão e agora têm tecla. Ficam aqui,
+     junto de `pararSelecionados`, porque agem sobre a SELEÇÃO — e é por isso
+     que a mesma letra serve com o dedo e com o teclado. */
+  UI.prototype.repararComSelecionado = function () {
+    var us = this.unidadesSelecionadas().filter(function (u) { return u.operario; });
+    if (!us.length) { this.mostrarAviso('Selecione um operário para reparar.', 'atencao'); return; }
+    var sim = this.sim, achou = 0;
+    for (var i = 0; i < us.length; i++) {
+      var alvo = sim.estruturaMaisFeridaProxima(us[i].x, us[i].y);
+      if (!alvo) continue;
+      sim.darTarefa(us[i], { tipo: 'reparar', alvo: alvo.id }, true);
+      achou++;
+    }
+    this.mostrarAviso(achou ? achou + ' operário(s) reparando.' : 'Nada danificado por perto.', achou ? 'info' : 'atencao');
+    this.atualizarTudo();
+  };
+
+  UI.prototype.minerarComSelecionados = function () {
+    var us = this.unidadesSelecionadas().filter(function (u) { return u.operario; });
+    if (!us.length) { this.mostrarAviso('Selecione um operário para minerar.', 'atencao'); return; }
+    var sim = this.sim;
+    for (var i = 0; i < us.length; i++) {
+      var j = sim.jazidaLivreMaisProxima(us[i].x, us[i].y);
+      if (j) sim.darTarefa(us[i], { tipo: 'minerar', jazida: j.id }, false);
+    }
+    this.mostrarAviso('Operários voltaram à mineração.', 'info');
     this.atualizarTudo();
   };
 
