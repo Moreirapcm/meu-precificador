@@ -5707,6 +5707,56 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
   };
 
+  /* Canhão giratório para VEÍCULO. Gerar cinco poses de tanque por IA foi
+     tentado e não deu: o modelo devolve um tanque só, por mais explícito que
+     seja o pedido — ele entende "cinco poses" para gente e ignora para máquina.
+     E não precisa: num tanque quem gira é a TORRE, e torre é um cilindro. O
+     mesmo desenho que as torres de defesa usam (um retângulo girado em torno de
+     um pivô) resolve, custa zero de arte e aponta com precisão de grau, coisa
+     que cinco desenhos nunca dariam.
+     Vale só para quem tem `torreta` em ALTURA_SPRITE-style: hoje o tanque. */
+  var TORRETA = {
+    tanque: { pivo: 0.56, comp: 13, grossura: 3.0, cor: '#5d6650', cano: '#454d3a' }
+  };
+
+  R.canhaoDeVeiculo = function (ctx, u, p, z, alturaTela) {
+    var t = TORRETA[u.tipo];
+    if (!t || u.morta) return;
+    var alvo = u.alvo && this.sim.alvoPorId(u.alvo);
+    /* sem alvo o cano fica no rumo da marcha, e não travado num ângulo fixo:
+       tanque parado com o canhão torto parece quebrado */
+    var ang = u.angulo === undefined ? -0.6 : u.angulo;
+    if (alvo && !alvo.morta) {
+      var c = this.sim.centroDe(alvo);
+      var pa = this.paraTela(c.x, c.y);
+      ang = Math.atan2((pa.y - (p.y - alturaTela * t.pivo)) * 1, pa.x - p.x);
+    } else {
+      /* o ângulo de mundo vira ângulo de tela na projeção 2:1 */
+      var dx = Math.cos(ang), dy = Math.sin(ang);
+      ang = Math.atan2((dx + dy) * 0.5, dx - dy);
+    }
+    var cx = p.x, cy = p.y - alturaTela * t.pivo;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(ang);
+    ctx.fillStyle = t.cano;
+    ctx.fillRect(0, -t.grossura / 2 * z, t.comp * z, t.grossura * z);
+    ctx.restore();
+    /* a base do cano é pequena: ela existe para o cano não parecer colado no
+       nada, não para virar um disco em cima do tanque */
+    ctx.fillStyle = t.cor;
+    ctx.beginPath(); ctx.arc(cx, cy, 3.2 * z, 0, 6.283); ctx.fill();
+    /* clarão no instante do disparo: a recarga acabou de ser reiniciada */
+    var arma = u.def && u.def.arma;
+    if (arma && u.recarga > arma.cad - 0.1 && alvo) {
+      var bx = cx + Math.cos(ang) * t.comp * z, by = cy + Math.sin(ang) * t.comp * z;
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#fff0c4';
+      ctx.beginPath(); ctx.arc(bx, by, 5 * z, 0, 6.283); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  };
+
   R.desenharUnidade = function (ctx, item) {
     var u = item.dado, z = this.cam.zoom;
     var p = this.paraTela(u.x, u.y);
@@ -5738,6 +5788,8 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
     if (img) {
       topo = this.spriteUnidade(ctx, u, img, p, raio, voo, z, this.sim);
+      /* o cano vai POR CIMA do casco: é peça de máquina, não de terreno */
+      this.canhaoDeVeiculo(ctx, u, p, z, p.y - topo);
       this.avisosUnidade(ctx, u, p, topo, raio, voo, inimigo, z);
       return;
     }

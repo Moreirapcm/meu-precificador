@@ -2,9 +2,9 @@ Crie uma FOLHA DE POSES de uma unidade para um jogo de estrategia isometrico, em
 
 NAO E DESENHO ANIMADO. Sem contorno preto em volta da figura, sem traco de caneta, sem cel shading, sem estilo anime. E uma figura com VOLUME, material pintado e sombra suave, como uma miniatura renderizada em tres dimensoes.
 
-A UNIDADE: o LANCEIRO PESADO, soldado antiblindagem, o mesmo da imagem de referencia — mesmo uniforme azul aco escuro, faixas laranja, capacete com visor ciano. Ele carrega um LANCA-FOGUETES apoiado no ombro.
+A UNIDADE: o DRONE ANTIAEREO, pequeno aparelho voador de quatro rotores, o mesmo da imagem de referencia — mesma cor, mesmo formato.
 
-A ACAO, igual nas cinco: ele esta DISPARANDO o lanca-foguetes. Tubo no ombro, corpo firme, os dois bracos segurando, um jato curto de fogo saindo pela traseira do tubo. O tubo e do tamanho do braco, nao maior que o corpo.
+A ACAO, igual nas cinco: ele esta DISPARANDO os canhoes gemeos embaixo do corpo, com um clarao pequeno em cada boca. Ele esta NO AR, inclinado levemente para a frente, com as pas dos rotores borradas de tao rapidas. Nao ha pernas nem chao embaixo dele.
 
 Desenhe a unidade CINCO vezes numa LINHA HORIZONTAL UNICA, lado a lado, bem espacadas, sem encostar uma na outra. Nao empilhe, nao faca duas fileiras: e UMA LINHA SO, da esquerda para a direita.
 
