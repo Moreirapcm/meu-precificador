@@ -1,0 +1,24 @@
+Crie uma FOLHA DE POSES de uma criatura alienigena para um jogo de estrategia isometrico, em RENDERIZACAO 3D LIMPA e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050, uma colmeia alienigena invadiu o planeta. Carapaca quitinosa segmentada como casco de inseto, pele umida e nervurada entre as placas, garras e mandibulas de osso claro, juntas internas brilhando como brasa por baixo da casca.
+
+NAO E DESENHO ANIMADO. Sem contorno preto em volta da figura, sem traco de caneta, sem cel shading. E uma figura com VOLUME e sombra suave, como uma miniatura renderizada em tres dimensoes.
+
+A CRIATURA: o CUSPIDOR, o artilheiro da colmeia — corpo bojudo apoiado em patas curtas, dorso coberto por sacos glandulares inchados, boca tubular curta na frente. Carapaca VERDE ACIDO com nervuras verde claro brilhante. O mesmo bicho da imagem de referencia.
+
+A ACAO, igual nas cinco: ele esta CUSPINDO ACIDO — o corpo firmado no chao, a boca tubular apontada para a frente e uma bolota CURTA de cuspe verde brilhante saindo dela, colada na boca. A bolota tem de ser pequena, do tamanho da cabeca, nunca um jato comprido.
+
+Desenhe a criatura CINCO vezes numa LINHA HORIZONTAL UNICA, lado a lado, bem espacadas, SEM ENCOSTAR uma na outra. Nao empilhe, nao faca duas fileiras.
+
+O QUE MUDA ENTRE AS CINCO E SO A DIRECAO PARA ONDE ELA ATACA:
+1. atacando para a DIREITA da tela, de perfil.
+2. atacando para a DIREITA E PARA CIMA, na diagonal, mostrando o dorso de tres quartos.
+3. atacando para CIMA, de costas para quem olha, mostrando o dorso.
+4. atacando para a DIREITA E PARA BAIXO, na diagonal, mostrando a frente de tres quartos.
+5. atacando para BAIXO, de frente para quem olha, vindo na direcao de quem ve.
+
+NENHUMA das cinco pode atacar para a esquerda: as direcoes que faltam eu faco espelhando.
+
+Todas do MESMO TAMANHO, todas apoiadas na MESMA LINHA DE CHAO, mesma iluminacao. Nada pode passar por cima da figura vizinha: garra, cauda e cuspe tem de ficar CURTOS e colados no corpo, senao eu nao consigo recortar cada uma separada.
+
+A figura e PEQUENA no jogo: silhueta forte, nada de detalhe miudo.
+
+FUNDO: MAGENTA PURO E CHAPADO em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem sombra projetada no chao. Sem moldura, sem texto, sem numero.

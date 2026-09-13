@@ -19,6 +19,13 @@ tmp="/tmp/uf-$(date +%s).jpg"
 nodeenv='export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh" >/dev/null 2>&1'
 
 scp -q "$prompt" lnv:/tmp/uf-prompt.txt || { echo "sem acesso ao LNV"; exit 1; }
+
+# REGRA DO PEDRO, 13/09/2026: a janela de criar imagem no LNV é aberta por este
+# script, sempre, antes de qualquer pedido. Ela cai sozinha — por reinício da
+# máquina, por fechar o Chrome, por um `reset_ia` que derruba o processo — e
+# quando cai o erro que aparece é "ECONNREFUSED 9370", que não diz nada a quem
+# só queria a arte. `abrir_janela_ia.sh` não faz nada se ela já estiver de pé.
+ssh lnv "$nodeenv; bash $remoto/abrir_janela_ia.sh >/dev/null 2>&1" || true
 args=""
 if [ -n "$ref" ]; then
   scp -q "$ref" lnv:/tmp/uf-ref.jpg || exit 1

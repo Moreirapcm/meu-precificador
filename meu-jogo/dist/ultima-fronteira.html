@@ -5620,7 +5620,13 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
          única, sempre na mesma pose, "atirando de lado". */
       var atacando = u.alvo && u.recarga > 0 && !u.operario;
       var d = this.anima.direcao(u, sim);
-      if (atacando) t = UF.sprites.tira(pasta + u.tipo + '-atirar-' + d.nome);
+      /* `-atirar-` para quem dispara, `-atacar-` para quem morde. São nomes
+         diferentes porque descrevem coisas diferentes, e o mesmo bicho pode um
+         dia ter as duas: o Cuspidor cospe de longe e dá patada de perto. */
+      if (atacando) {
+        t = UF.sprites.tira(pasta + u.tipo + '-atirar-' + d.nome) ||
+          UF.sprites.tira(pasta + u.tipo + '-atacar-' + d.nome);
+      }
       if (!t && u.rota) t = UF.sprites.tira(pasta + u.tipo + '-andar-' + d.nome);
       if (t) {
         if (t.n > 1) {
@@ -5776,6 +5782,41 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }
   };
 
+  /* Arco de garra para quem bate de perto.
+     O corpo a corpo do jogo é resolvido com o mesmo `atirar()` do tiro — um
+     projétil que percorre 1,2 célula a doze por segundo, ou seja, existe por um
+     décimo de segundo e o jogador nunca vê. O golpe ficava invisível: a vida do
+     alvo caía e nada acontecia na tela.
+     Aqui ele ganha um risco curvo na direção do alvo, no instante do golpe.
+     É só desenho — a regra continua sendo a do projétil. */
+  R.golpeDePerto = function (ctx, u, p, z, alturaTela) {
+    var arma = u.def && u.def.arma;
+    if (!arma || !u.alvo || u.morta) return;
+    if (arma.alc > 1.6) return;                    /* quem atira de longe, não */
+    if (u.recarga < arma.cad - 0.12) return;       /* só no instante do golpe */
+    var alvo = this.sim.alvoPorId(u.alvo);
+    if (!alvo || alvo.morta) return;
+    var c = this.sim.centroDe(alvo);
+    var pa = this.paraTela(c.x, c.y);
+    var ang = Math.atan2(pa.y - (p.y - alturaTela * 0.5), pa.x - p.x);
+    var forca = (u.recarga - (arma.cad - 0.12)) / 0.12;   /* 1 no impacto */
+    ctx.save();
+    ctx.translate(p.x, p.y - alturaTela * 0.5);
+    ctx.rotate(ang);
+    ctx.globalAlpha = forca * 0.85;
+    ctx.strokeStyle = u.def.cor || '#ffd7a0';
+    ctx.lineWidth = 2.2 * z;
+    ctx.lineCap = 'round';
+    var r = (10 + 6 * (1 - forca)) * z;
+    for (var i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.arc(0, i * 3.2 * z, r, -0.5, 0.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  };
+
   R.desenharUnidade = function (ctx, item) {
     var u = item.dado, z = this.cam.zoom;
     var p = this.paraTela(u.x, u.y);
@@ -5809,6 +5850,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       topo = this.spriteUnidade(ctx, u, img, p, raio, voo, z, this.sim);
       /* o cano vai POR CIMA do casco: é peça de máquina, não de terreno */
       this.canhaoDeVeiculo(ctx, u, p, z, p.y - topo);
+      this.golpeDePerto(ctx, u, p, z, p.y - topo);
       this.avisosUnidade(ctx, u, p, topo, raio, voo, inimigo, z);
       return;
     }
