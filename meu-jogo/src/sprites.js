@@ -103,7 +103,11 @@
     'unidades/medico-caindo1': 1,
     'unidades/medico-caindo2': 1,
     'unidades/operario-caindo1': 1,
-    'unidades/operario-caindo2': 1
+    'unidades/operario-caindo2': 1,
+    'unidades/tanque-caindo1': 1,
+    'unidades/drone-caindo1': 1,
+    'unidades/tanque-morto': 1,
+    'unidades/drone-morto': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não

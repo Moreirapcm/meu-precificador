@@ -60,6 +60,11 @@
 
      `salto` em pixels, `balanco` em radianos, `peso` é o squash. Bicho pesado
      salta pouco e afunda muito; bicho leve salta alto e quase não afunda. */
+  /* Quem é MÁQUINA. Serve para a morte: veículo não tomba de lado como gente.
+     Fica aqui junto das outras tabelas de corpo porque é a mesma pergunta —
+     que tipo de coisa é esta unidade — respondida para um fim diferente. */
+  Anima.VEICULO = { tanque: true, drone: true };
+
   Anima.GALOPE = {
     corredor:  { salto: 3.4, balanco: 0.07, peso: 0.05 },
     predador:  { salto: 2.2, balanco: 0.05, peso: 0.06 },
@@ -208,6 +213,25 @@
     if (olhar !== undefined) r.espelhar = !paraDireitaNaTela(olhar);
 
     var morto = this.morte[u.id];
+    if (morto !== undefined && Anima.VEICULO[u.tipo]) {
+      /* VEÍCULO NÃO TOMBA. Máquina destruída não cai de lado como gente: ela
+         para onde estava e queima. Girar um tanque 83 graus deixava a esteira
+         para cima, e o que devia ser uma carcaça fumegante virava um brinquedo
+         chutado.
+         O que a máquina faz é AFUNDAR um pouco — as suspensões cedem — e
+         escurecer. O drone é a exceção que confirma: ele estava no ar, e o que
+         ele faz é DESPENCAR, girando enquanto cai. */
+      var tv = Math.min(1, morto / 0.6);
+      if (u.voa) {
+        r.giro = (r.espelhar ? -1 : 1) * 0.9 * tv * tv;
+        r.desviaY = 26 * z * tv * tv;          /* a altura do voo, indo a zero */
+      } else {
+        r.desviaY = 2.5 * z * tv;
+        r.escalaY = 1 - 0.06 * tv;
+      }
+      r.alfa = Math.max(0, 1 - Math.max(0, morto - 0.9) / 0.25);
+      return r;
+    }
     if (morto !== undefined) {
       /* A MORTE EM TRÊS TEMPOS, e cada um resolve uma coisa:
 
