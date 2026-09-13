@@ -55,6 +55,21 @@
   World.prototype.gerar = function (semente) {
     var rand = rng(semente);
     var w = this.w, h = this.h, n = this.n;
+
+    /* Mapa desenhado: a planta substitui a geração por ruído inteira. O que
+       vem DEPOIS continua valendo — remover ilhas, plantar jazidas, abrir
+       passagem, definir entradas —, porque são as invariantes do jogo e não
+       da paisagem. Um mapa pintado à mão não está dispensado de ter rota da
+       zona de invasão até o centro. */
+    if (this.cfg.planta && UF.MAPAS && UF.MAPAS[this.cfg.planta]) {
+      this.desenhoParaTerreno(UF.MAPAS[this.cfg.planta]);
+      this.removerIlhas();
+      this.plantarJazidas(rand);
+      this.abrirPassagemAoRedorDasJazidas();
+      this.definirEntradas(rand);
+      return;
+    }
+
     var campo = new Float32Array(n), i, x, y;
     for (i = 0; i < n; i++) campo[i] = rand();
 
@@ -120,6 +135,42 @@
     this.plantarJazidas(rand);
     this.abrirPassagemAoRedorDasJazidas();
     this.definirEntradas(rand);
+  };
+
+  /* Lê a string da planta e escreve o terreno. A planta tem o lado dela; se
+     for diferente do lado do setor, é reamostrada pelo vizinho mais próximo —
+     assim a mesma planta serve a um setor maior ou menor sem redesenhar. */
+  World.prototype.desenhoParaTerreno = function (mapa) {
+    var w = this.w, h = this.h, lado = mapa.lado, cel = mapa.celulas;
+    var DE = { '.': T.ASFALTO, ',': T.ASFALTO, '#': T.RUINA, ':': T.ESCOMBRO, '~': T.AGUA };
+    /* praça: chão livre que o desenho pinta de mato. A simulação não precisa
+       saber a diferença — quem precisa é a apresentação. */
+    this.praca = new Uint8Array(this.n);
+    for (var y = 0; y < h; y++) {
+      var sy = Math.min(lado - 1, Math.floor(y * lado / h));
+      for (var x = 0; x < w; x++) {
+        var sx = Math.min(lado - 1, Math.floor(x * lado / w));
+        var ch = cel.charAt(sy * lado + sx);
+        var i = this.idx(x, y);
+        this.terreno[i] = DE[ch] === undefined ? T.ASFALTO : DE[ch];
+        if (ch === ',') this.praca[i] = 1;
+      }
+    }
+    /* Borda transitável, como nos mapas gerados: é por onde o invasor entra. */
+    for (var b = 0; b < w; b++) {
+      if (this.terreno[this.idx(b, 1)] !== T.AGUA) this.terreno[this.idx(b, 0)] = T.ASFALTO;
+      if (this.terreno[this.idx(b, h - 2)] !== T.AGUA) this.terreno[this.idx(b, h - 1)] = T.ASFALTO;
+    }
+    for (var c = 0; c < h; c++) {
+      if (this.terreno[this.idx(1, c)] !== T.AGUA) this.terreno[this.idx(0, c)] = T.ASFALTO;
+      if (this.terreno[this.idx(w - 2, c)] !== T.AGUA) this.terreno[this.idx(w - 1, c)] = T.ASFALTO;
+    }
+    /* A rua da planta é a rua do jogo: é o que as jazidas e os postos evitam
+       ocupar, e o que o desenho pinta com faixa. */
+    this.rua = new Uint8Array(this.n);
+    for (var k = 0; k < this.n; k++) {
+      if (this.terreno[k] === T.ASFALTO && !this.praca[k]) this.rua[k] = 1;
+    }
   };
 
   /* Média em janela quadrada, repetida algumas vezes. */

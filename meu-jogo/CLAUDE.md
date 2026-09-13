@@ -9,7 +9,7 @@ está preservado em `v2-referencia/` e não deve ser alterado.
 
 ```bash
 python3 -m http.server 8000    # daqui; abre http://localhost:8000
-node tests/aceitacao.cjs       # 27 testes de regra — precisa passar 27/27
+node tests/aceitacao.cjs       # 28 testes de regra — precisa passar 28/28
 node tests/equilibrio.cjs      # simula partidas inteiras nos 6 setores (~3 min)
 node build.cjs                 # gera dist/ (arquivo único offline + página do artifact)
 ```
@@ -57,6 +57,7 @@ Se aparecer `jogador.m +=` fora de `sim*.js`, é bug.
 | `src/util.js` | números, tempo, aleatório com semente (`rng`) |
 | `src/data.js` | **todo o equilíbrio**: estruturas, unidades, invasores, pesquisas, setores |
 | `src/geo.js` | contorno real dos continentes, projeção, coordenadas |
+| `src/mapas.js` | mapas **desenhados** (planta pintada → string de células) |
 | `src/world.js` | terreno, malha urbana, rios, cratera, jazidas, névoa |
 | `src/path.js` | A* em grade, com cerco e portões |
 | `src/sim.js` | estado, posicionamento, muros, energia |
@@ -71,7 +72,7 @@ Se aparecer `jogador.m +=` fora de `sim*.js`, é bug.
 | `src/main.js` | montagem, troca de telas, laço principal |
 
 Ordem dos `<script>` em `index.html` é dependência real: `util` → `data` → `geo`
-→ `world` → `path` → `sim*` → `salvar` → `render*` → `audio` → `ui*` →
+→ `mapas` → `world` → `path` → `sim*` → `salvar` → `render*` → `audio` → `ui*` →
 `mundo-ui` → `main`. `build.cjs` lê essa ordem do próprio HTML; para acrescentar
 um arquivo, basta pôr a tag no lugar certo.
 

@@ -364,6 +364,14 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
       </select>
     </label>
 
+    <label class="campo">
+      <span>Mapa</span>
+      <select id="selMapa">
+        <option value="" selected>Gerado — terreno sorteado pela semente do setor</option>
+        <option value="manaus">Manaus 2050 — planta desenhada, rio e praça central</option>
+      </select>
+    </label>
+
     <button id="btnJogar" class="principal">ASSUMIR O COMANDO <span>↗</span></button>
     <button id="btnContinuar" class="secundario" hidden>Continuar partida salva</button>
     <button id="btnComoJogar" class="texto">Como se joga</button>
@@ -916,6 +924,106 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
   UF.geo = { continentes: continentes, projetar: projetar, coordenada: coordenada };
 })(typeof window !== 'undefined' ? window : globalThis);
 
+/* ===== src/mapas.js ===== */
+/* Última Fronteira — mapas DESENHADOS.
+ *
+ * O jogo gera o terreno por regra, e mapa gerado é sempre igual a si mesmo:
+ * muda a semente, não muda a cidade. Aqui ficam os mapas feitos à mão — na
+ * verdade PINTADOS: uma planta em cores chapadas (azul rio, branco rua, preto
+ * quarteirão, cinza entulho, verde praça) que `arte/ferramentas/planta-para-
+ * mapa.py` converte em uma string de um caractere por célula.
+ *
+ * É texto, e não imagem carregada em tempo de jogo, por dois motivos: imagem
+ * carrega de forma assíncrona e o mundo é montado de uma vez, no construtor; e
+ * os testes rodam em Node, sem canvas. Texto funciona nos dois, e continua
+ * abrindo por `file://` com dois cliques.
+ *
+ *   '.' rua   '#' quarteirão de pé   ':' entulho   '~' água   ',' praça
+ */
+(function (UF) {
+  'use strict';
+
+  var MAPAS = {};
+
+  MAPAS['manaus'] = {
+    lado: 70,
+    celulas: [
+      '.####,######################.#####..##,##.##:::##,,,,,,,,,,,,,,,,,,,,.',
+      ',.###,###############:######.###,#..,,,##.###:::#,,,,,,,,,,,,,,,,,,,.,',
+      '#,.##,,############,:##:.#,#.##:##..#,,##.##:::##,,,,,,,,,,,,,,,,,,.,,',
+      '##..##.###.#..#.#.#.#.#:.,,,.#####..#####.##..:.....,,,,,,,,,,,,,,.,,,',
+      '###..##.##.######.#,#.##.###.#####..#####.##,:::::::.,,,,,,,,,,,,.,,,,',
+      '#####.####.,####:.#,####.#::.:##::..##::#.###:::::#:.,,,,,,,,,,,.,,,,,',
+      '##,###.#######:####,,:##.###.#:###..#::::.,,##:::#::.,,,,,,,#,,.,,,,,,',
+      ',,##:##.############,###.:##.#::##..####:.####:::##:.,,,,,###,.,,,,,,,',
+      '####,###.###::####.,.#######.::::#..#::#:.##::::#:::.,,,,,,,,.,,,,,,,,',
+      '#########.########,,,#####:#.##::#..#::##.###::#::::.,,,,,,,..,,,,,,,,',
+      '###.######.#######,,,.......................................#.,,,,,,,,',
+      '#,,.######..######,,,#######.,####..##:##.::,,,,,#########..#.,,,,,,,,',
+      '#####,,#####.###############.#,,##..##::#.##,,,,,:#######.###.#,,,,,,,',
+      '###.###,,####.#########:.:##.#,,##..##::#.##::#,########.####.#,,,,,,,',
+      '###.######.,##.########:::::.##,##..##::#.##::###:::###.#####.##,,,,,,',
+      '##:.#,#.##.####.##::###......##,##..##::#.##..##.###.#.#.####.,,,,,,,,',
+      ',:###,#######:##..######.,,,.#:#:#..#####.####:####,,,,######.,,,,,,,,',
+      '#:#.#,##,###::###.###:##.,,,.#:,:#..##::#.####:####,,,,#.##.#.,,,,.,,,',
+      ',:#:#,:#,,########.#####.,,#.#,,,#..##:::.##::#::##,,,,######.,,,,,,,,',
+      '###.#,#:##.:#:#####.#####:##.#,,##..##::#.#:::####.,,,:######.,#,,,,,,',
+      '####:##########:####.####:##.#####..#::##.#:::###.###########.,,,,,,,,',
+      ',,,.,,,,,,.#:#..#.###.,,.###.#####..#####.###.,,.###.###.##.#.####.,,,',
+      '###,,,,,##.#:########,,,.###.#####..#####.####,..##:.########.####.,,,',
+      '#,#,,,,,,,.#::#::####,,,.###.###:#..###:#.####.,,#::.########.###,,,,,',
+      ',,,.,,,,,,.#......#.......##.##..#..###.#.###....##......##.#.##.#.,,,',
+      ',,#,,,,,,,.###,,###::###..##.##:##..#####.##..######.,,,#####.####,,,,',
+      ',##,,,,,,,.::#,#,,::######.#.#####..#####.#.########.##,::###.,#.#,,,,',
+      ',,,,,,,,,,.::#,,,,:::######..#####..#####..#########.,,,#####.##.,,,,,',
+      '::,.::.#:#.:::#:#.#:#.##.###..............###.###::#.###.##.#.###,,,,,',
+      '::,,#:.#####::######:###.:##.,,,,,,,,,,,,.####:##::#####:####.###,,,,,',
+      '::,,::.######:,:::::#::#####.,,,,,,,,,,,,.####::::::::##::###.###,,,,,',
+      '#####:.#######,,:.::#:######.,,,,,,,,,,,,.#######:::::##.##.,.###,,,,,',
+      '##:#::.#,#####,,,###########.,,,,,,,,,,,,.:##:#####::::####.#.,,,,,#,,',
+      '########::::################.,,,,,,,,,,,,.::::###############.##,,,#,,',
+      '.............................,,,,,,,,,,,,.............................',
+      '.............................,,,,,,,,,,,,.............................',
+      '####,#######################.,,,,,,,,,,,,.###################.####,,,,',
+      ',,,,,,.#####,#,,##:::###.###.,,,,,,,,,,,,.#########:.########.,,##,,,,',
+      '~~~,,###,###,:,::::::##:####.,,,,,,,,,,,,.#:::#####::::#::,,,.,,,#,,,,',
+      '~~~~~:.#,:###:##::::#::#:::#.,,,,,,,,,,,,.####:::###.:::::###.,,###,,,',
+      '~~~~~,.######:####:::#######.,,,,,,,,,,,,.#########:.#:::::##.,,###,,,',
+      '~~~~~~,###.#::###.#::.##.###..............#########:.#::.::##.,,,##,,,',
+      '~~~~~~,#####:#####::#######.######..######.#######::.######,##,,,,,,,,',
+      '~~~~~~~#####:###:.:#######.#####:#..#######.#####::#.,#####,##,,,,,,,,',
+      '~~~~~~~,##.##:#::.#######.######:#..###:####.####::#.,,#######,,,,,,,,',
+      '~~~~~~~~,,,######.###.##..##.###:#..###::####....::#.,,###,,,#,,,,,,#,',
+      '~~~~~~~~,,,,#######:#,,,.#########..#:#######.,,,#:#.#,#.##,,:,,,,,,,,',
+      '~~~~~~~~~,,,###,#####,,,.#########..#########.,,,#########,###,,,,,,,,',
+      '~~~~~~~~~~,######.###.,,.###.#####..#########.,,.#######.####.,,,,,,,,',
+      '~~~~~~~~~~~,,,######.########::###..#############.##############,,,,,,',
+      '~~~~~~~~~~~~#######.######:::::#:#..######::######.###,###,,##,,,##,,,',
+      '~~~~~~~~~~~~~#####.#######:::::#::..#####.#####::##.######,,##,,,##,,,',
+      '~~~~~~~~~~~~~~###.###::#########.,..,,##::#####:####.###.##,,,,,,,,,,,',
+      '~~~~~~~~~~~~~~~#.#########::####.,..,,#####,,,,,,####.######,,,#,,,,,,',
+      '~~~~~~~~~~~~~~~..###############.,..,,#:::#,,,,,,#####.#######,,,,,,,,',
+      '~~~~~~~~~~~~~~~~~:###.##.......#......#.:...,.,,.#.#,##.#######,,,#,,,',
+      '~~~~~~~~~~~~~~~~~~~#####.::::::#:#..#::#:#::,,,,,##.####.#######,,,,,,',
+      '~~~~~~~~~~~~~~~~~~~~~##:.::::::#:#..#::######.,,########..######,,,,,,',
+      '~~~~~~~~~~~~~~~~~~~~~~~:::::####:#..##:####,,.#,##,##.####.###,,,,,,,,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~::::##::::..#::#::#####,###########.##,####,,,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~::######..########################..##,,,,,,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~######..######:##.##########.###..,,,,,,,,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##,##..#::##::#######,#########...,##,,#,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,,,#..#:#########,,,###,,,:#:,,,,.,#,,,,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,#..#::###:,###,,,#,#,#,##,,###,.,,#,#',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,,..#::###:,,.:::,###,#,.,######,.,#,,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,..#::####,,.:::,###,#.::###:,,#,.,#,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,..#####..,,....,,,,,,,::,,###,##,.,#',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,..######,,,,,,,,,,,,,,##,##,,,,,#,.,',
+      '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..######,,,,,,,,,,,,,,###,#######,,.',
+    ].join('')
+  };
+
+  UF.MAPAS = MAPAS;
+}(window.UF = window.UF || {}));
+
 /* ===== src/world.js ===== */
 /* Última Fronteira — mundo: terreno, grade de ocupação, jazidas e visibilidade. */
 (function (global) {
@@ -974,6 +1082,21 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
   World.prototype.gerar = function (semente) {
     var rand = rng(semente);
     var w = this.w, h = this.h, n = this.n;
+
+    /* Mapa desenhado: a planta substitui a geração por ruído inteira. O que
+       vem DEPOIS continua valendo — remover ilhas, plantar jazidas, abrir
+       passagem, definir entradas —, porque são as invariantes do jogo e não
+       da paisagem. Um mapa pintado à mão não está dispensado de ter rota da
+       zona de invasão até o centro. */
+    if (this.cfg.planta && UF.MAPAS && UF.MAPAS[this.cfg.planta]) {
+      this.desenhoParaTerreno(UF.MAPAS[this.cfg.planta]);
+      this.removerIlhas();
+      this.plantarJazidas(rand);
+      this.abrirPassagemAoRedorDasJazidas();
+      this.definirEntradas(rand);
+      return;
+    }
+
     var campo = new Float32Array(n), i, x, y;
     for (i = 0; i < n; i++) campo[i] = rand();
 
@@ -1039,6 +1162,42 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     this.plantarJazidas(rand);
     this.abrirPassagemAoRedorDasJazidas();
     this.definirEntradas(rand);
+  };
+
+  /* Lê a string da planta e escreve o terreno. A planta tem o lado dela; se
+     for diferente do lado do setor, é reamostrada pelo vizinho mais próximo —
+     assim a mesma planta serve a um setor maior ou menor sem redesenhar. */
+  World.prototype.desenhoParaTerreno = function (mapa) {
+    var w = this.w, h = this.h, lado = mapa.lado, cel = mapa.celulas;
+    var DE = { '.': T.ASFALTO, ',': T.ASFALTO, '#': T.RUINA, ':': T.ESCOMBRO, '~': T.AGUA };
+    /* praça: chão livre que o desenho pinta de mato. A simulação não precisa
+       saber a diferença — quem precisa é a apresentação. */
+    this.praca = new Uint8Array(this.n);
+    for (var y = 0; y < h; y++) {
+      var sy = Math.min(lado - 1, Math.floor(y * lado / h));
+      for (var x = 0; x < w; x++) {
+        var sx = Math.min(lado - 1, Math.floor(x * lado / w));
+        var ch = cel.charAt(sy * lado + sx);
+        var i = this.idx(x, y);
+        this.terreno[i] = DE[ch] === undefined ? T.ASFALTO : DE[ch];
+        if (ch === ',') this.praca[i] = 1;
+      }
+    }
+    /* Borda transitável, como nos mapas gerados: é por onde o invasor entra. */
+    for (var b = 0; b < w; b++) {
+      if (this.terreno[this.idx(b, 1)] !== T.AGUA) this.terreno[this.idx(b, 0)] = T.ASFALTO;
+      if (this.terreno[this.idx(b, h - 2)] !== T.AGUA) this.terreno[this.idx(b, h - 1)] = T.ASFALTO;
+    }
+    for (var c = 0; c < h; c++) {
+      if (this.terreno[this.idx(1, c)] !== T.AGUA) this.terreno[this.idx(0, c)] = T.ASFALTO;
+      if (this.terreno[this.idx(w - 2, c)] !== T.AGUA) this.terreno[this.idx(w - 1, c)] = T.ASFALTO;
+    }
+    /* A rua da planta é a rua do jogo: é o que as jazidas e os postos evitam
+       ocupar, e o que o desenho pinta com faixa. */
+    this.rua = new Uint8Array(this.n);
+    for (var k = 0; k < this.n; k++) {
+      if (this.terreno[k] === T.ASFALTO && !this.praca[k]) this.rua[k] = 1;
+    }
   };
 
   /* Média em janela quadrada, repetida algumas vezes. */
@@ -7133,6 +7292,17 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
 
   Jogo.prototype.comecar = function (setor) {
     if (!UF.Salvar.liberado(setor)) { this.ui.mostrarAviso('Setor bloqueado. Conclua o anterior.', 'atencao'); return; }
+    /* O mapa desenhado entra como uma CÓPIA do setor com `planta` preenchida:
+       o objeto de data.js é compartilhado e mexer nele contaminaria a próxima
+       partida — e o progresso salvo, que guarda o id do setor. */
+    var escolhido = $('selMapa') ? $('selMapa').value : '';
+    if (escolhido && UF.MAPAS && UF.MAPAS[escolhido]) {
+      var copia = {};
+      for (var k in setor) if (Object.prototype.hasOwnProperty.call(setor, k)) copia[k] = setor[k];
+      copia.planta = escolhido;
+      copia.tam = UF.MAPAS[escolhido].lado;
+      setor = copia;
+    }
     var sim = new UF.Sim({
       setor: setor,
       dificuldade: $('selDificuldade').value,

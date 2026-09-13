@@ -1,0 +1,18 @@
+ATENCAO: esta imagem NAO e uma ilustracao bonita. E um MAPA TECNICO, uma planta baixa esquematica, em CORES CHAPADAS, que vai ser lida por um programa pixel a pixel. Nada de sombra, nada de textura, nada de degrade, nada de brilho, nada de perspectiva.
+
+Desenhe a PLANTA BAIXA de MANAUS destruida, vista EXATAMENTE DE CIMA, ortogonal, como um mapa de satelite simplificado. Imagem QUADRADA.
+
+USE SOMENTE ESTAS CINCO CORES, chapadas e puras, sem misturar e sem tom intermediario:
+- AZUL PURO (0,0,255): agua. O rio Negro entra por um canto e ocupa cerca de um quinto da imagem, com a margem irregular.
+- BRANCO PURO (255,255,255): ruas e avenidas. Uma malha de ruas retas cruzando a cidade inteira, algumas avenidas mais largas, formando quarteiroes. As ruas tem que ser CONTINUAS e se conectar de uma ponta a outra do mapa.
+- PRETO PURO (0,0,0): quarteiroes com predios de pe. Blocos cheios entre as ruas.
+- CINZA MEDIO (128,128,128): quarteiroes que viraram entulho, prédio desabado. Espalhados entre os pretos.
+- VERDE PURO (0,255,0): pracas, parques e terreno aberto. Algumas manchas pelo mapa, e uma praca GRANDE no centro.
+
+REGRAS QUE IMPORTAM MAIS QUE A ESTETICA:
+- Cada cor e um valor exato. NADA de anti-serrilhado suave, nada de borda desbotada, nada de sombra.
+- As ruas brancas formam uma grade conectada: de qualquer rua da borda da imagem se chega ao centro andando so por branco.
+- O centro da imagem tem uma praca VERDE grande e livre, de pelo menos um decimo da largura da imagem.
+- A agua fica encostada em UM canto ou UM lado, nunca cortando o mapa em dois.
+
+Sem texto, sem legenda, sem numeros, sem bussola, sem moldura.

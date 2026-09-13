@@ -54,6 +54,17 @@
 
   Jogo.prototype.comecar = function (setor) {
     if (!UF.Salvar.liberado(setor)) { this.ui.mostrarAviso('Setor bloqueado. Conclua o anterior.', 'atencao'); return; }
+    /* O mapa desenhado entra como uma CÓPIA do setor com `planta` preenchida:
+       o objeto de data.js é compartilhado e mexer nele contaminaria a próxima
+       partida — e o progresso salvo, que guarda o id do setor. */
+    var escolhido = $('selMapa') ? $('selMapa').value : '';
+    if (escolhido && UF.MAPAS && UF.MAPAS[escolhido]) {
+      var copia = {};
+      for (var k in setor) if (Object.prototype.hasOwnProperty.call(setor, k)) copia[k] = setor[k];
+      copia.planta = escolhido;
+      copia.tam = UF.MAPAS[escolhido].lado;
+      setor = copia;
+    }
     var sim = new UF.Sim({
       setor: setor,
       dificuldade: $('selDificuldade').value,

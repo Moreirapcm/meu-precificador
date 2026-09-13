@@ -8,7 +8,7 @@ global.localStorage = {
   setItem: function (k, v) { memoria[k] = String(v); },
   removeItem: function (k) { delete memoria[k]; }
 };
-['util', 'data', 'world', 'path', 'geo', 'sim', 'sim-unidades', 'sim-combate', 'salvar']
+['util', 'data', 'mapas', 'world', 'path', 'geo', 'sim', 'sim-unidades', 'sim-combate', 'salvar']
   .forEach(function (m) { require('../src/' + m + '.js'); });
 var UF = global.UF, D = UF.DATA;
 
@@ -92,6 +92,34 @@ teste('Zonas de invasão têm rota até o centro do mapa', function () {
     var alc = sim.nav.alcancaveis(p.x, p.y, sim.ctxAliado);
     w.entradas.forEach(function (e) {
       ok(alc[w.idx(e.x, e.y)], setor.nome + ': entrada ' + e.nome + ' sem rota ao centro');
+    });
+  });
+});
+
+teste('Mapa desenhado vale as mesmas invariantes do gerado', function () {
+  /* Um mapa pintado à mão não está dispensado de ter local para a Central nem
+     rota da zona de invasão até o centro: quem garante isso é o que roda
+     DEPOIS da planta (remover ilhas, plantar jazidas, abrir passagem), e é
+     justamente o que este teste protege de ser esquecido num mapa novo. */
+  Object.keys(UF.MAPAS).forEach(function (nome) {
+    var base = D.SETORES[0], copia = {};
+    for (var k in base) if (Object.prototype.hasOwnProperty.call(base, k)) copia[k] = base[k];
+    copia.planta = nome;
+    copia.tam = UF.MAPAS[nome].lado;
+    var sim = new UF.Sim({ setor: copia });
+    var w = sim.world;
+    ok(w.jazidas.length > 0, nome + ': mapa sem jazida nenhuma');
+    var achou = false;
+    for (var y = 2; y < w.h - 5 && !achou; y++) {
+      for (var x = 2; x < w.w - 5; x++) {
+        if (sim.podeColocarSemExploracao('central', x, y).ok) { achou = true; break; }
+      }
+    }
+    ok(achou, nome + ': mapa sem local válido para a Central');
+    var p = sim.nav.celulaLivreProxima(Math.floor(w.w / 2), Math.floor(w.h / 2), 12);
+    var alc = sim.nav.alcancaveis(p.x, p.y, sim.ctxAliado);
+    w.entradas.forEach(function (e) {
+      ok(alc[w.idx(e.x, e.y)], nome + ': entrada ' + e.nome + ' sem rota ao centro');
     });
   });
 });
