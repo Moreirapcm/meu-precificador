@@ -28,7 +28,9 @@ descreve() {
   esac
 }
 
-for dir in leste nordeste norte sudeste sul; do
+# Três direções, não cinco, quando a quinta não sai: `R.tiraDaDirecao` cai na
+# vizinha. Passe DIRECOES no ambiente para mudar a lista.
+for dir in ${DIRECOES:-leste nordeste norte sudeste sul}; do
   saida="$raiz/arte/origem/$nome-$dir.jpg"
   [ -s "$saida" ] && { echo "== $dir: ja existe, pulei"; continue; }
   tmp="$(mktemp /tmp/uf-dir-XXXX.txt)"

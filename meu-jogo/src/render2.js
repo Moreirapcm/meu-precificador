@@ -481,6 +481,25 @@
        seria encontrada — nenhum bicho poderia ser animado. */
     var pasta = u.lado === 'inimigo' ? 'inimigos/' : 'unidades/';
     var t = null, q = 0;
+
+    /* MORRENDO: os quadros da queda, quando existem. O tombo calculado continua
+       valendo por baixo — ele dá o giro e o afundamento —, mas trocar a POSE no
+       meio do caminho é o que separa "boneco girando" de "gente caindo". São
+       dois quadros, e não dez: o que o olho pega numa queda de meio segundo é o
+       instante do impacto e o do meio do caminho. O resto é embalo. */
+    if (u.morta && this.anima) {
+      var tm = this.anima.morte[u.id] || 0;
+      var caindo = tm < 0.2 ? UF.sprites.tira(pasta + u.tipo + '-caindo1')
+        : tm < 0.5 ? UF.sprites.tira(pasta + u.tipo + '-caindo2') : null;
+      if (caindo) {
+        var altC = (ALTURA_SPRITE[u.tipo] || 1.3) * ALT * z;
+        var largC = caindo.larg * (altC / caindo.alt);
+        this.imagemComSilhueta(ctx, caindo.img, -largC / 2, -altC, largC, altC);
+        ctx.restore();
+        return pe - altC;
+      }
+    }
+
     if (pose.golpe) {
       t = UF.sprites.tira(pasta + u.tipo + '-minerar');
       if (t) q = Math.floor(((sim ? sim.t : 0) * 6 + (u.animacao || 0)) % t.n);

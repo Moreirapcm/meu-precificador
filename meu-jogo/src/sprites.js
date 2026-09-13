@@ -90,7 +90,12 @@
     'inimigos/cuspidor-morto': 1,
     'unidades/fuzileiro-morto': 1,
     'unidades/lanceiro-morto': 1,
-    'unidades/incendiario-morto': 1
+    'unidades/incendiario-morto': 1,
+    'unidades/medico-morto': 1,
+    'unidades/operario-morto': 1,
+    /* os dois quadros da QUEDA: o instante do impacto e o do meio do caminho */
+    'unidades/fuzileiro-caindo1': 1,
+    'unidades/fuzileiro-caindo2': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não
@@ -119,8 +124,21 @@
     return true;
   }
 
+  /* Pede TODAS as tiras registradas de uma vez, no começo da partida.
+     A imagem só começa a carregar na primeira vez em que é pedida, e quadros
+     de momento curto — os dois da queda duram menos de meio segundo — nunca
+     chegam a tempo da primeira vez que acontecem: o primeiro soldado a morrer
+     morria sem animação, o segundo em diante não. Pedir tudo no início custa
+     uma rajada de requisições que o navegador já ia fazer de qualquer jeito. */
+  function aquecer() {
+    for (var chave in TIRAS) {
+      if (Object.prototype.hasOwnProperty.call(TIRAS, chave)) imagem(chave);
+    }
+  }
+
   UF.sprites = {
     imagem: imagem,
+    aquecer: aquecer,
     estrutura: estrutura,
     tira: tira,
     unidade: unidade,

@@ -85,6 +85,9 @@
   Jogo.prototype.montar = function (sim, nova) {
     this.sim = sim;
     this.trocarTela('jogo');
+    /* pede todas as tiras agora: quadro de momento curto não chega a tempo se
+       só for pedido quando acontece pela primeira vez */
+    if (UF.sprites && UF.sprites.aquecer) UF.sprites.aquecer();
     this.render = new UF.Render($('jogo'), sim);
     this.render.redimensionar();
     this.ui.iniciarPartida(sim, this.render);
