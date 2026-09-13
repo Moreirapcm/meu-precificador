@@ -3037,6 +3037,31 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (origem.lado !== 'inimigo' && this.jogador.pesquisas.precisao) dano *= 1.18;
     var area = arma.area || 0;
     if (area && origem.lado !== 'inimigo' && this.jogador.pesquisas.artilhariaAv) area *= 1.35;
+
+    /* CORPO A CORPO não tem projétil. O Corredor morde, e mordida não é uma
+       bolinha que atravessa uma célula de distância — mas era exatamente isso
+       que aparecia na tela, porque todo ataque do jogo passava por aqui e este
+       trecho sempre criou projétil. A garra do bicho virava um ponto voador.
+       Abaixo de 1,6 célula o dano é aplicado na hora e o que sai é um evento de
+       GOLPE, que o desenho traduz em arco de garra. A diferença de regra é o
+       tempo de voo que deixa de existir: um décimo de segundo numa cadência de
+       seis décimos. Medido com `equilibrio.cjs` antes e depois. */
+    if ((arma.alc || 0) <= 1.6 && !area) {
+      this.aplicarDano(alvo, dano, {
+        perfura: !!arma.perfura,
+        metadeBlindagem: origem.lado !== 'inimigo' && !!this.jogador.pesquisas.penetracao,
+        lentidao: arma.lentidao || 0,
+        acido: !!(origem.def && origem.def.acido),
+        origemId: origem.id, lado: origem.lado
+      });
+      this.emitir('golpe', {
+        x: centroO.x, y: centroO.y, alvoX: centroA.x, alvoY: centroA.y,
+        cor: (origem.def && origem.def.cor) || arma.cor, id: origem.id
+      });
+      if (origem.def && origem.def.suicida) this.aplicarDano(origem, origem.hp + 1, { silencioso: true });
+      return;
+    }
+
     this.projeteis.push({
       x: centroO.x, y: centroO.y - 0.35,
       /* de onde o tiro VEIO, e onde ele estava no quadro anterior. A primeira
@@ -5782,41 +5807,6 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }
   };
 
-  /* Arco de garra para quem bate de perto.
-     O corpo a corpo do jogo é resolvido com o mesmo `atirar()` do tiro — um
-     projétil que percorre 1,2 célula a doze por segundo, ou seja, existe por um
-     décimo de segundo e o jogador nunca vê. O golpe ficava invisível: a vida do
-     alvo caía e nada acontecia na tela.
-     Aqui ele ganha um risco curvo na direção do alvo, no instante do golpe.
-     É só desenho — a regra continua sendo a do projétil. */
-  R.golpeDePerto = function (ctx, u, p, z, alturaTela) {
-    var arma = u.def && u.def.arma;
-    if (!arma || !u.alvo || u.morta) return;
-    if (arma.alc > 1.6) return;                    /* quem atira de longe, não */
-    if (u.recarga < arma.cad - 0.12) return;       /* só no instante do golpe */
-    var alvo = this.sim.alvoPorId(u.alvo);
-    if (!alvo || alvo.morta) return;
-    var c = this.sim.centroDe(alvo);
-    var pa = this.paraTela(c.x, c.y);
-    var ang = Math.atan2(pa.y - (p.y - alturaTela * 0.5), pa.x - p.x);
-    var forca = (u.recarga - (arma.cad - 0.12)) / 0.12;   /* 1 no impacto */
-    ctx.save();
-    ctx.translate(p.x, p.y - alturaTela * 0.5);
-    ctx.rotate(ang);
-    ctx.globalAlpha = forca * 0.85;
-    ctx.strokeStyle = u.def.cor || '#ffd7a0';
-    ctx.lineWidth = 2.2 * z;
-    ctx.lineCap = 'round';
-    var r = (10 + 6 * (1 - forca)) * z;
-    for (var i = -1; i <= 1; i++) {
-      ctx.beginPath();
-      ctx.arc(0, i * 3.2 * z, r, -0.5, 0.5);
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  };
-
   R.desenharUnidade = function (ctx, item) {
     var u = item.dado, z = this.cam.zoom;
     var p = this.paraTela(u.x, u.y);
@@ -5850,7 +5840,6 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       topo = this.spriteUnidade(ctx, u, img, p, raio, voo, z, this.sim);
       /* o cano vai POR CIMA do casco: é peça de máquina, não de terreno */
       this.canhaoDeVeiculo(ctx, u, p, z, p.y - topo);
-      this.golpeDePerto(ctx, u, p, z, p.y - topo);
       this.avisosUnidade(ctx, u, p, topo, raio, voo, inimigo, z);
       return;
     }
@@ -6014,6 +6003,15 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         this.lancarCacos(cx, cy, 14, 4.2, '#9a9186');
         this.efeitoMundo('fumaca', cx, cy, { vida: 1.8, tam: 16 });
         this.sacudir(11);
+      } else if (e.tipo === 'golpe') {
+        /* o arco nasce do agressor e aponta para o alvo; a simulação manda os
+           dois pontos porque só ela sabe quem bateu em quem */
+        this.efeitoMundo('garra', (e.x + e.alvoX) / 2, (e.y + e.alvoY) / 2, {
+          ang: Math.atan2((e.alvoX - e.x) + (e.alvoY - e.y),
+            (e.alvoX - e.x) - (e.alvoY - e.y)),
+          cor: e.cor, vida: 0.18
+        });
+        this.lancarCacos(e.alvoX, e.alvoY, 2, 1.1, e.cor || '#ffd7a0');
       } else if (e.tipo === 'cura') {
         this.efeitoMundo('cura', e.x, e.y, { vida: 0.5 });
       } else if (e.tipo === 'entrega') {
@@ -6096,6 +6094,23 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         ctx.textAlign = 'center';
         ctx.fillText('✚', p.x, p.y - 14 * z - idade * 16 * z);
         ctx.textAlign = 'left';
+      } else if (e.tipo === 'garra') {
+        /* três riscos curvos abrindo: o gesto de garra que todo RTS usa para
+           dizer "bateu aqui" sem precisar de quadro desenhado */
+        ctx.save();
+        ctx.translate(p.x, p.y - 14 * z);
+        ctx.rotate(e.ang);
+        ctx.globalAlpha = t;
+        ctx.strokeStyle = e.cor || '#ffd7a0';
+        ctx.lineWidth = 2.4 * z;
+        ctx.lineCap = 'round';
+        var raio = (7 + 9 * idade) * z;
+        for (var k = -1; k <= 1; k++) {
+          ctx.beginPath();
+          ctx.arc(0, k * 3.4 * z, raio, -0.55, 0.55);
+          ctx.stroke();
+        }
+        ctx.restore();
       } else if (e.tipo === 'texto') {
         ctx.globalAlpha = Math.min(1, t * 1.8);
         ctx.fillStyle = e.cor || '#ffd479';

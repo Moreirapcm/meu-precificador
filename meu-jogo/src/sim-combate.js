@@ -122,6 +122,31 @@
     if (origem.lado !== 'inimigo' && this.jogador.pesquisas.precisao) dano *= 1.18;
     var area = arma.area || 0;
     if (area && origem.lado !== 'inimigo' && this.jogador.pesquisas.artilhariaAv) area *= 1.35;
+
+    /* CORPO A CORPO não tem projétil. O Corredor morde, e mordida não é uma
+       bolinha que atravessa uma célula de distância — mas era exatamente isso
+       que aparecia na tela, porque todo ataque do jogo passava por aqui e este
+       trecho sempre criou projétil. A garra do bicho virava um ponto voador.
+       Abaixo de 1,6 célula o dano é aplicado na hora e o que sai é um evento de
+       GOLPE, que o desenho traduz em arco de garra. A diferença de regra é o
+       tempo de voo que deixa de existir: um décimo de segundo numa cadência de
+       seis décimos. Medido com `equilibrio.cjs` antes e depois. */
+    if ((arma.alc || 0) <= 1.6 && !area) {
+      this.aplicarDano(alvo, dano, {
+        perfura: !!arma.perfura,
+        metadeBlindagem: origem.lado !== 'inimigo' && !!this.jogador.pesquisas.penetracao,
+        lentidao: arma.lentidao || 0,
+        acido: !!(origem.def && origem.def.acido),
+        origemId: origem.id, lado: origem.lado
+      });
+      this.emitir('golpe', {
+        x: centroO.x, y: centroO.y, alvoX: centroA.x, alvoY: centroA.y,
+        cor: (origem.def && origem.def.cor) || arma.cor, id: origem.id
+      });
+      if (origem.def && origem.def.suicida) this.aplicarDano(origem, origem.hp + 1, { silencioso: true });
+      return;
+    }
+
     this.projeteis.push({
       x: centroO.x, y: centroO.y - 0.35,
       /* de onde o tiro VEIO, e onde ele estava no quadro anterior. A primeira
