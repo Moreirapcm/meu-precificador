@@ -666,6 +666,7 @@
     this.desenharAreasDePerigo(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
+    this.desenharCaixaSelecao(ctx);
     if (abalo) ctx.restore();
   };
 

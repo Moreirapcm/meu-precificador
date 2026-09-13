@@ -4922,6 +4922,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.desenharAreasDePerigo(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
+    this.desenharCaixaSelecao(ctx);
     if (abalo) ctx.restore();
   };
 
@@ -6155,6 +6156,24 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (this.efeitos.length > 420) this.efeitos.splice(0, this.efeitos.length - 420);
   };
 
+  /* A caixa de seleção, desenhada por último para ficar por cima de tudo.
+     Preenchimento fraco e borda nítida: o preenchimento diz a área, a borda diz
+     onde ela termina — só borda some sobre terreno claro, só preenchimento vira
+     mancha. */
+  R.desenharCaixaSelecao = function (ctx) {
+    var c = this.caixaSelecao;
+    if (!c || !c.ativa) return;
+    var x = Math.min(c.x0, c.x1), y = Math.min(c.y0, c.y1);
+    var l = Math.abs(c.x1 - c.x0), a = Math.abs(c.y1 - c.y0);
+    ctx.save();
+    ctx.fillStyle = 'rgba(140,224,127,0.14)';
+    ctx.fillRect(x, y, l, a);
+    ctx.strokeStyle = '#8ce07f';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 0.5, y + 0.5, l, a);
+    ctx.restore();
+  };
+
   /* -------------------------------------------------------------- névoa */
   R.desenharNevoa = function (ctx) {
     var w = this.sim.world, z = this.cam.zoom;
@@ -6493,6 +6512,18 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var toques = new Map();
     var arrastando = false, moveu = 0, ultimo = null, pinca = null;
     var LIMIAR = 8;
+    /* A caixa de seleção é a ausência número um em relação a StarCraft e Age of
+       Empires: sem ela só dá para pegar UMA unidade por vez, ou o mapa inteiro
+       por categoria. Mas ela disputa o gesto com o arrasto da câmera, e a saída
+       é diferente em cada aparelho:
+         - mouse, botão esquerdo  -> caixa de seleção
+         - mouse, botão do meio   -> arrasta a câmera
+         - dedo, um toque         -> arrasta a câmera (é o gesto que o celular
+                                     espera; sem ele não há como andar no mapa)
+         - dedo, toque LONGO      -> caixa de seleção
+       No celular o toque longo é o que substitui o botão direito que não existe. */
+    var caixa = null;            /* {x0,y0,x1,y1} em pixels de tela */
+    var relogioLongo = 0;
 
     function pos(e) {
       var r = cv.getBoundingClientRect();
@@ -6503,7 +6534,24 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       cv.setPointerCapture(e.pointerId);
       toques.set(e.pointerId, pos(e));
       UF.audio.acordar();
-      if (toques.size === 1) { arrastando = true; moveu = 0; ultimo = pos(e); }
+      if (toques.size === 1) {
+        arrastando = true; moveu = 0; ultimo = pos(e);
+        var comMouse = e.pointerType === 'mouse';
+        var podeCaixa = !self.modo && self.sim && self.sim.fase !== 'colocacao';
+        if (comMouse && e.button === 0 && podeCaixa) {
+          caixa = { x0: ultimo.x, y0: ultimo.y, x1: ultimo.x, y1: ultimo.y, ativa: false };
+        } else if (!comMouse && podeCaixa) {
+          /* dedo: só vira caixa se ficar parado meio segundo antes de arrastar */
+          var partida = ultimo;
+          relogioLongo = setTimeout(function () {
+            if (moveu <= LIMIAR) {
+              caixa = { x0: partida.x, y0: partida.y, x1: partida.x, y1: partida.y, ativa: true };
+              self.render.caixaSelecao = caixa;
+              UF.audio.evento('clique');
+            }
+          }, 500);
+        }
+      }
       if (toques.size === 2) {
         var v = Array.from(toques.values());
         pinca = { d: Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y), zoom: self.render.cam.zoom };
@@ -6540,6 +6588,12 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         return;
       }
       if (self.modo && self.modo.tipo === 'construir') { self.moverPrevia(p); return; }
+      if (caixa && (caixa.ativa || moveu > LIMIAR)) {
+        caixa.ativa = true;
+        caixa.x1 = p.x; caixa.y1 = p.y;
+        self.render.caixaSelecao = caixa;
+        return;
+      }
       if (arrastando && moveu > LIMIAR) {
         /* Arrastar em espaço vazio move a câmera; nunca envia tropas. */
         self.render.cam.x += dx;
@@ -6554,6 +6608,13 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (toques.size < 2) pinca = null;
       if (toques.size > 0) return;
       arrastando = false;
+      clearTimeout(relogioLongo);
+      if (caixa && caixa.ativa) {
+        self.selecionarNaCaixa(caixa);
+        caixa = null; self.render.caixaSelecao = null; moveu = 0;
+        return;
+      }
+      caixa = null; self.render.caixaSelecao = null;
       if (self.modo && self.modo.tipo === 'muro' && self.modo.inicio) { self.concluirTracado(); return; }
       if (moveu <= LIMIAR) self.tocar(p);
       moveu = 0;
@@ -6601,10 +6662,22 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (k === 'e') { self.jogo.alternarVelocidade(); return; }
       if (k === 'q') { self.iniciarHabilidade('bombardeio'); return; }
       if (k === 'w') { self.iniciarHabilidade('escudo'); return; }
-      if (k === '1') { self.selecionarGrupo('soldados'); return; }
-      if (k === '2') { self.selecionarGrupo('operarios'); return; }
-      if (k === '3') { self.selecionarGrupo('aereos'); return; }
-      if (k === '4') { self.selecionarGrupo('feridos'); return; }
+      if (k === 's') { self.pararSelecionados(); return; }
+      if (k === 'h') { self.voltarParaBase(); return; }
+      if (k === '.' || k === ',') { self.selecionarOciosos(); return; }
+
+      /* Número: grupo de controle, como em StarCraft. Com Ctrl grava, sozinho
+         chama. Antes Ctrl+1 caía direto em "selecionar todos os soldados" —
+         quem tem o reflexo de StarCraft destruía a própria seleção ao tentar
+         gravá-la. Se o grupo não existe, o número cai no atalho de categoria,
+         que é o que já havia. */
+      if (k >= '1' && k <= '9') {
+        if (e.ctrlKey || e.metaKey) { e.preventDefault(); self.gravarGrupo(k); return; }
+        if (self.chamarGrupo(k)) return;
+        var categoria = { '1': 'soldados', '2': 'operarios', '3': 'aereos', '4': 'feridos' }[k];
+        if (categoria) self.selecionarGrupo(categoria);
+        return;
+      }
       var mapaCam = { arrowleft: [1, 0], arrowright: [-1, 0], arrowup: [0, 1], arrowdown: [0, -1] };
       if (mapaCam[k]) { self.render.cam.x += mapaCam[k][0] * 60; self.render.cam.y += mapaCam[k][1] * 60; }
     });
@@ -6674,6 +6747,103 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }
     UF.audio.evento('clique');
     this.atualizarTudo();
+  };
+
+  /* O que a caixa pega: só unidade SUA e viva. Prédio não entra — em RTS
+     nenhum jogador espera arrastar por cima da base e sair com dez torres
+     selecionadas. Se a caixa não pegar ninguém, ela LIMPA a seleção, que é o
+     jeito de desmarcar tudo sem precisar de tecla. */
+  UI.prototype.selecionarNaCaixa = function (c) {
+    var sim = this.sim, ids = [];
+    var x0 = Math.min(c.x0, c.x1), x1 = Math.max(c.x0, c.x1);
+    var y0 = Math.min(c.y0, c.y1), y1 = Math.max(c.y0, c.y1);
+    for (var i = 0; i < sim.unidades.length; i++) {
+      var u = sim.unidades[i];
+      if (u.lado !== 'aliado' || u.morta) continue;
+      var p = this.render.paraTela(u.x, u.y);
+      if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1) ids.push(u.id);
+    }
+    /* Soldado tem precedência sobre operário: arrastar por cima da base com
+       tropa parada ali dentro é para pegar a TROPA, não interromper a obra. */
+    var soldados = [];
+    for (var k = 0; k < ids.length; k++) {
+      var un = sim.unidadePorId(ids[k]);
+      if (un && !un.operario) soldados.push(ids[k]);
+    }
+    if (soldados.length) ids = soldados;
+
+    this.grupoSelecionado = null;
+    this.selecionado = ids.length === 1 ? ids[0] : 0;
+    this.jazidaSelecionada = null;
+    this.render.selecao = ids;
+    if (ids.length) UF.audio.evento('clique');
+    this.atualizarTudo();
+  };
+
+  /* Grupos de controle, como em StarCraft: Ctrl+número grava a seleção, número
+     sozinho a chama de volta. Guardado por ID, e as unidades mortas são
+     filtradas na hora de chamar — um grupo não pode ressuscitar ninguém. */
+  UI.prototype.gravarGrupo = function (n) {
+    if (!this.grupos) this.grupos = {};
+    var ids = (this.render.selecao || []).slice();
+    if (!ids.length) { this.mostrarAviso('Nada selecionado para gravar no grupo ' + n + '.', 'atencao'); return; }
+    this.grupos[n] = ids;
+    this.mostrarAviso('Grupo ' + n + ': ' + ids.length + ' unidade(s).', 'info');
+  };
+
+  UI.prototype.chamarGrupo = function (n) {
+    var g = this.grupos && this.grupos[n];
+    if (!g || !g.length) return false;
+    var sim = this.sim, vivos = [];
+    for (var i = 0; i < g.length; i++) {
+      var u = sim.unidadePorId(g[i]);
+      if (u && !u.morta) vivos.push(u.id);
+    }
+    this.grupos[n] = vivos;
+    if (!vivos.length) { this.mostrarAviso('O grupo ' + n + ' não tem mais ninguém.', 'atencao'); return true; }
+    this.grupoSelecionado = null;
+    this.selecionado = vivos.length === 1 ? vivos[0] : 0;
+    this.jazidaSelecionada = null;
+    this.render.selecao = vivos;
+    UF.audio.evento('clique');
+    this.atualizarTudo();
+    return true;
+  };
+
+  /* Tropa ociosa: o dado já existia na simulação e nunca virava seleção. É a
+     forma mais barata de recuperar controle num mapa grande. */
+  UI.prototype.selecionarOciosos = function () {
+    var sim = this.sim, ids = [];
+    for (var i = 0; i < sim.unidades.length; i++) {
+      var u = sim.unidades[i];
+      if (u.lado !== 'aliado' || u.morta) continue;
+      var parado = !u.tarefa || u.tarefa.tipo === 'ocioso';
+      if (parado && !u.alvo) ids.push(u.id);
+    }
+    if (!ids.length) { this.mostrarAviso('Ninguém parado.', 'info'); return; }
+    this.grupoSelecionado = null;
+    this.selecionado = ids.length === 1 ? ids[0] : 0;
+    this.jazidaSelecionada = null;
+    this.render.selecao = ids;
+    this.render.centralizarEm(sim.unidadePorId(ids[0]).x, sim.unidadePorId(ids[0]).y);
+    this.atualizarTudo();
+  };
+
+  UI.prototype.pararSelecionados = function () {
+    var us = this.unidadesSelecionadas();
+    if (!us.length) return;
+    for (var i = 0; i < us.length; i++) {
+      this.sim.darTarefa(us[i], { tipo: 'ocioso' }, true);
+      us[i].rota = null;
+    }
+    this.mostrarAviso(us.length + ' unidade(s) pararam.', 'info');
+    this.atualizarTudo();
+  };
+
+  UI.prototype.voltarParaBase = function () {
+    var c = this.sim.central;
+    if (!c) return;
+    this.render.centralizarEm(c.x + c.w / 2, c.y + c.h / 2);
   };
 
   UI.prototype.selecionarGrupo = function (nome) {

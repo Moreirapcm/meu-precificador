@@ -880,6 +880,24 @@
     if (this.efeitos.length > 420) this.efeitos.splice(0, this.efeitos.length - 420);
   };
 
+  /* A caixa de seleção, desenhada por último para ficar por cima de tudo.
+     Preenchimento fraco e borda nítida: o preenchimento diz a área, a borda diz
+     onde ela termina — só borda some sobre terreno claro, só preenchimento vira
+     mancha. */
+  R.desenharCaixaSelecao = function (ctx) {
+    var c = this.caixaSelecao;
+    if (!c || !c.ativa) return;
+    var x = Math.min(c.x0, c.x1), y = Math.min(c.y0, c.y1);
+    var l = Math.abs(c.x1 - c.x0), a = Math.abs(c.y1 - c.y0);
+    ctx.save();
+    ctx.fillStyle = 'rgba(140,224,127,0.14)';
+    ctx.fillRect(x, y, l, a);
+    ctx.strokeStyle = '#8ce07f';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 0.5, y + 0.5, l, a);
+    ctx.restore();
+  };
+
   /* -------------------------------------------------------------- névoa */
   R.desenharNevoa = function (ctx) {
     var w = this.sim.world, z = this.cam.zoom;
