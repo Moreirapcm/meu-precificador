@@ -124,6 +124,12 @@
     if (area && origem.lado !== 'inimigo' && this.jogador.pesquisas.artilhariaAv) area *= 1.35;
     this.projeteis.push({
       x: centroO.x, y: centroO.y - 0.35,
+      /* de onde o tiro VEIO, e onde ele estava no quadro anterior. A primeira
+         serve ao clarão da boca do cano; a segunda ao traçante, que é um
+         segmento entre as duas posições. Sem guardar isso, o desenho só tem um
+         ponto solto e o tiro não tem direção nem velocidade aparente. */
+      saiuX: centroO.x, saiuY: centroO.y - 0.35,
+      antX: centroO.x, antY: centroO.y - 0.35,
       alvoId: alvo.id, lado: origem.lado,
       ultimoX: centroA.x, ultimoY: centroA.y,
       dano: dano, vel: arma.vel || 14, area: area,
@@ -150,6 +156,7 @@
       }
       var dx = ax - p.x, dy = ay - p.y, d = Math.hypot(dx, dy);
       var passo = p.vel * dt;
+      p.antX = p.x; p.antY = p.y;
       if (d > passo) {
         p.x += dx / d * passo; p.y += dy / d * passo;
         continue;
@@ -162,6 +169,10 @@
       } else if (alvo && !alvo.morta) {
         this.aplicarDano(alvo, p.dano, p);
         this.emitir('impacto', { x: ax, y: ay, cor: p.cor });
+      } else {
+        /* o alvo morreu no caminho: o tiro ainda assim bate no chão. Sem isto
+           o projétil sumia no ar, sem faísca, e parecia um bug de desenho. */
+        this.emitir('impacto', { x: ax, y: ay, cor: p.cor, vazio: true });
       }
     }
   };

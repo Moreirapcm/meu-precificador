@@ -41,7 +41,7 @@
     this.pal = PALETAS[sim.setor.bioma] || PALETAS.metropole;
     this.cam = { x: 0, y: 0, zoom: 1 };
     this.efeitos = [];
-    this.marcadores = [];
+    this.tremorTela = 0;
     this.anima = UF.Anima ? new UF.Anima() : null;
     this.previa = null;              /* prévia de construção */
     this.tracado = null;             /* prévia de muro por arraste */
@@ -483,6 +483,8 @@
     ];
     for (var g = 0; g < grupos.length; g++) {
       var img = UF.sprites.cenario(grupos[g].nome);
+      /* uma textura pode não ter chegado ainda; `createPattern(null)` estoura */
+      if (!img) continue;
       var padrao = c.createPattern(img, 'repeat');
       if (!padrao) continue;
       /* A textura é esticada para cobrir ~10 células em vez de 4. É o truque que
@@ -617,6 +619,21 @@
     ctx.fillStyle = this.pal.ceu;
     ctx.fillRect(0, 0, larg, alt);
 
+    /* Tremor: o quadro INTEIRO se desloca por alguns instantes depois de uma
+       explosão. Sacudir a tela é o jeito mais barato de dar peso a um estouro,
+       e o único que o jogador sente sem olhar para o ponto certo. Some sozinho
+       e nunca passa de alguns pixels — tremor grande embrulha o estômago e
+       atrapalha quem está tentando clicar. */
+    var abalo = 0;
+    if (this.tremorTela > 0.1) {
+      this.tremorTela *= Math.pow(0.02, dt);       /* cai rápido, independe de FPS */
+      abalo = this.tremorTela;
+      ctx.save();
+      ctx.translate((Math.random() - 0.5) * abalo, (Math.random() - 0.5) * abalo);
+    } else {
+      this.tremorTela = 0;
+    }
+
     /* As texturas chegam depois do primeiro quadro; quando chegam, repinta o
        chão uma vez. Sem isso a partida inteira ficaria com a cor chapada. */
     if (this.terrenoSemTextura && UF.sprites && UF.sprites.chaoPronto()) {
@@ -649,6 +666,7 @@
     this.desenharAreasDePerigo(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
+    if (abalo) ctx.restore();
   };
 
   /* Vulto: o contorno da unidade aparecendo ATRAVÉS do prédio que a esconde.

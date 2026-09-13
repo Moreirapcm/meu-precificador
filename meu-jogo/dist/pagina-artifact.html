@@ -3019,6 +3019,12 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     if (area && origem.lado !== 'inimigo' && this.jogador.pesquisas.artilhariaAv) area *= 1.35;
     this.projeteis.push({
       x: centroO.x, y: centroO.y - 0.35,
+      /* de onde o tiro VEIO, e onde ele estava no quadro anterior. A primeira
+         serve ao clarão da boca do cano; a segunda ao traçante, que é um
+         segmento entre as duas posições. Sem guardar isso, o desenho só tem um
+         ponto solto e o tiro não tem direção nem velocidade aparente. */
+      saiuX: centroO.x, saiuY: centroO.y - 0.35,
+      antX: centroO.x, antY: centroO.y - 0.35,
       alvoId: alvo.id, lado: origem.lado,
       ultimoX: centroA.x, ultimoY: centroA.y,
       dano: dano, vel: arma.vel || 14, area: area,
@@ -3045,6 +3051,7 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
       }
       var dx = ax - p.x, dy = ay - p.y, d = Math.hypot(dx, dy);
       var passo = p.vel * dt;
+      p.antX = p.x; p.antY = p.y;
       if (d > passo) {
         p.x += dx / d * passo; p.y += dy / d * passo;
         continue;
@@ -3057,6 +3064,10 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
       } else if (alvo && !alvo.morta) {
         this.aplicarDano(alvo, p.dano, p);
         this.emitir('impacto', { x: ax, y: ay, cor: p.cor });
+      } else {
+        /* o alvo morreu no caminho: o tiro ainda assim bate no chão. Sem isto
+           o projétil sumia no ar, sem faísca, e parecia um bug de desenho. */
+        this.emitir('impacto', { x: ax, y: ay, cor: p.cor, vazio: true });
       }
     }
   };
@@ -3837,10 +3848,15 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     'unidades/operario-andar-nordeste': 4
   };
 
+  /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não
+     existe — e o desenho pergunta por várias a cada unidade, uma por direção —
+     disparava um pedido ao servidor para cada chave inventada, e o console
+     enchia de 404 que não eram erro nenhum. */
   function tira(chave) {
+    if (!TIRAS[chave]) return null;
     var img = imagem(chave);
     if (!img) return null;
-    var n = TIRAS[chave] || 1;
+    var n = TIRAS[chave];
     return { img: img, n: n, larg: img.width / n, alt: img.height };
   }
 
@@ -3853,7 +3869,7 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
      não tinham chegado nessa hora, o mapa fica sem elas para sempre — daí a
      pergunta, que a apresentação usa para repintar quando todas chegarem. */
   function chaoPronto() {
-    var nomes = ['chao-pavimento', 'chao-entulho', 'chao-agua'];
+    var nomes = ['chao-pavimento', 'chao-entulho', 'chao-agua', 'asfalto'];
     for (var i = 0; i < nomes.length; i++) if (!cenario(nomes[i])) return false;
     return true;
   }
@@ -4211,7 +4227,7 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     this.pal = PALETAS[sim.setor.bioma] || PALETAS.metropole;
     this.cam = { x: 0, y: 0, zoom: 1 };
     this.efeitos = [];
-    this.marcadores = [];
+    this.tremorTela = 0;
     this.anima = UF.Anima ? new UF.Anima() : null;
     this.previa = null;              /* prévia de construção */
     this.tracado = null;             /* prévia de muro por arraste */
@@ -4653,6 +4669,8 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     ];
     for (var g = 0; g < grupos.length; g++) {
       var img = UF.sprites.cenario(grupos[g].nome);
+      /* uma textura pode não ter chegado ainda; `createPattern(null)` estoura */
+      if (!img) continue;
       var padrao = c.createPattern(img, 'repeat');
       if (!padrao) continue;
       /* A textura é esticada para cobrir ~10 células em vez de 4. É o truque que
@@ -4787,6 +4805,21 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     ctx.fillStyle = this.pal.ceu;
     ctx.fillRect(0, 0, larg, alt);
 
+    /* Tremor: o quadro INTEIRO se desloca por alguns instantes depois de uma
+       explosão. Sacudir a tela é o jeito mais barato de dar peso a um estouro,
+       e o único que o jogador sente sem olhar para o ponto certo. Some sozinho
+       e nunca passa de alguns pixels — tremor grande embrulha o estômago e
+       atrapalha quem está tentando clicar. */
+    var abalo = 0;
+    if (this.tremorTela > 0.1) {
+      this.tremorTela *= Math.pow(0.02, dt);       /* cai rápido, independe de FPS */
+      abalo = this.tremorTela;
+      ctx.save();
+      ctx.translate((Math.random() - 0.5) * abalo, (Math.random() - 0.5) * abalo);
+    } else {
+      this.tremorTela = 0;
+    }
+
     /* As texturas chegam depois do primeiro quadro; quando chegam, repinta o
        chão uma vez. Sem isso a partida inteira ficaria com a cor chapada. */
     if (this.terrenoSemTextura && UF.sprites && UF.sprites.chaoPronto()) {
@@ -4819,6 +4852,7 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     this.desenharAreasDePerigo(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
+    if (abalo) ctx.restore();
   };
 
   /* Vulto: o contorno da unidade aparecendo ATRAVÉS do prédio que a esconde.
@@ -5456,6 +5490,13 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
 
     ctx.save();
     if (pose.alfa < 1) ctx.globalAlpha = pose.alfa;
+    /* Clarão de dano: a unidade pisca branca no instante em que é atingida.
+       `ultimoDano` já era anotado pela simulação e só servia para decidir a
+       hora de remover o corpo. Sem esse piscar, levar tiro e não levar tiro
+       têm exatamente a mesma aparência, e o combate fica mudo. */
+    if (sim && u.ultimoDano !== undefined && sim.t - u.ultimoDano < 0.11 && !u.morta) {
+      ctx.filter = 'brightness(2.6) saturate(0.5)';
+    }
     ctx.translate(p.x + pose.desviaX, pe);
     if (pose.giro) ctx.rotate(pose.giro);
     if (pose.espelhar) ctx.scale(-1, 1);
@@ -5469,21 +5510,35 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
        distância percorrida, não por relógio. Assim o quadro de pé-no-chão cai
        quando o pé está de fato no chão, e a unidade não patina. Trocar quadro
        por tempo traria o deslizamento de volta pela porta dos fundos. */
+    /* A pasta muda para invasor. A chave era montada sempre como
+       'unidades/<tipo>-...', então uma tira colocada em assets/inimigos/ nunca
+       seria encontrada — nenhum bicho poderia ser animado. */
+    var pasta = u.lado === 'inimigo' ? 'inimigos/' : 'unidades/';
     var t = null, q = 0;
     if (pose.golpe) {
-      t = UF.sprites.tira('unidades/' + u.tipo + '-minerar');
+      t = UF.sprites.tira(pasta + u.tipo + '-minerar');
       if (t) q = Math.floor(((sim ? sim.t : 0) * 6 + (u.animacao || 0)) % t.n);
-    } else if (u.rota && this.anima) {
+    } else if (this.anima) {
+      /* ATACANDO ganha precedência sobre andar: quem está trocando tiro está
+         parado de frente para o alvo, e era exatamente isso que faltava — a
+         direção era calculada e jogada fora porque só o ramo do movimento a
+         consultava. Unidade parada atirando tem `u.rota` nulo e caía na imagem
+         única, sempre na mesma pose, "atirando de lado". */
+      var atacando = u.alvo && u.recarga > 0 && !u.operario;
       var d = this.anima.direcao(u, sim);
-      t = UF.sprites.tira('unidades/' + u.tipo + '-andar-' + d.nome);
-      var fase = this.anima.passo[u.id];
-      if (t && fase !== undefined) {
-        q = Math.floor(fase / 6.283 * t.n) % t.n;
+      if (atacando) t = UF.sprites.tira(pasta + u.tipo + '-atirar-' + d.nome);
+      if (!t && u.rota) t = UF.sprites.tira(pasta + u.tipo + '-andar-' + d.nome);
+      if (t) {
+        if (t.n > 1) {
+          var fase = this.anima.passo[u.id];
+          if (atacando) q = Math.floor(((sim ? sim.t : 0) * 10) % t.n);
+          else if (fase !== undefined) q = Math.floor(fase / 6.283 * t.n) % t.n;
+          else t = null;
+        }
         /* o espelho já veio de `pose.espelhar`; aqui só corrige quando a
-           direção escolhida não quer espelho (frente e costas) */
-        if (!d.espelhar && pose.espelhar) ctx.scale(-1, 1);
-        else if (d.espelhar && !pose.espelhar) ctx.scale(-1, 1);
-      } else t = null;
+           direção escolhida discorda dele (frente e costas não espelham) */
+        if (t && d.espelhar !== pose.espelhar) ctx.scale(-1, 1);
+      }
     }
     if (t) {
       var altT = (ALTURA_SPRITE[u.tipo] || 1.3) * ALT * z;
@@ -5652,43 +5707,126 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
   };
 
   /* ---------------------------------------------------------- projéteis */
+  /* Um ponto parado não parece um tiro. O que dá velocidade ao projétil é o
+     TRAÇANTE: o segmento entre onde ele estava no quadro anterior e onde está
+     agora, esticado um pouco para trás. Em cima dele vai o núcleo claro, que é
+     o que o olho segue.
+     O obus (`area`) ganha um risco de fumaça em vez de traçante — arma pesada
+     lê diferente de bala, e hoje as seis famílias de arma usavam o mesmo
+     círculo. */
   R.desenharProjeteis = function (ctx) {
     var z = this.cam.zoom;
     for (var i = 0; i < this.sim.projeteis.length; i++) {
       var p = this.sim.projeteis[i];
       var t = this.paraTela(p.x, p.y);
+      var a = this.paraTela(p.antX === undefined ? p.x : p.antX,
+        p.antY === undefined ? p.y : p.antY);
+      var ax = t.x + (a.x - t.x) * 3.2, ay = t.y + (a.y - t.y) * 3.2;
+      var alto = 12 * z;
+
+      ctx.lineCap = 'round';
+      if (p.area) {
+        ctx.strokeStyle = 'rgba(190,185,175,0.32)';
+        ctx.lineWidth = 3.4 * z;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay - alto); ctx.lineTo(t.x, t.y - alto); ctx.stroke();
+      } else {
+        ctx.strokeStyle = p.cor || '#ffd7a0';
+        ctx.globalAlpha = 0.45;
+        ctx.lineWidth = 2.6 * z;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay - alto); ctx.lineTo(t.x, t.y - alto); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
       ctx.fillStyle = p.cor || '#ffd7a0';
       ctx.beginPath();
-      ctx.arc(t.x, t.y - 12 * z, (p.area ? 3.4 : 2.2) * z, 0, 6.283);
+      ctx.arc(t.x, t.y - alto, (p.area ? 3.4 : 2.0) * z, 0, 6.283);
       ctx.fill();
-      ctx.globalAlpha = 0.35;
-      ctx.beginPath(); ctx.arc(t.x, t.y - 12 * z, (p.area ? 6 : 4) * z, 0, 6.283); ctx.fill();
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath(); ctx.arc(t.x, t.y - alto, (p.area ? 6 : 4) * z, 0, 6.283); ctx.fill();
       ctx.globalAlpha = 1;
     }
   };
 
   /* ------------------------------------------------------------ efeitos */
+  /* Os efeitos guardam coordenada de MUNDO, não de tela.
+     Antes a conversão era feita no instante em que o evento chegava, e o efeito
+     ficava colado na tela: arrastar o mapa levava a explosão junto. Com poucos
+     efeitos ninguém via; com estilhaço e fumaça de verdade, salta.
+
+     `caco` é a primeira partícula do jogo que se MOVE sozinha — tem velocidade
+     e gravidade. É o que separa "um círculo que apaga" de "alguma coisa
+     explodiu ali". */
+  R.efeitoMundo = function (tipo, x, y, extra) {
+    var e = extra || {};
+    e.tipo = tipo; e.x = x; e.y = y;
+    if (e.vida === undefined) e.vida = 0.4;
+    e.max = e.vida;
+    this.efeitos.push(e);
+    return e;
+  };
+
+  /* Estilhaços saindo de um ponto. `forca` é o quanto eles voam. */
+  R.lancarCacos = function (x, y, quantos, forca, cor) {
+    for (var i = 0; i < quantos; i++) {
+      var a = Math.random() * 6.283, v = forca * (0.4 + Math.random() * 0.6);
+      this.efeitoMundo('caco', x, y, {
+        vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.6,
+        sobe: 26 + Math.random() * 40, cor: cor,
+        vida: 0.4 + Math.random() * 0.45
+      });
+    }
+  };
+
   R.consumirEventos = function () {
     var ev = this.sim.eventos;
     for (var i = 0; i < ev.length; i++) {
       var e = ev[i];
       if (e.tipo === 'explosao') {
-        var p = this.paraTela(e.x, e.y);
-        this.efeitos.push({ tipo: 'explosao', x: p.x, y: p.y, raio: e.raio * LARG * 0.5, vida: 0.55, max: 0.55, grande: e.grande });
+        this.efeitoMundo('explosao', e.x, e.y,
+          { raio: e.raio * LARG * 0.5, vida: 0.55, grande: e.grande });
+        this.lancarCacos(e.x, e.y, 7, 3.2, '#c9a878');
+        this.efeitoMundo('fumaca', e.x, e.y, { vida: 1.2, tam: 10 });
+        this.sacudir(Math.min(9, 3 + (e.raio || 1) * 2));
       } else if (e.tipo === 'impacto') {
-        var q = this.paraTela(e.x, e.y);
-        this.efeitos.push({ tipo: 'faisca', x: q.x, y: q.y - 10, cor: e.cor, vida: 0.25, max: 0.25 });
-      } else if (e.tipo === 'entrega') {
-        this.marcadores.push({ texto: '+' + e.qtd, cor: e.recurso === 'petroleo' ? '#e8a33d' : '#ffd479', vida: 1 });
+        this.efeitoMundo('faisca', e.x, e.y, { cor: e.cor, vida: 0.22, alto: 10 });
+        if (!e.vazio) this.lancarCacos(e.x, e.y, 3, 1.6, e.cor || '#ffe7b0');
+      } else if (e.tipo === 'tiro') {
+        /* O clarão da boca do cano estava emitido pela simulação desde sempre e
+           era jogado fora pelo desenho. É o efeito mais barato do jogo e o que
+           mais diz "este aqui atirou". */
+        this.efeitoMundo('clarao', e.x, e.y, { cor: e.cor, vida: 0.09, alto: 12 });
+      } else if (e.tipo === 'unidadeMorta') {
+        this.efeitoMundo('fumaca', e.x, e.y, { vida: 0.9, tam: 6 });
+        this.lancarCacos(e.x, e.y, 4, 1.4, e.lado === 'inimigo' ? '#8fbf5a' : '#b08f6a');
       } else if (e.tipo === 'estruturaDestruida') {
-        var r = this.paraTela(e.x + e.w / 2, e.y + e.h / 2);
-        this.efeitos.push({ tipo: 'explosao', x: r.x, y: r.y, raio: 26 * (e.w || 1), vida: 0.7, max: 0.7 });
+        var cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+        this.efeitoMundo('explosao', cx, cy, { raio: 26 * (e.w || 1), vida: 0.7, grande: true });
+        this.lancarCacos(cx, cy, 14, 4.2, '#9a9186');
+        this.efeitoMundo('fumaca', cx, cy, { vida: 1.8, tam: 16 });
+        this.sacudir(11);
       } else if (e.tipo === 'cura') {
-        var c = this.paraTela(e.x, e.y);
-        this.efeitos.push({ tipo: 'cura', x: c.x, y: c.y - 14, vida: 0.5, max: 0.5 });
+        this.efeitoMundo('cura', e.x, e.y, { vida: 0.5 });
+      } else if (e.tipo === 'entrega') {
+        /* O "+8" da carga entregue ia para um array `marcadores` que ninguém
+           desenhava e ninguém esvaziava: o número nunca aparecia na tela e a
+           lista crescia a partida inteira. Agora sobe no lugar da entrega. */
+        var un = this.sim.unidadePorId ? this.sim.unidadePorId(e.id) : null;
+        var ex = un ? un.x : (e.x || 0), ey = un ? un.y : (e.y || 0);
+        this.efeitoMundo('texto', ex, ey, {
+          texto: '+' + e.qtd, vida: 0.9,
+          cor: e.recurso === 'petroleo' ? '#e8a33d' : '#ffd479'
+        });
       }
     }
     ev.length = 0;
+  };
+
+  /* Tremor de câmera. Guarda só a força; quem aplica é `desenhar`, deslocando o
+     quadro inteiro. Some sozinho. */
+  R.sacudir = function (forca) {
+    this.tremorTela = Math.max(this.tremorTela || 0, forca);
   };
 
   R.desenharEfeitos = function (ctx, dt) {
@@ -5697,34 +5835,70 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
       var e = this.efeitos[i];
       e.vida -= dt;
       if (e.vida <= 0) { this.efeitos.splice(i, 1); continue; }
-      var t = e.vida / e.max;
+      var t = e.vida / e.max;         /* 1 = acabou de nascer, 0 = sumindo */
+      var idade = 1 - t;
+      if (e.vx) { e.x += e.vx * dt; e.y += e.vy * dt; }
+      var p = this.paraTela(e.x, e.y);
+
       if (e.tipo === 'explosao') {
         ctx.globalAlpha = t * 0.85;
-        var grad = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.raio * z * (1.6 - t));
+        var raio = e.raio * z * (1.6 - t);
+        var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, raio);
         grad.addColorStop(0, e.grande ? '#fff6d0' : '#ffd08a');
         grad.addColorStop(0.5, '#ff8a3c');
         grad.addColorStop(1, 'rgba(255,90,40,0)');
         ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.arc(e.x, e.y, e.raio * z * (1.6 - t), 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, raio, 0, 6.283); ctx.fill();
       } else if (e.tipo === 'faisca') {
         ctx.globalAlpha = t;
         ctx.fillStyle = e.cor || '#ffe7b0';
-        ctx.beginPath(); ctx.arc(e.x, e.y, 4 * z * t + 1, 0, 6.283); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - (e.alto || 10) * z, 4 * z * t + 1, 0, 6.283); ctx.fill();
+      } else if (e.tipo === 'clarao') {
+        /* estrela curta: um círculo claro e dois riscos cruzados */
+        ctx.globalAlpha = t;
+        var r = 6.5 * z * t;
+        ctx.fillStyle = '#fff4cf';
+        ctx.beginPath(); ctx.arc(p.x, p.y - (e.alto || 12) * z, r, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = e.cor || '#ffe07a';
+        ctx.lineWidth = 1.6 * z;
+        ctx.beginPath();
+        ctx.moveTo(p.x - r * 2.2, p.y - (e.alto || 12) * z);
+        ctx.lineTo(p.x + r * 2.2, p.y - (e.alto || 12) * z);
+        ctx.moveTo(p.x, p.y - (e.alto || 12) * z - r * 1.6);
+        ctx.lineTo(p.x, p.y - (e.alto || 12) * z + r * 1.6);
+        ctx.stroke();
+      } else if (e.tipo === 'caco') {
+        /* sobe e cai: a altura é uma parábola em cima da posição de mundo */
+        var h = (e.sobe * (idade * 2 - idade * idade * 2.6)) * z;
+        ctx.globalAlpha = Math.min(1, t * 1.6);
+        ctx.fillStyle = e.cor || '#c9a878';
+        ctx.fillRect(p.x - 1.4 * z, p.y - 10 * z - h, 2.8 * z, 2.8 * z);
       } else if (e.tipo === 'fumaca') {
-        ctx.globalAlpha = t * 0.32;
+        ctx.globalAlpha = t * 0.34;
         ctx.fillStyle = '#9aa2ad';
-        ctx.beginPath(); ctx.arc(e.x, e.y - (1 - t) * 22 * z, (5 + (1 - t) * 9) * z, 0, 6.283); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - 10 * z - idade * 26 * z,
+          ((e.tam || 5) + idade * 12) * z, 0, 6.283);
+        ctx.fill();
       } else if (e.tipo === 'cura') {
         ctx.globalAlpha = t;
         ctx.fillStyle = '#9fffd0';
         ctx.font = (12 * z).toFixed(0) + 'px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('✚', e.x, e.y - (1 - t) * 16 * z);
+        ctx.fillText('✚', p.x, p.y - 14 * z - idade * 16 * z);
+        ctx.textAlign = 'left';
+      } else if (e.tipo === 'texto') {
+        ctx.globalAlpha = Math.min(1, t * 1.8);
+        ctx.fillStyle = e.cor || '#ffd479';
+        ctx.font = '600 ' + (12 * z).toFixed(0) + 'px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(e.texto, p.x, p.y - 16 * z - idade * 20 * z);
         ctx.textAlign = 'left';
       }
       ctx.globalAlpha = 1;
     }
-    if (this.efeitos.length > 220) this.efeitos.splice(0, this.efeitos.length - 220);
+    if (this.efeitos.length > 420) this.efeitos.splice(0, this.efeitos.length - 420);
   };
 
   /* -------------------------------------------------------------- névoa */

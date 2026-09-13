@@ -53,10 +53,15 @@
     'unidades/operario-andar-nordeste': 4
   };
 
+  /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não
+     existe — e o desenho pergunta por várias a cada unidade, uma por direção —
+     disparava um pedido ao servidor para cada chave inventada, e o console
+     enchia de 404 que não eram erro nenhum. */
   function tira(chave) {
+    if (!TIRAS[chave]) return null;
     var img = imagem(chave);
     if (!img) return null;
-    var n = TIRAS[chave] || 1;
+    var n = TIRAS[chave];
     return { img: img, n: n, larg: img.width / n, alt: img.height };
   }
 
@@ -69,7 +74,7 @@
      não tinham chegado nessa hora, o mapa fica sem elas para sempre — daí a
      pergunta, que a apresentação usa para repintar quando todas chegarem. */
   function chaoPronto() {
-    var nomes = ['chao-pavimento', 'chao-entulho', 'chao-agua'];
+    var nomes = ['chao-pavimento', 'chao-entulho', 'chao-agua', 'asfalto'];
     for (var i = 0; i < nomes.length; i++) if (!cenario(nomes[i])) return false;
     return true;
   }
