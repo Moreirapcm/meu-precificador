@@ -82,6 +82,26 @@
     'inimigos/cuspidor-atacar-leste': 1,
     'inimigos/cuspidor-atacar-nordeste': 1,
     'inimigos/cuspidor-atacar-sudeste': 1,
+    /* Os cinco últimos da colmeia. A trinca aqui é leste/NORTE/sudeste, e não
+       leste/nordeste/sudeste como nos três primeiros: medindo, o único ângulo
+       que o gerador realmente vira é o de costas — pedir "nordeste" devolve a
+       mesma pose de sempre com outro brilho. `VIZINHAS` manda nordeste cair em
+       leste e sul cair em sudeste, então a cobertura continua inteira. */
+    'inimigos/detonador-atacar-leste': 1,
+    'inimigos/detonador-atacar-norte': 1,
+    'inimigos/detonador-atacar-sudeste': 1,
+    'inimigos/couracado-atacar-leste': 1,
+    'inimigos/couracado-atacar-norte': 1,
+    'inimigos/couracado-atacar-sudeste': 1,
+    'inimigos/asa-atacar-leste': 1,
+    'inimigos/asa-atacar-norte': 1,
+    'inimigos/asa-atacar-sudeste': 1,
+    'inimigos/tita-atacar-leste': 1,
+    'inimigos/tita-atacar-norte': 1,
+    'inimigos/tita-atacar-sudeste': 1,
+    'inimigos/matriarca-atacar-leste': 1,
+    'inimigos/matriarca-atacar-norte': 1,
+    'inimigos/matriarca-atacar-sudeste': 1,
     /* corpo caído: uma imagem só, sem direção. Um corpo deitado lê igual de
        qualquer ângulo — o que muda é para que lado ele está virado, e isso o
        desenho resolve espelhando. */

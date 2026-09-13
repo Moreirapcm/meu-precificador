@@ -42,13 +42,22 @@ convert "$saida" \
   "$saida"
 "$PY" - "$saida" <<'PYCODE'
 import sys
-from PIL import Image
+from PIL import Image, ImageFilter, ImageChops
 sai = sys.argv[1]
 img = Image.open(sai).convert('RGBA')
-px = img.load()
+# O despill vale SÓ NA FRANJA. A versão anterior varria a imagem inteira e
+# cinzava a peça toda quando a peça era genuinamente rosa — a Matriarca saiu
+# cinza-chumbo, de bicho rosa que era. E é da borda que a franja vem: o pixel
+# contaminado está a um ou dois de distância do vazio, nunca no meio do corpo.
+alfa = img.getchannel('A')
+dentro = alfa.filter(ImageFilter.MinFilter(5))          # erode ~2 px
+franja = ImageChops.subtract(alfa, dentro)              # só o anel da borda
+px, pf = img.load(), franja.load()
 L, A = img.size
 for y in range(A):
     for x in range(L):
+        if not pf[x, y]:
+            continue
         r, g, b, a = px[x, y]
         # magenta vazado: vermelho e azul altos, verde baixo
         if a and r > g + 22 and b > g + 22:

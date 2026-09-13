@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tira o fundo magenta de uma arte gerada por IA e devolve PNG com transparência.
 #
-#   recortar-fundo.sh entrada.jpg saida.png [largura] [--borda|--verde] [--despill]
+#   recortar-fundo.sh entrada.jpg saida.png [largura] [--borda|--verde] [--despill] [--espelhar]
 #
 # Modo padrão (matiz): a máscara é "vermelho e azul altos, verde baixo" = magenta.
 # O chroma key por cor exata não serve porque o magenta visto entre as barras de
@@ -26,11 +26,13 @@ saida="${2:?falta a saida}"
 largura=""
 modo="matiz"
 despill=0
+espelhar=0
 for a in "${@:3}"; do
   case "$a" in
     --borda) modo="borda" ;;
     --verde) modo="verde" ;;
     --despill) despill=1 ;;
+    --espelhar) espelhar=1 ;;
     *) largura="$a" ;;
   esac
 done
@@ -73,6 +75,15 @@ if [ "$despill" = 1 ]; then
   convert "$tmp/rgb.png" "$tmp/a.png" -alpha off -compose CopyOpacity -composite PNG32:"$saida"
   rm -rf "$tmp"
 fi
+
+# O gerador escolhe sozinho para que lado a criatura olha, e para metade das
+# peças ela sai virada para a ESQUERDA. O jogo assume o contrário — as direções
+# de oeste saem espelhando as de leste. Virar aqui, e não no desenho, deixa o
+# arquivo já correto e não custa nada em tempo de jogo. Vira também a luz, que
+# passa a vir da direita; no tamanho em que a peça aparece isso não se lê, e é o
+# mesmo preço que o Age of Empires pagou ao espelhar as três direções que não
+# desenhou.
+[ "$espelhar" = 1 ] && convert "$saida" -flop PNG32:"$saida"
 
 [ -n "$largura" ] && convert "$saida" -background none -resize "${largura}x" PNG32:"$saida"
 identify -format "%f %wx%h alpha=%A modo=$modo\n" "$saida"

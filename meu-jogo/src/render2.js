@@ -510,6 +510,17 @@
          consultava. Unidade parada atirando tem `u.rota` nulo e caía na imagem
          única, sempre na mesma pose, "atirando de lado". */
       var atacando = u.alvo && u.recarga > 0 && !u.operario;
+      /* O DETONADOR morre no mesmo quadro em que ataca — `suicida` aplica o
+         dano e logo em seguida mata o próprio bicho. A pose de ataque dele
+         nunca chegaria a aparecer: o quadro seguinte já é o da morte. Então
+         para o suicida a pose vale na APROXIMAÇÃO, quando ele já escolheu o
+         alvo e está a menos de três células. Não é licença poética — é o mesmo
+         aviso que o StarCraft dá antes do baneling estourar, e o jogador
+         precisa dele para ter tempo de reagir. */
+      if (!atacando && u.alvo && u.def && u.def.suicida && sim) {
+        var vitima = sim.alvoPorId(u.alvo);
+        if (vitima && sim.distanciaEntre(u, vitima) < 3) atacando = true;
+      }
       var d = this.anima.direcao(u, sim);
       /* `-atirar-` para quem dispara, `-atacar-` para quem morde. São nomes
          diferentes porque descrevem coisas diferentes, e o mesmo bicho pode um
