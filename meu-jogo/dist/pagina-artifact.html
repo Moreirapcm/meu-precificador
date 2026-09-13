@@ -459,6 +459,17 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
 </div>
 
 <script>
+/* Instalação no celular. Só registra em http(s): por `file://` o navegador
+   recusa service worker, e o jogo tem de continuar abrindo com dois cliques —
+   essa é a promessa do projeto e ela vem antes do PWA. */
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+</script>
+
+<script>
 /* ===== src/util.js ===== */
 /* Última Fronteira — utilidades compartilhadas.
    Carregado como script clássico para que o jogo funcione também via file://. */

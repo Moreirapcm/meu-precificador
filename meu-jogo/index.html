@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#070a10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icones/icone-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Última Fronteira</title>
 <meta name="description" content="Estratégia em tempo real: reconstrua uma base em cidades reais da Terra arrasadas pela invasão. Operários, mineração, muros, tropas e tecnologia, no celular ou no computador.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -175,5 +179,15 @@
 <script src="src/ui2.js"></script>
 <script src="src/mundo-ui.js"></script>
 <script src="src/main.js"></script>
+<script>
+/* Instalação no celular. Só registra em http(s): por `file://` o navegador
+   recusa service worker, e o jogo tem de continuar abrindo com dois cliques —
+   essa é a promessa do projeto e ela vem antes do PWA. */
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>
