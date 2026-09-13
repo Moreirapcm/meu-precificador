@@ -92,6 +92,7 @@
     this.render.redimensionar();
     this.ui.iniciarPartida(sim, this.render);
     UF.audio.acordar();
+    UF.audio.iniciarTrilha();
 
     if (sim.fase === 'colocacao') {
       /* Antes de instalar a Central o setor é mostrado por inteiro, sem névoa
@@ -121,6 +122,7 @@
   };
 
   Jogo.prototype.voltarAoMapa = function () {
+    if (UF.audio.pararTrilha) UF.audio.pararTrilha();
     this.sim = null;
     this.render = null;
     this.trocarTela('inicio');
@@ -288,6 +290,20 @@
       if (sim.fase === 'colocacao') self.ui.previaColocacaoCentral({
         x: self.render.cv.clientWidth / 2, y: self.render.cv.clientHeight / 2
       });
+
+      /* A trilha acompanha a partida: o quanto falta para a onda e quantos
+         invasores estão de pé. É o mesmo dado que o painel mostra em número,
+         dito de um jeito que o jogador entende sem olhar. */
+      self.relogioTensao = (self.relogioTensao || 0) + dtReal;
+      if (self.relogioTensao > 0.5) {
+        self.relogioTensao = 0;
+        var inimigos = 0;
+        for (var iu = 0; iu < sim.unidades.length; iu++) {
+          if (sim.unidades[iu].lado === 'inimigo' && !sim.unidades[iu].morta) inimigos++;
+        }
+        var perto = sim.onda && sim.onda.tempo < 20 ? (20 - sim.onda.tempo) / 20 : 0;
+        UF.audio.definirTensao(Math.max(perto, Math.min(1, inimigos / 8)));
+      }
 
       self.render.desenhar(dtReal);
       self.render.desenharMinimapa($('minimapa'));
