@@ -69,7 +69,13 @@
     'unidades/incendiario-atirar-nordeste': 1,
     'unidades/incendiario-atirar-norte': 1,
     'unidades/incendiario-atirar-sudeste': 1,
-    'unidades/incendiario-atirar-sul': 1
+    'unidades/incendiario-atirar-sul': 1,
+    /* O Corredor tem TRÊS direções, não cinco: o gerador não vira a câmera em
+       volta de bicho quadrúpede, muda a postura dele. As que faltam caem na
+       vizinha, em `R.tiraDaDirecao`. */
+    'inimigos/corredor-atacar-leste': 1,
+    'inimigos/corredor-atacar-nordeste': 1,
+    'inimigos/corredor-atacar-sudeste': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não

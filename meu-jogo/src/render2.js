@@ -331,6 +331,31 @@
       s.cv.width * esc, s.cv.height * esc);
   };
 
+  /* Vizinha mais próxima quando a direção exata não foi desenhada.
+     Nem toda unidade vai ter as cinco. O gerador de imagem faz a folha de cinco
+     poses para humanoide, mas para CRIATURA ele muda a postura do bicho em vez
+     de girar a câmera: pedindo "de costas", o quadrúpede veio em pé, bípede.
+     Três tentativas, três bichos errados — então o Corredor tem leste, nordeste
+     e sudeste, e as duas que faltam caem na vizinha.
+     Vinte e dois graus de erro num bicho que se mexe é invisível; um sprite
+     faltando não é. Foi assim que os jogos com pouco quadro sempre fizeram. */
+  var VIZINHAS = {
+    leste: ['leste', 'nordeste', 'sudeste'],
+    nordeste: ['nordeste', 'leste', 'norte'],
+    norte: ['norte', 'nordeste', 'leste'],
+    sudeste: ['sudeste', 'leste', 'sul'],
+    sul: ['sul', 'sudeste', 'leste']
+  };
+
+  R.tiraDaDirecao = function (prefixo, nome) {
+    var ordem = VIZINHAS[nome] || [nome];
+    for (var i = 0; i < ordem.length; i++) {
+      var t = UF.sprites.tira(prefixo + ordem[i]);
+      if (t) return t;
+    }
+    return null;
+  };
+
   R.spriteUnidade = function (ctx, u, img, p, raio, voo, z, sim) {
     var pose = this.anima ? this.anima.postura(u, z, this.sim)
       : { espelhar: false, giro: 0, subir: 0, desviaX: 0, desviaY: 0, escalaY: 1, alfa: 1 };
@@ -380,10 +405,10 @@
          diferentes porque descrevem coisas diferentes, e o mesmo bicho pode um
          dia ter as duas: o Cuspidor cospe de longe e dá patada de perto. */
       if (atacando) {
-        t = UF.sprites.tira(pasta + u.tipo + '-atirar-' + d.nome) ||
-          UF.sprites.tira(pasta + u.tipo + '-atacar-' + d.nome);
+        t = this.tiraDaDirecao(pasta + u.tipo + '-atirar-', d.nome) ||
+          this.tiraDaDirecao(pasta + u.tipo + '-atacar-', d.nome);
       }
-      if (!t && u.rota) t = UF.sprites.tira(pasta + u.tipo + '-andar-' + d.nome);
+      if (!t && u.rota) t = this.tiraDaDirecao(pasta + u.tipo + '-andar-', d.nome);
       if (t) {
         if (t.n > 1) {
           var fase = this.anima.passo[u.id];
