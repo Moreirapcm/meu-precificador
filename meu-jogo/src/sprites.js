@@ -50,7 +50,16 @@
     'unidades/operario-andar-norte': 4,
     'unidades/operario-andar-sul': 4,
     'unidades/operario-andar-sudeste': 4,
-    'unidades/operario-andar-nordeste': 4
+    'unidades/operario-andar-nordeste': 4,
+    /* Pose de tiro: UM quadro por direção, não quatro. O que o jogador precisa
+       ler num soldado parado é PARA ONDE ele está atirando — a pose em si não
+       muda. O movimento do disparo quem faz é o coice (anima.js) e o clarão da
+       boca do cano, que já são calculados. */
+    'unidades/fuzileiro-atirar-leste': 1,
+    'unidades/fuzileiro-atirar-nordeste': 1,
+    'unidades/fuzileiro-atirar-norte': 1,
+    'unidades/fuzileiro-atirar-sudeste': 1,
+    'unidades/fuzileiro-atirar-sul': 1
   };
 
   /* Só tenta carregar o que ESTÁ registrado. Perguntar por uma tira que não
