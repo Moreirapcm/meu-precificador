@@ -433,6 +433,11 @@
        a rotação abre uma fenda bem no meio da cintura. */
     var costura = alt * 0.05;
 
+    /* O contorno entra AQUI dentro, e não por fora: a figura é desenhada em
+       metades recortadas, e contornar por fora daria uma linha escura na
+       cintura. Desenhada aqui, a parte do contorno que cairia na linha de corte
+       é comida pelo `clip` — sobra só a silhueta externa, que é o que importa. */
+    var self = this;
     function perna(a, escurecer) {
       ctx.save();
       ctx.translate(0, quadril);
@@ -440,7 +445,7 @@
       ctx.beginPath();
       ctx.rect(-larg / 2, -costura, larg, alturaPerna + costura + 1);
       ctx.clip();
-      ctx.drawImage(img, -larg / 2, -alt * (1 - frac), larg, alt);
+      self.imagemComSilhueta(ctx, img, -larg / 2, -alt * (1 - frac), larg, alt);
       if (escurecer) {
         ctx.globalCompositeOperation = 'source-atop';
         ctx.fillStyle = 'rgba(0,0,0,0.38)';
@@ -463,7 +468,7 @@
     ctx.beginPath();
     ctx.rect(-larg / 2, -alt * (1 - frac), larg, alt * (1 - frac) + costura);
     ctx.clip();
-    ctx.drawImage(img, -larg / 2, -alt * (1 - frac), larg, alt);
+    this.imagemComSilhueta(ctx, img, -larg / 2, -alt * (1 - frac), larg, alt);
     ctx.restore();
 
   };
