@@ -4194,13 +4194,23 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
      rua nenhuma. Aqui a ruína e a rocha viram silhueta escura, o chão sobe de
      tom e a rua é a coisa mais clara da tela: a leitura fica "massa escura =
      não passa, claro = passa". */
+  /* O que BLOQUEIA é escuro; onde se ANDA é claro. A primeira versão fazia o
+     contrário — ruína bege clara sobre chão verde escuro — e o olho ia direto
+     para o obstáculo, não para o espaço jogável.
+
+     A segunda decisão é a TEMPERATURA. O jogo inteiro era cinza-esverdeado, e
+     cinza sobre cinza cansa a vista e não ajuda ninguém a se orientar: era a
+     queixa do Pedro, "o mapa está confuso", antes mesmo de ele saber nomeá-la.
+     Agora o chão é quente — poeira, areia, concreto velho ao sol do fim de
+     tarde — e o que bloqueia continua escuro, só que num escuro quente também.
+     A hierarquia não mudou; mudou a luz. */
   var PALETAS = {
-    porto:     { chao: '#5c655a', chao2: '#656e62', rua: '#7b8377', agua: '#16262b', aguaBrilho: '#294a48', entulho: '#4e5346', ruina: '#2f3429', ruinaTopo: '#394030', rocha: '#272a23', grama: '#556149', terra: '#6b6348', ceu: '#0d1410' },
-    costa:     { chao: '#585e66', chao2: '#616771', rua: '#767d87', agua: '#123040', aguaBrilho: '#1d4c5c', entulho: '#4a4d53', ruina: '#2c3036', ruinaTopo: '#353a41', rocha: '#24282d', grama: '#525c4a', terra: '#6d6650', ceu: '#0a1016' },
-    metropole: { chao: '#575a60', chao2: '#60636a', rua: '#767a82', entulho: '#4a4d52', agua: '#262518', aguaBrilho: '#3a3726', ruina: '#2b2d32', ruinaTopo: '#34363c', rocha: '#232529', grama: '#535b48', terra: '#67624f', ceu: '#0b0d12' },
-    deserto:   { chao: '#8a7757', chao2: '#948160', rua: '#a89372', agua: '#15384a', aguaBrilho: '#215a72', entulho: '#6b5d45', ruina: '#453a29', ruinaTopo: '#51452e', rocha: '#3a3222', grama: '#7d7551', terra: '#9b8757', ceu: '#161009' },
-    ilha:      { chao: '#545c60', chao2: '#5d656a', rua: '#727b80', agua: '#0f2636', aguaBrilho: '#1a4059', entulho: '#474d51', ruina: '#292f33', ruinaTopo: '#32383d', rocha: '#21262a', grama: '#4f5a49', terra: '#68634f', ceu: '#080c12' },
-    cratera:   { chao: '#6e6a58', chao2: '#777360', rua: '#8b8670', agua: '#175a5c', aguaBrilho: '#22807f', entulho: '#5b5747', ruina: '#393528', ruinaTopo: '#433e2f', rocha: '#2f2c22', grama: '#666a4d', terra: '#7b7154', ceu: '#100f0a' }
+    porto:     { chao: '#8a8163', chao2: '#948a6b', rua: '#a89a78', agua: '#20323a', aguaBrilho: '#3a5e5a', entulho: '#6f6549', ruina: '#3a3328', ruinaTopo: '#473d2f', rocha: '#332c22', grama: '#6c7148', terra: '#8a734d', ceu: '#171208' },
+    costa:     { chao: '#8d8166', chao2: '#978b70', rua: '#ab9c7d', agua: '#1a3b4a', aguaBrilho: '#2a6070', entulho: '#71664c', ruina: '#3b342a', ruinaTopo: '#483f33', rocha: '#332d25', grama: '#6a7049', terra: '#8d7550', ceu: '#14110b' },
+    metropole: { chao: '#867f6c', chao2: '#908977', rua: '#a39a85', agua: '#2f2a1a', aguaBrilho: '#473f29', entulho: '#6b6352', ruina: '#38332c', ruinaTopo: '#443e36', rocha: '#302b25', grama: '#666c4a', terra: '#847049', ceu: '#14120d' },
+    deserto:   { chao: '#a08a62', chao2: '#ac956b', rua: '#bfa87d', agua: '#1c4356', aguaBrilho: '#2a6a80', entulho: '#846f4c', ruina: '#4a3d2a', ruinaTopo: '#584930', rocha: '#413524', grama: '#8a7f4e', terra: '#a08556', ceu: '#1b1409' },
+    ilha:      { chao: '#7f7c6b', chao2: '#898676', rua: '#9c9884', agua: '#173242', aguaBrilho: '#255468', entulho: '#666352', ruina: '#33312b', ruinaTopo: '#3e3b34', rocha: '#2b2924', grama: '#5f6748', terra: '#7d6c4c', ceu: '#10110c' },
+    cratera:   { chao: '#8f8460', chao2: '#998e69', rua: '#ada077', agua: '#1e5a56', aguaBrilho: '#2d8079', entulho: '#756a4a', ruina: '#413a28', ruinaTopo: '#4e452f', rocha: '#372f21', grama: '#737546', terra: '#8f784c', ceu: '#161208' }
   };
 
   function Render(canvas, sim) {
@@ -4579,8 +4589,10 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
         }
         if (!perto) continue;
         var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
-        c.globalAlpha = 0.1 + perto * 0.075;
-        this.losango(c, px, py, '#05080c');
+        /* o alfa vai por argumento: `losango` reseta globalAlpha para 1 quando
+           não recebe um, e a oclusão saía OPACA — um losango preto chapado em
+           volta de cada prédio. Passou despercebido enquanto o chão era escuro. */
+        this.losango(c, px, py, '#05080c', 0.1 + perto * 0.075);
       }
     }
     c.restore();
