@@ -645,7 +645,12 @@
          toque seria imposto de dedo — o trator varre o raio inteiro sozinho,
          de dentro para fora, e só para quando não sobra nada limpável. */
       if (u.def.limpeza) {
-        if (ordem === 'limpar' || !ordem) {
+        /* Toque em célula que não dá para limpar é ordem de ANDAR, como para
+           qualquer outra unidade. Antes, o toque padrão sempre virava limpeza:
+           o trator ignorava o ponto tocado e ficava limpando em volta de si
+           mesmo — a única unidade do jogo que não obedecia a um toque no chão. */
+        var daParaLimpar = sim.world.limpavel(cel.x, cel.y);
+        if (ordem === 'limpar' || (!ordem && daParaLimpar)) {
           /* O ponto tocado é só o PRIMEIRO alvo: daí em diante o trator segue
              sozinho pelo entulho ao redor. */
           sim.darTarefa(u, { tipo: 'limpar', raio: 10,
@@ -820,6 +825,9 @@
 
   UI.prototype.cancelarModo = function () {
     this.modo = null;
+    /* Sem isto, cancelar no meio do arrasto deixava os losangos dourados
+       pendurados na tela até o próximo arrasto de limpeza. */
+    this.render.areaLimpeza = null;
     this.render.previa = null;
     this.render.tracado = null;
     $('modoHud').hidden = true;

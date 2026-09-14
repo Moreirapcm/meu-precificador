@@ -304,8 +304,19 @@
            vez de parar e esperar ordem nova. Limpeza é serviço contínuo, e
            obrigar um toque a cada seis células seria imposto de dedo.
            Quem quiser o trator em outro lugar manda Mover, que troca a tarefa. */
-        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10, tarefa.desistidas,
-          tarefa.area);
+        /* Com ÁREA, a varredura centra no retângulo, não no trator: a ordem é
+           "trabalhe ali", e a máquina pode estar do outro lado do mapa. Com o
+           centro na unidade, uma área a cinquenta células virava "nada ao
+           alcance" e a ordem não fazia nada. Sem área, o centro é ele mesmo, e
+           aí sim é serviço contínuo ao redor. */
+        var a = tarefa.area;
+        var centroBusca = a
+          ? { x: (a.x0 + a.x1) / 2, y: (a.y0 + a.y1) / 2 }
+          : u;
+        var alcance = a
+          ? Math.max(a.x1 - a.x0, a.y1 - a.y0) + 2
+          : (tarefa.raio || 10);
+        var prox = this.celulaLimpavelProxima(centroBusca, alcance, tarefa.desistidas, a);
         if (!prox) {
           /* Acabou o que dá para alcançar daqui. PARA e AVISA.
              A primeira versão limpava a lista de desistências e tentava tudo de
@@ -529,6 +540,16 @@
       var b = this.estruturas[u.tarefa.alvo];
       if (b) b.construtores = Math.max(0, b.construtores - 1);
     }
+    /* A VAGA NA JAZIDA também tem de voltar. Operário morto enquanto extraía
+       deixava `ocupadas` contando um trabalhador que não existe mais, e a
+       jazida ficava "4/4 operários" com um vivo — para sempre, sem aviso
+       nenhum. O invasor que caça minerador existe justamente para isso
+       acontecer. */
+    if (u.tarefa && u.tarefa.tipo === 'minerar' && u.tarefa.contabilizada) {
+      var jaz = this.world.jazidaPorId(u.tarefa.jazida);
+      if (jaz) jaz.ocupadas = Math.max(0, jaz.ocupadas - 1);
+      u.tarefa.contabilizada = false;
+    }
     u.tarefa = { tipo: 'ocioso' };
     u.rota = null;
   };
@@ -650,7 +671,12 @@
     var u = this.criarUnidade(item.tipo, saida.x + 0.5, saida.y + 0.5, 'aliado');
     if (b.rally) {
       var cel = this.nav.celulaLivreProxima(b.rally.x, b.rally.y, 6);
-      if (cel) this.darTarefa(u, { tipo: u.operario ? 'mover' : 'moverAtacando', destino: cel });
+      /* Quem não luta vai MOVER. O trator não é operário, então caía em
+         `moverAtacando` — e o laço dele é o dos trabalhos, que não tem esse
+         ramo: a máquina nascia e congelava para sempre com a tarefa
+         "avançando", e nem o botão de ociosos a encontrava. */
+      var pacifico = u.operario || !u.def.arma;
+      if (cel) this.darTarefa(u, { tipo: pacifico ? 'mover' : 'moverAtacando', destino: cel });
     }
     this.emitir('unidadePronta', { id: u.id, tipo: item.tipo, estrutura: b.id });
   };

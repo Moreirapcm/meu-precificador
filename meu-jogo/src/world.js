@@ -54,13 +54,41 @@
     if (t === T.RUINA) {
       this.terreno[i] = T.ESCOMBRO;
       this.versaoRota++;
+      this.anotarTerreno(x, y);
       return 'ruina';
     }
     if (t === T.ESCOMBRO) {
       this.terreno[i] = T.ASFALTO;
+      this.anotarTerreno(x, y);
       return 'escombro';
     }
     return null;
+  };
+
+  /* O TERRENO MUDADO tem de ir no save, e por um motivo que vai além de perder
+     trabalho: muro construído sobre ruína limpa volta, ao carregar, a estar
+     sobre RUÍNA — e `solido()` verdadeiro faz o custo de rota virar infinito
+     ANTES de olhar se é portão. O portão para de deixar passar, e se a
+     estrutura morre a célula fica bloqueada para sempre. É estrago
+     permanente na partida salva, não incômodo.
+
+     Guardar a lista das células mexidas é mais barato que o mapa inteiro: são
+     dezenas contra dezenas de milhares. */
+  World.prototype.anotarTerreno = function (x, y) {
+    if (!this.terrenoMudado) this.terrenoMudado = [];
+    this.terrenoMudado.push({ x: x, y: y, t: this.terreno[this.idx(x, y)] });
+  };
+
+  World.prototype.aplicarTerrenoMudado = function (lista) {
+    if (!lista || !lista.length) return;
+    this.terrenoMudado = [];
+    for (var i = 0; i < lista.length; i++) {
+      var c = lista[i];
+      if (!this.dentro(c.x, c.y)) continue;
+      this.terreno[this.idx(c.x, c.y)] = c.t;
+      this.terrenoMudado.push({ x: c.x, y: c.y, t: c.t });
+    }
+    this.versaoRota++;
   };
 
   /* O que ainda vale a pena limpar aqui. */

@@ -911,6 +911,10 @@
         this.lancarCacos(e.x + 0.5, e.y + 0.5, 2, 1.4, '#b9ab93');
       } else if (e.tipo === 'terrenoLimpo') {
         this.terrenoSujo = true;
+        /* O minimapa é desenhado uma vez e guardado. O trator é a primeira
+           coisa do jogo que muda o terreno, então até agora ninguém precisava
+           invalidá-lo — e a ruína limpa continuava lá a partida inteira. */
+        this.cvMini = null;
         /* Poeira no lugar: sem ela a célula simplesmente TROCA DE COR de um
            quadro para o outro, e troca de cor sem causa não se lê como
            trabalho feito. */

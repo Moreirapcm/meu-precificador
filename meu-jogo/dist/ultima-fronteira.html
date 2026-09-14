@@ -1245,13 +1245,41 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (t === T.RUINA) {
       this.terreno[i] = T.ESCOMBRO;
       this.versaoRota++;
+      this.anotarTerreno(x, y);
       return 'ruina';
     }
     if (t === T.ESCOMBRO) {
       this.terreno[i] = T.ASFALTO;
+      this.anotarTerreno(x, y);
       return 'escombro';
     }
     return null;
+  };
+
+  /* O TERRENO MUDADO tem de ir no save, e por um motivo que vai além de perder
+     trabalho: muro construído sobre ruína limpa volta, ao carregar, a estar
+     sobre RUÍNA — e `solido()` verdadeiro faz o custo de rota virar infinito
+     ANTES de olhar se é portão. O portão para de deixar passar, e se a
+     estrutura morre a célula fica bloqueada para sempre. É estrago
+     permanente na partida salva, não incômodo.
+
+     Guardar a lista das células mexidas é mais barato que o mapa inteiro: são
+     dezenas contra dezenas de milhares. */
+  World.prototype.anotarTerreno = function (x, y) {
+    if (!this.terrenoMudado) this.terrenoMudado = [];
+    this.terrenoMudado.push({ x: x, y: y, t: this.terreno[this.idx(x, y)] });
+  };
+
+  World.prototype.aplicarTerrenoMudado = function (lista) {
+    if (!lista || !lista.length) return;
+    this.terrenoMudado = [];
+    for (var i = 0; i < lista.length; i++) {
+      var c = lista[i];
+      if (!this.dentro(c.x, c.y)) continue;
+      this.terreno[this.idx(c.x, c.y)] = c.t;
+      this.terrenoMudado.push({ x: c.x, y: c.y, t: c.t });
+    }
+    this.versaoRota++;
   };
 
   /* O que ainda vale a pena limpar aqui. */
@@ -2791,8 +2819,19 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
            vez de parar e esperar ordem nova. Limpeza é serviço contínuo, e
            obrigar um toque a cada seis células seria imposto de dedo.
            Quem quiser o trator em outro lugar manda Mover, que troca a tarefa. */
-        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10, tarefa.desistidas,
-          tarefa.area);
+        /* Com ÁREA, a varredura centra no retângulo, não no trator: a ordem é
+           "trabalhe ali", e a máquina pode estar do outro lado do mapa. Com o
+           centro na unidade, uma área a cinquenta células virava "nada ao
+           alcance" e a ordem não fazia nada. Sem área, o centro é ele mesmo, e
+           aí sim é serviço contínuo ao redor. */
+        var a = tarefa.area;
+        var centroBusca = a
+          ? { x: (a.x0 + a.x1) / 2, y: (a.y0 + a.y1) / 2 }
+          : u;
+        var alcance = a
+          ? Math.max(a.x1 - a.x0, a.y1 - a.y0) + 2
+          : (tarefa.raio || 10);
+        var prox = this.celulaLimpavelProxima(centroBusca, alcance, tarefa.desistidas, a);
         if (!prox) {
           /* Acabou o que dá para alcançar daqui. PARA e AVISA.
              A primeira versão limpava a lista de desistências e tentava tudo de
@@ -3016,6 +3055,16 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       var b = this.estruturas[u.tarefa.alvo];
       if (b) b.construtores = Math.max(0, b.construtores - 1);
     }
+    /* A VAGA NA JAZIDA também tem de voltar. Operário morto enquanto extraía
+       deixava `ocupadas` contando um trabalhador que não existe mais, e a
+       jazida ficava "4/4 operários" com um vivo — para sempre, sem aviso
+       nenhum. O invasor que caça minerador existe justamente para isso
+       acontecer. */
+    if (u.tarefa && u.tarefa.tipo === 'minerar' && u.tarefa.contabilizada) {
+      var jaz = this.world.jazidaPorId(u.tarefa.jazida);
+      if (jaz) jaz.ocupadas = Math.max(0, jaz.ocupadas - 1);
+      u.tarefa.contabilizada = false;
+    }
     u.tarefa = { tipo: 'ocioso' };
     u.rota = null;
   };
@@ -3137,7 +3186,12 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var u = this.criarUnidade(item.tipo, saida.x + 0.5, saida.y + 0.5, 'aliado');
     if (b.rally) {
       var cel = this.nav.celulaLivreProxima(b.rally.x, b.rally.y, 6);
-      if (cel) this.darTarefa(u, { tipo: u.operario ? 'mover' : 'moverAtacando', destino: cel });
+      /* Quem não luta vai MOVER. O trator não é operário, então caía em
+         `moverAtacando` — e o laço dele é o dos trabalhos, que não tem esse
+         ramo: a máquina nascia e congelava para sempre com a tarefa
+         "avançando", e nem o botão de ociosos a encontrava. */
+      var pacifico = u.operario || !u.def.arma;
+      if (cel) this.darTarefa(u, { tipo: pacifico ? 'mover' : 'moverAtacando', destino: cel });
     }
     this.emitir('unidadePronta', { id: u.id, tipo: item.tipo, estrutura: b.id });
   };
@@ -3871,7 +3925,23 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   S.irAte = function (u, destino, dt, folga) {
     if (u.voa) { this.voar(u, destino, dt); return; }
     if (this.encostouEm(u, destino, folga == null ? 0.6 : folga)) { u.rota = null; return; }
-    if (!u.rota) { if (!this.pedirRota(u, destino, { raioChegada: folga ? 1 : 0 })) return; }
+    if (!u.rota || !u.rota.length) {
+      /* DESTINO EM CÉLULA INTEIRA quando não é retângulo. `path.js` testa a
+         chegada como |x − (px+0,5)| ≤ raio: com destino fracionário e raio 0
+         isso é impossível para coordenada inteira, e o A* varre o mapa para
+         devolver nada — a unidade fica parada, `bloqueado`, gastando uma busca
+         de mapa inteiro a cada 1,6 s.
+
+         Media: um fuzileiro voltando ao posto ficou 20 segundos imóvel no mesmo
+         pixel, com 34 buscas desperdiçadas. O mesmo defeito do trator, e este
+         conserto aqui pega de uma vez os três que passam centro fracionário:
+         a volta ao posto do apoio, a coleira da patrulha e o centro do
+         `defender`. Estrutura tem `w`/`h` e continua indo como está — para ela
+         o buscador usa o retângulo. */
+      var alvoRota = destino;
+      if (!destino.w) alvoRota = { x: Math.floor(destino.x), y: Math.floor(destino.y) };
+      if (!this.pedirRota(u, alvoRota, { raioChegada: folga ? 1 : 0 })) return;
+    }
     var bloqueio = this.andar(u, dt);
     if (bloqueio) u.rota = null;
   };
@@ -4249,6 +4319,10 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
           return { id: j.id, estoque: j.estoque, ocupadas: 0, extrator: j.extrator };
         }),
         explorado: empacotar(sim.world.explorado),
+        /* Só as células que o trator mexeu, não o mapa inteiro. */
+        terrenoMudado: (sim.world.terrenoMudado || []).map(function (c) {
+          return { x: c.x, y: c.y, t: c.t };
+        }),
         avisouEntrega: !!sim.avisouEntrega
       };
     },
@@ -4286,6 +4360,9 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         if (jaz) { jaz.estoque = j.estoque; jaz.ocupadas = 0; jaz.extrator = j.extrator; }
       });
       desempacotar(dados.explorado, sim.world.explorado);
+      /* ANTES das estruturas: `ocupar()` valida contra o terreno, e um muro
+         sobre ruína ainda não limpa seria recusado ou ficaria sólido. */
+      sim.world.aplicarTerrenoMudado(dados.terrenoMudado);
 
       dados.estruturas.forEach(function (e) {
         var b = e;
@@ -6924,6 +7001,10 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         this.lancarCacos(e.x + 0.5, e.y + 0.5, 2, 1.4, '#b9ab93');
       } else if (e.tipo === 'terrenoLimpo') {
         this.terrenoSujo = true;
+        /* O minimapa é desenhado uma vez e guardado. O trator é a primeira
+           coisa do jogo que muda o terreno, então até agora ninguém precisava
+           invalidá-lo — e a ruína limpa continuava lá a partida inteira. */
+        this.cvMini = null;
         /* Poeira no lugar: sem ela a célula simplesmente TROCA DE COR de um
            quadro para o outro, e troca de cor sem causa não se lê como
            trabalho feito. */
@@ -8281,7 +8362,12 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
          toque seria imposto de dedo — o trator varre o raio inteiro sozinho,
          de dentro para fora, e só para quando não sobra nada limpável. */
       if (u.def.limpeza) {
-        if (ordem === 'limpar' || !ordem) {
+        /* Toque em célula que não dá para limpar é ordem de ANDAR, como para
+           qualquer outra unidade. Antes, o toque padrão sempre virava limpeza:
+           o trator ignorava o ponto tocado e ficava limpando em volta de si
+           mesmo — a única unidade do jogo que não obedecia a um toque no chão. */
+        var daParaLimpar = sim.world.limpavel(cel.x, cel.y);
+        if (ordem === 'limpar' || (!ordem && daParaLimpar)) {
           /* O ponto tocado é só o PRIMEIRO alvo: daí em diante o trator segue
              sozinho pelo entulho ao redor. */
           sim.darTarefa(u, { tipo: 'limpar', raio: 10,
@@ -8456,6 +8542,9 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
   UI.prototype.cancelarModo = function () {
     this.modo = null;
+    /* Sem isto, cancelar no meio do arrasto deixava os losangos dourados
+       pendurados na tela até o próximo arrasto de limpeza. */
+    this.render.areaLimpeza = null;
     this.render.previa = null;
     this.render.tracado = null;
     $('modoHud').hidden = true;

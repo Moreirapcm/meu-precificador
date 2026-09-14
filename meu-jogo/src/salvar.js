@@ -81,6 +81,10 @@
           return { id: j.id, estoque: j.estoque, ocupadas: 0, extrator: j.extrator };
         }),
         explorado: empacotar(sim.world.explorado),
+        /* Só as células que o trator mexeu, não o mapa inteiro. */
+        terrenoMudado: (sim.world.terrenoMudado || []).map(function (c) {
+          return { x: c.x, y: c.y, t: c.t };
+        }),
         avisouEntrega: !!sim.avisouEntrega
       };
     },
@@ -118,6 +122,9 @@
         if (jaz) { jaz.estoque = j.estoque; jaz.ocupadas = 0; jaz.extrator = j.extrator; }
       });
       desempacotar(dados.explorado, sim.world.explorado);
+      /* ANTES das estruturas: `ocupar()` valida contra o terreno, e um muro
+         sobre ruína ainda não limpa seria recusado ou ficaria sólido. */
+      sim.world.aplicarTerrenoMudado(dados.terrenoMudado);
 
       dados.estruturas.forEach(function (e) {
         var b = e;

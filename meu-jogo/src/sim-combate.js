@@ -568,7 +568,23 @@
   S.irAte = function (u, destino, dt, folga) {
     if (u.voa) { this.voar(u, destino, dt); return; }
     if (this.encostouEm(u, destino, folga == null ? 0.6 : folga)) { u.rota = null; return; }
-    if (!u.rota) { if (!this.pedirRota(u, destino, { raioChegada: folga ? 1 : 0 })) return; }
+    if (!u.rota || !u.rota.length) {
+      /* DESTINO EM CÉLULA INTEIRA quando não é retângulo. `path.js` testa a
+         chegada como |x − (px+0,5)| ≤ raio: com destino fracionário e raio 0
+         isso é impossível para coordenada inteira, e o A* varre o mapa para
+         devolver nada — a unidade fica parada, `bloqueado`, gastando uma busca
+         de mapa inteiro a cada 1,6 s.
+
+         Media: um fuzileiro voltando ao posto ficou 20 segundos imóvel no mesmo
+         pixel, com 34 buscas desperdiçadas. O mesmo defeito do trator, e este
+         conserto aqui pega de uma vez os três que passam centro fracionário:
+         a volta ao posto do apoio, a coleira da patrulha e o centro do
+         `defender`. Estrutura tem `w`/`h` e continua indo como está — para ela
+         o buscador usa o retângulo. */
+      var alvoRota = destino;
+      if (!destino.w) alvoRota = { x: Math.floor(destino.x), y: Math.floor(destino.y) };
+      if (!this.pedirRota(u, alvoRota, { raioChegada: folga ? 1 : 0 })) return;
+    }
     var bloqueio = this.andar(u, dt);
     if (bloqueio) u.rota = null;
   };
