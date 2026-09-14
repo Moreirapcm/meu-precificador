@@ -88,6 +88,14 @@
         var m = self.render.paraMundo(ultimo.x, ultimo.y);
         self.modo.inicio = { x: Math.floor(m.x), y: Math.floor(m.y) };
       }
+      /* LIMPEZA POR ÁREA: o mesmo gesto do muro. Arrastar marca o retângulo,
+         soltar manda o trator trabalhar ali dentro. Um toque só continua
+         valendo — é a ordem rápida de "comece por aqui". */
+      if (self.modo && self.modo.tipo === 'ordem' && self.modo.ordem === 'limpar' &&
+          toques.size === 1) {
+        var ml = self.render.paraMundo(ultimo.x, ultimo.y);
+        self.modo.inicio = { x: Math.floor(ml.x), y: Math.floor(ml.y) };
+      }
     });
 
     cv.addEventListener('pointermove', function (e) {
@@ -112,6 +120,11 @@
 
       if (self.modo && self.modo.tipo === 'muro' && self.modo.inicio) {
         self.atualizarTracado(p);
+        return;
+      }
+      if (self.modo && self.modo.tipo === 'ordem' && self.modo.ordem === 'limpar' &&
+          self.modo.inicio && moveu > LIMIAR) {
+        self.atualizarAreaLimpeza(p);
         return;
       }
       if (self.modo && self.modo.tipo === 'construir') { self.moverPrevia(p); return; }
@@ -143,6 +156,8 @@
       }
       caixa = null; self.render.caixaSelecao = null;
       if (self.modo && self.modo.tipo === 'muro' && self.modo.inicio) { self.concluirTracado(); return; }
+      if (self.modo && self.modo.tipo === 'ordem' && self.modo.ordem === 'limpar' &&
+          self.modo.inicio && self.render.areaLimpeza) { self.concluirAreaLimpeza(); return; }
       if (moveu <= LIMIAR) {
         /* DUPLO TOQUE: seleciona todas as unidades do mesmo tipo que estão na
            TELA. É o gesto mais antigo e mais usado do gênero, e faltava.
@@ -719,6 +734,54 @@
     if (!res.ok) { this.mostrarAviso(res.motivo, 'atencao'); UF.audio.evento('negado'); return; }
     UF.audio.evento('clique');
     this.mostrarAviso(res.ids.length + ' trecho(s) em obra. ' + this.precoTexto(res.custo) + ' pagos.', 'info');
+    this.atualizarTudo();
+  };
+
+  /* ÁREA DE LIMPEZA. O retângulo entre onde o dedo desceu e onde está agora,
+     com a conta do que há para fazer ali dentro — o jogador precisa saber se
+     pintou uma quadra inteira ou três pedras. */
+  UI.prototype.atualizarAreaLimpeza = function (p) {
+    var m = this.render.paraMundo(p.x, p.y);
+    var i = this.modo.inicio;
+    var a = {
+      x0: Math.min(i.x, Math.floor(m.x)), y0: Math.min(i.y, Math.floor(m.y)),
+      x1: Math.max(i.x, Math.floor(m.x)), y1: Math.max(i.y, Math.floor(m.y))
+    };
+    var n = 0;
+    for (var x = a.x0; x <= a.x1; x++) {
+      for (var y = a.y0; y <= a.y1; y++) if (this.sim.world.limpavel(x, y)) n++;
+    }
+    a.quantas = n;
+    this.render.areaLimpeza = a;
+    this.mostrarModo(n + ' célula(s) para limpar · solte para mandar');
+  };
+
+  UI.prototype.concluirAreaLimpeza = function () {
+    var a = this.render.areaLimpeza;
+    this.render.areaLimpeza = null;
+    this.modo.inicio = null;
+    if (!a) return;
+    var us = this.unidadesSelecionadas().filter(function (u) { return u.def.limpeza; });
+    if (!us.length) { this.cancelarModo(); return; }
+    if (!a.quantas) {
+      this.mostrarAviso('Nada para limpar nessa área.', 'atencao');
+      UF.audio.evento('negado');
+      this.cancelarModo();
+      return;
+    }
+    /* O raio sai do tamanho do retângulo: a ordem é "trabalhe AQUI DENTRO", e
+       o trator para quando não sobra nada ao alcance. Vários tratores recebem
+       a mesma área e se dividem sozinhos, porque cada um procura a célula mais
+       próxima DELE. */
+    var meio = { x: (a.x0 + a.x1) / 2, y: (a.y0 + a.y1) / 2 };
+    var raio = Math.max(3, Math.ceil(Math.max(a.x1 - a.x0, a.y1 - a.y0) / 2) + 2);
+    for (var i = 0; i < us.length; i++) {
+      this.sim.darTarefa(us[i], { tipo: 'limpar', raio: raio, area: a, alvo: null }, true);
+    }
+    this.render.efeitos.push(this.marcaDeOrdem({ x: meio.x, y: meio.y }, '#d8a13a'));
+    UF.audio.evento('clique');
+    this.mostrarAviso(us.length + ' trator(es) limpando ' + a.quantas + ' célula(s).', 'info');
+    this.cancelarModo();
     this.atualizarTudo();
   };
 

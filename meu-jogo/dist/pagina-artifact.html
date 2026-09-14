@@ -2772,6 +2772,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
        trator abre espaço de construção e caminho novo, que são as duas coisas
        mais fortes que uma unidade pode dar de graça. */
     if (tarefa.tipo === 'limpar') {
+      this.revalidarDesistencias(tarefa);
       var al = tarefa.alvo;
       if (al && !this.encostavel(al.x, al.y)) al = tarefa.alvo = null;
       if (!al || !w.limpavel(al.x, al.y)) {
@@ -2781,7 +2782,8 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
            vez de parar e esperar ordem nova. Limpeza é serviço contínuo, e
            obrigar um toque a cada seis células seria imposto de dedo.
            Quem quiser o trator em outro lugar manda Mover, que troca a tarefa. */
-        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10, tarefa.desistidas);
+        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10, tarefa.desistidas,
+          tarefa.area);
         if (!prox) {
           /* Acabou o que dá para alcançar daqui. PARA e AVISA.
              A primeira versão limpava a lista de desistências e tentava tudo de
@@ -2850,8 +2852,15 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
            rota volta vazia e ele congela. Medido nos dois casos. */
         if ((!u.rota || !u.rota.length) &&
             !this.pedirRota(u, { x: alvoPosto.x, y: alvoPosto.y }, { raioChegada: 0 })) {
-          this.desistirDaCelula(tarefa, al);
-          u.bloqueado = true;
+          /* `pedirRota` devolve falso por DOIS motivos, e só um deles é "não há
+             caminho": o outro é a espera de 1,6 s entre tentativas. Banir a
+             célula nos dois casos fazia a lista negra engolir o bairro em menos
+             de dois segundos, sem ninguém ter procurado caminho nenhum — é a
+             causa do "limpa três ou quatro e para". `u.bloqueado` só fica
+             verdadeiro na falha de verdade; na espera, é apenas esperar.
+             É o que a OpenRA faz no `MoveCooldownHelper`: bloqueio é
+             temporário e se tenta de novo, nunca se bane. */
+          if (u.bloqueado) this.desistirDaCelula(tarefa, al);
           return;
         }
         if (!u.rota.length) {
@@ -2883,6 +2892,12 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         this.emitir('terrenoLimpo', { x: al.x, y: al.y, era: oque });
         if (oque === 'ruina') this.aviso('Passagem aberta no entulho.', 'info');
       }
+      /* TERMINA A CÉLULA ANTES DE SAIR DELA. Derrubar a ruína deixa ENTULHO,
+         que continua na tela: para quem está olhando, o trator "passou e não
+         sumiu com nada". Ficando até o chão abrir, cada célula que ele deixa
+         para trás está de fato limpa — e a máquina já está no posto certo, de
+         modo que a segunda passada não custa caminhada nenhuma. */
+      if (w.limpavel(al.x, al.y)) { tarefa.progresso = 0; return; }
       tarefa.alvo = null;
       tarefa.posto = null;
       return;
@@ -3012,8 +3027,21 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   S.desistirDaCelula = function (tarefa, cel) {
     if (!tarefa.desistidas) tarefa.desistidas = {};
     tarefa.desistidas[cel.x + ',' + cel.y] = 1;
+    tarefa.versaoDaLista = this.world.versaoRota;
     tarefa.alvo = null;
     tarefa.posto = null;
+  };
+
+  /* A lista negra CADUCA quando o mapa muda. O próprio trator derruba paredes:
+     a célula que estava atrás de uma ruína fica alcançável assim que ela cai, e
+     mantê-la banida era condenar o resto da quadra por causa de uma tentativa
+     velha. `versaoRota` sobe a cada mudança de navegabilidade e é o carimbo
+     exato de "a lista é de antes". */
+  S.revalidarDesistencias = function (tarefa) {
+    if (!tarefa.desistidas) return;
+    if (tarefa.versaoDaLista === this.world.versaoRota) return;
+    tarefa.desistidas = null;
+    tarefa.versaoDaLista = this.world.versaoRota;
   };
 
   S.encostavel = function (x, y) {
@@ -3022,7 +3050,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       w.livre(x, y - 1) || w.livre(x, y + 1);
   };
 
-  S.celulaLimpavelProxima = function (centro, raio, pular) {
+  S.celulaLimpavelProxima = function (centro, raio, pular, area) {
     var w = this.world;
     var cx = Math.floor(centro.x), cy = Math.floor(centro.y);
     for (var r = 0; r <= raio; r++) {
@@ -3031,6 +3059,9 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
           var x = cx + dx, y = cy + dy;
           if (pular && pular[x + ',' + y]) continue;
+          /* Área pintada pelo jogador: fora dela o trator não mexe. Sem isto
+             uma ordem de "limpe esta quadra" viraria "limpe a cidade". */
+          if (area && (x < area.x0 || x > area.x1 || y < area.y0 || y > area.y1)) continue;
           if (w.limpavel(x, y) && this.encostavel(x, y)) return { x: x, y: y };
         }
       }
@@ -5610,6 +5641,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.desenharAreasDePerigo(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
+    this.desenharAreaLimpeza(ctx);
     this.desenharCaixaSelecao(ctx);
     if (abalo) ctx.restore();
   };
@@ -7030,6 +7062,34 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     ctx.restore();
   };
 
+  /* ÁREA DE LIMPEZA, desenhada em coordenada de MUNDO: a caixa de seleção é
+     um retângulo de tela porque seleciona pelo que está na tela; esta marca
+     cobre CÉLULAS, então tem de ser losango sobre losango, senão ela mente
+     sobre o que vai ser limpo. */
+  R.desenharAreaLimpeza = function (ctx) {
+    var a = this.areaLimpeza;
+    if (!a) return;
+    var w = this.sim.world, z = this.cam.zoom;
+    ctx.save();
+    for (var x = a.x0; x <= a.x1; x++) {
+      for (var y = a.y0; y <= a.y1; y++) {
+        if (!w.dentro(x, y)) continue;
+        var p = this.paraTela(x + 0.5, y + 0.5);
+        var pode = w.limpavel(x, y);
+        ctx.globalAlpha = pode ? 0.34 : 0.1;
+        ctx.fillStyle = pode ? '#d8a13a' : '#7a8090';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - ALT * z / 2);
+        ctx.lineTo(p.x + LARG * z / 2, p.y);
+        ctx.lineTo(p.x, p.y + ALT * z / 2);
+        ctx.lineTo(p.x - LARG * z / 2, p.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  };
+
   /* -------------------------------------------------------------- névoa */
   R.desenharNevoa = function (ctx) {
     var w = this.sim.world, z = this.cam.zoom;
@@ -7655,6 +7715,14 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         var m = self.render.paraMundo(ultimo.x, ultimo.y);
         self.modo.inicio = { x: Math.floor(m.x), y: Math.floor(m.y) };
       }
+      /* LIMPEZA POR ÁREA: o mesmo gesto do muro. Arrastar marca o retângulo,
+         soltar manda o trator trabalhar ali dentro. Um toque só continua
+         valendo — é a ordem rápida de "comece por aqui". */
+      if (self.modo && self.modo.tipo === 'ordem' && self.modo.ordem === 'limpar' &&
+          toques.size === 1) {
+        var ml = self.render.paraMundo(ultimo.x, ultimo.y);
+        self.modo.inicio = { x: Math.floor(ml.x), y: Math.floor(ml.y) };
+      }
     });
 
     cv.addEventListener('pointermove', function (e) {
@@ -7679,6 +7747,11 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
       if (self.modo && self.modo.tipo === 'muro' && self.modo.inicio) {
         self.atualizarTracado(p);
+        return;
+      }
+      if (self.modo && self.modo.tipo === 'ordem' && self.modo.ordem === 'limpar' &&
+          self.modo.inicio && moveu > LIMIAR) {
+        self.atualizarAreaLimpeza(p);
         return;
       }
       if (self.modo && self.modo.tipo === 'construir') { self.moverPrevia(p); return; }
@@ -7710,6 +7783,8 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       }
       caixa = null; self.render.caixaSelecao = null;
       if (self.modo && self.modo.tipo === 'muro' && self.modo.inicio) { self.concluirTracado(); return; }
+      if (self.modo && self.modo.tipo === 'ordem' && self.modo.ordem === 'limpar' &&
+          self.modo.inicio && self.render.areaLimpeza) { self.concluirAreaLimpeza(); return; }
       if (moveu <= LIMIAR) {
         /* DUPLO TOQUE: seleciona todas as unidades do mesmo tipo que estão na
            TELA. É o gesto mais antigo e mais usado do gênero, e faltava.
@@ -8286,6 +8361,54 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (!res.ok) { this.mostrarAviso(res.motivo, 'atencao'); UF.audio.evento('negado'); return; }
     UF.audio.evento('clique');
     this.mostrarAviso(res.ids.length + ' trecho(s) em obra. ' + this.precoTexto(res.custo) + ' pagos.', 'info');
+    this.atualizarTudo();
+  };
+
+  /* ÁREA DE LIMPEZA. O retângulo entre onde o dedo desceu e onde está agora,
+     com a conta do que há para fazer ali dentro — o jogador precisa saber se
+     pintou uma quadra inteira ou três pedras. */
+  UI.prototype.atualizarAreaLimpeza = function (p) {
+    var m = this.render.paraMundo(p.x, p.y);
+    var i = this.modo.inicio;
+    var a = {
+      x0: Math.min(i.x, Math.floor(m.x)), y0: Math.min(i.y, Math.floor(m.y)),
+      x1: Math.max(i.x, Math.floor(m.x)), y1: Math.max(i.y, Math.floor(m.y))
+    };
+    var n = 0;
+    for (var x = a.x0; x <= a.x1; x++) {
+      for (var y = a.y0; y <= a.y1; y++) if (this.sim.world.limpavel(x, y)) n++;
+    }
+    a.quantas = n;
+    this.render.areaLimpeza = a;
+    this.mostrarModo(n + ' célula(s) para limpar · solte para mandar');
+  };
+
+  UI.prototype.concluirAreaLimpeza = function () {
+    var a = this.render.areaLimpeza;
+    this.render.areaLimpeza = null;
+    this.modo.inicio = null;
+    if (!a) return;
+    var us = this.unidadesSelecionadas().filter(function (u) { return u.def.limpeza; });
+    if (!us.length) { this.cancelarModo(); return; }
+    if (!a.quantas) {
+      this.mostrarAviso('Nada para limpar nessa área.', 'atencao');
+      UF.audio.evento('negado');
+      this.cancelarModo();
+      return;
+    }
+    /* O raio sai do tamanho do retângulo: a ordem é "trabalhe AQUI DENTRO", e
+       o trator para quando não sobra nada ao alcance. Vários tratores recebem
+       a mesma área e se dividem sozinhos, porque cada um procura a célula mais
+       próxima DELE. */
+    var meio = { x: (a.x0 + a.x1) / 2, y: (a.y0 + a.y1) / 2 };
+    var raio = Math.max(3, Math.ceil(Math.max(a.x1 - a.x0, a.y1 - a.y0) / 2) + 2);
+    for (var i = 0; i < us.length; i++) {
+      this.sim.darTarefa(us[i], { tipo: 'limpar', raio: raio, area: a, alvo: null }, true);
+    }
+    this.render.efeitos.push(this.marcaDeOrdem({ x: meio.x, y: meio.y }, '#d8a13a'));
+    UF.audio.evento('clique');
+    this.mostrarAviso(us.length + ' trator(es) limpando ' + a.quantas + ' célula(s).', 'info');
+    this.cancelarModo();
     this.atualizarTudo();
   };
 

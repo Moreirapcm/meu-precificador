@@ -294,6 +294,7 @@
        trator abre espaço de construção e caminho novo, que são as duas coisas
        mais fortes que uma unidade pode dar de graça. */
     if (tarefa.tipo === 'limpar') {
+      this.revalidarDesistencias(tarefa);
       var al = tarefa.alvo;
       if (al && !this.encostavel(al.x, al.y)) al = tarefa.alvo = null;
       if (!al || !w.limpavel(al.x, al.y)) {
@@ -303,7 +304,8 @@
            vez de parar e esperar ordem nova. Limpeza é serviço contínuo, e
            obrigar um toque a cada seis células seria imposto de dedo.
            Quem quiser o trator em outro lugar manda Mover, que troca a tarefa. */
-        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10, tarefa.desistidas);
+        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10, tarefa.desistidas,
+          tarefa.area);
         if (!prox) {
           /* Acabou o que dá para alcançar daqui. PARA e AVISA.
              A primeira versão limpava a lista de desistências e tentava tudo de
@@ -372,8 +374,15 @@
            rota volta vazia e ele congela. Medido nos dois casos. */
         if ((!u.rota || !u.rota.length) &&
             !this.pedirRota(u, { x: alvoPosto.x, y: alvoPosto.y }, { raioChegada: 0 })) {
-          this.desistirDaCelula(tarefa, al);
-          u.bloqueado = true;
+          /* `pedirRota` devolve falso por DOIS motivos, e só um deles é "não há
+             caminho": o outro é a espera de 1,6 s entre tentativas. Banir a
+             célula nos dois casos fazia a lista negra engolir o bairro em menos
+             de dois segundos, sem ninguém ter procurado caminho nenhum — é a
+             causa do "limpa três ou quatro e para". `u.bloqueado` só fica
+             verdadeiro na falha de verdade; na espera, é apenas esperar.
+             É o que a OpenRA faz no `MoveCooldownHelper`: bloqueio é
+             temporário e se tenta de novo, nunca se bane. */
+          if (u.bloqueado) this.desistirDaCelula(tarefa, al);
           return;
         }
         if (!u.rota.length) {
@@ -405,6 +414,12 @@
         this.emitir('terrenoLimpo', { x: al.x, y: al.y, era: oque });
         if (oque === 'ruina') this.aviso('Passagem aberta no entulho.', 'info');
       }
+      /* TERMINA A CÉLULA ANTES DE SAIR DELA. Derrubar a ruína deixa ENTULHO,
+         que continua na tela: para quem está olhando, o trator "passou e não
+         sumiu com nada". Ficando até o chão abrir, cada célula que ele deixa
+         para trás está de fato limpa — e a máquina já está no posto certo, de
+         modo que a segunda passada não custa caminhada nenhuma. */
+      if (w.limpavel(al.x, al.y)) { tarefa.progresso = 0; return; }
       tarefa.alvo = null;
       tarefa.posto = null;
       return;
@@ -534,8 +549,21 @@
   S.desistirDaCelula = function (tarefa, cel) {
     if (!tarefa.desistidas) tarefa.desistidas = {};
     tarefa.desistidas[cel.x + ',' + cel.y] = 1;
+    tarefa.versaoDaLista = this.world.versaoRota;
     tarefa.alvo = null;
     tarefa.posto = null;
+  };
+
+  /* A lista negra CADUCA quando o mapa muda. O próprio trator derruba paredes:
+     a célula que estava atrás de uma ruína fica alcançável assim que ela cai, e
+     mantê-la banida era condenar o resto da quadra por causa de uma tentativa
+     velha. `versaoRota` sobe a cada mudança de navegabilidade e é o carimbo
+     exato de "a lista é de antes". */
+  S.revalidarDesistencias = function (tarefa) {
+    if (!tarefa.desistidas) return;
+    if (tarefa.versaoDaLista === this.world.versaoRota) return;
+    tarefa.desistidas = null;
+    tarefa.versaoDaLista = this.world.versaoRota;
   };
 
   S.encostavel = function (x, y) {
@@ -544,7 +572,7 @@
       w.livre(x, y - 1) || w.livre(x, y + 1);
   };
 
-  S.celulaLimpavelProxima = function (centro, raio, pular) {
+  S.celulaLimpavelProxima = function (centro, raio, pular, area) {
     var w = this.world;
     var cx = Math.floor(centro.x), cy = Math.floor(centro.y);
     for (var r = 0; r <= raio; r++) {
@@ -553,6 +581,9 @@
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
           var x = cx + dx, y = cy + dy;
           if (pular && pular[x + ',' + y]) continue;
+          /* Área pintada pelo jogador: fora dela o trator não mexe. Sem isto
+             uma ordem de "limpe esta quadra" viraria "limpe a cidade". */
+          if (area && (x < area.x0 || x > area.x1 || y < area.y0 || y > area.y1)) continue;
           if (w.limpavel(x, y) && this.encostavel(x, y)) return { x: x, y: y };
         }
       }

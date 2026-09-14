@@ -1058,6 +1058,34 @@
     ctx.restore();
   };
 
+  /* ÁREA DE LIMPEZA, desenhada em coordenada de MUNDO: a caixa de seleção é
+     um retângulo de tela porque seleciona pelo que está na tela; esta marca
+     cobre CÉLULAS, então tem de ser losango sobre losango, senão ela mente
+     sobre o que vai ser limpo. */
+  R.desenharAreaLimpeza = function (ctx) {
+    var a = this.areaLimpeza;
+    if (!a) return;
+    var w = this.sim.world, z = this.cam.zoom;
+    ctx.save();
+    for (var x = a.x0; x <= a.x1; x++) {
+      for (var y = a.y0; y <= a.y1; y++) {
+        if (!w.dentro(x, y)) continue;
+        var p = this.paraTela(x + 0.5, y + 0.5);
+        var pode = w.limpavel(x, y);
+        ctx.globalAlpha = pode ? 0.34 : 0.1;
+        ctx.fillStyle = pode ? '#d8a13a' : '#7a8090';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - ALT * z / 2);
+        ctx.lineTo(p.x + LARG * z / 2, p.y);
+        ctx.lineTo(p.x, p.y + ALT * z / 2);
+        ctx.lineTo(p.x - LARG * z / 2, p.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  };
+
   /* -------------------------------------------------------------- névoa */
   R.desenharNevoa = function (ctx) {
     var w = this.sim.world, z = this.cam.zoom;
