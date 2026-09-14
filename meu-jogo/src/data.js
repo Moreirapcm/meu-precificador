@@ -142,13 +142,13 @@
   /* ------------------------------------------------------------- unidades */
   var UNIDADES = {
     operario: {
-      nome: 'Operário', custo: { m: 50 }, pop: 1, tempo: 12, hp: 90, vel: 2.5, visao: 6,
+      nome: 'Operário', raio: 0.26, custo: { m: 50 }, pop: 1, tempo: 12, hp: 90, vel: 2.5, visao: 6,
       carga: 8, coleta: 4, obra: 1, construtor: true,
       arma: { dano: 5, cad: 1.2, alc: 1.1, solo: true, ar: false, vel: 12 },
       desc: 'Minera, constrói, repara e explora. Frágil: morre com a carga que levava.'
     },
     fuzileiro: {
-      nome: 'Fuzileiro', custo: { m: 60 }, pop: 1, tempo: 11, hp: 130, vel: 2.7, visao: 8, blind: 0,
+      nome: 'Fuzileiro', raio: 0.27, custo: { m: 60 }, pop: 1, tempo: 11, hp: 130, vel: 2.7, visao: 8, blind: 0,
       arma: { dano: 12, cad: 0.7, alc: 5.5, solo: true, ar: true, vel: 18, cor: '#ffe9a8' },
       desc: 'Tiro rápido contra solo e ar. Frágil quando cercado.'
     },
@@ -164,7 +164,7 @@
        jogador tem a escolha da primeira hora: mais um operário ou o trator que
        abre a quadra ao lado. */
     trator: {
-      nome: 'Trator de limpeza', custo: { m: 110 }, pop: 2, tempo: 14, hp: 260, vel: 1.9,
+      nome: 'Trator de limpeza', raio: 0.44, custo: { m: 110 }, pop: 2, tempo: 14, hp: 260, vel: 1.9,
       visao: 6, blind: 2, operario: false, limpeza: 4.5,
       desc: 'Derruba ruína e limpa entulho: abre caminho e libera terreno para construir.'
     },
@@ -182,32 +182,32 @@
        Alcance 1,2 é corpo a corpo de verdade: abaixo de 1,6 o dano é aplicado
        na hora e o desenho mostra arco de garra, sem projétil nenhum. */
     cao: {
-      nome: 'Cão de guerra', custo: { m: 55 }, pop: 1, tempo: 8, hp: 80, vel: 4.6, visao: 10, blind: 0,
+      nome: 'Cão de guerra', raio: 0.24, custo: { m: 55 }, pop: 1, tempo: 8, hp: 80, vel: 4.6, visao: 10, blind: 0,
       arma: { dano: 15, cad: 0.5, alc: 1.2, solo: true, ar: false, vel: 12 },
       desc: 'Rápido e barato. Alcança quem foge e enxerga longe; morre fácil em área.'
     },
     incendiario: {
-      nome: 'Incendiário', custo: { m: 90 }, pop: 2, tempo: 15, hp: 200, vel: 2.4, visao: 7, blind: 1,
+      nome: 'Incendiário', raio: 0.3, custo: { m: 90 }, pop: 2, tempo: 15, hp: 200, vel: 2.4, visao: 7, blind: 1,
       arma: { dano: 20, cad: 1.1, alc: 2.6, solo: true, ar: false, vel: 14, area: 1.5, cor: '#ff8a4c' },
       desc: 'Dano em cone curto contra enxames no solo.'
     },
     medico: {
-      nome: 'Médico de campo', custo: { m: 90, c: 15 }, pop: 1, tempo: 14, hp: 120, vel: 2.8, visao: 7,
+      nome: 'Médico de campo', raio: 0.26, custo: { m: 90, c: 15 }, pop: 1, tempo: 14, hp: 120, vel: 2.8, visao: 7,
       cura: { taxa: 14, alc: 4, reserva: 320 }, req: { tech: 2 },
       desc: 'Recupera soldados próximos com reserva limitada. Precisa de proteção.'
     },
     lanceiro: {
-      nome: 'Lanceiro pesado', custo: { m: 120, c: 20 }, pop: 2, tempo: 18, hp: 230, vel: 2.2, visao: 8, blind: 2,
+      nome: 'Lanceiro pesado', raio: 0.32, custo: { m: 120, c: 20 }, pop: 2, tempo: 18, hp: 230, vel: 2.2, visao: 8, blind: 2,
       arma: { dano: 46, cad: 1.5, alc: 5.2, solo: true, ar: true, vel: 16, perfura: true, cor: '#b8f0d0' },
       desc: 'Eficiente contra blindagem. Rende pouco contra muitos alvos leves.'
     },
     drone: {
-      nome: 'Drone antiaéreo', custo: { m: 140, c: 30 }, pop: 2, tempo: 16, hp: 160, vel: 3.6, visao: 9, voa: true,
+      nome: 'Drone antiaéreo', raio: 0.3, custo: { m: 140, c: 30 }, pop: 2, tempo: 16, hp: 160, vel: 3.6, visao: 9, voa: true,
       arma: { dano: 26, cad: 0.85, alc: 6.2, solo: false, ar: true, vel: 22, cor: '#8fd9ff' },
       desc: 'Interceta voadores. Não consegue atacar alvos terrestres.'
     },
     tanque: {
-      nome: 'Tanque de cerco', custo: { m: 200, c: 50 }, pop: 3, tempo: 24, hp: 380, vel: 1.6, visao: 10, blind: 3,
+      nome: 'Tanque de cerco', raio: 0.42, custo: { m: 200, c: 50 }, pop: 3, tempo: 24, hp: 380, vel: 1.6, visao: 10, blind: 3,
       arma: { dano: 72, cad: 2.6, alc: 9.5, alcMin: 2, solo: true, ar: false, vel: 10, area: 2, cor: '#ffd27f' },
       desc: 'Alcance e área. Lento, sem ataque aéreo e vulnerável de perto.'
     }
@@ -282,6 +282,13 @@
      nenhuma (Central 0, Torre de muralha 45 minerais, Quartel 150): nenhuma
      pesquisa pode ficar inalcançável por morar em prédio que ela mesma
      destrava. */
+  /* CORPO DAS NOSSAS UNIDADES. Os invasores já tinham `raio` — usado para o
+     desenho e para a distância de combate — e as nossas não: caíam no padrão
+     0,3 e, pior, não empurravam ninguém. Vinte fuzileiros ficavam exatamente
+     nas mesmas coordenadas, um sprite só com dezenove cópias por baixo.
+     Os números seguem a escala do Brood War, onde o Zergling ocupa meio
+     ladrilho e o Dragoon um inteiro: cão 0,24, fuzileiro 0,27, tanque 0,42. */
+
   /* -------------------------------------------------------------- pesquisa */
   var PESQUISAS = [
     { id: 'tech2', ramo: 'comando', casa: 'pesquisa', nome: 'Tecnologia II — Fortificação', custo: { m: 250 }, tempo: 40, tech: 2,

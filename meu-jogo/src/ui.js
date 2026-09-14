@@ -302,20 +302,46 @@
       if (t === 'ordem') { this.ordemNoTerreno(p); return; }
     }
 
-    var alvo = this.entidadeEm(m);
+    var alvo = this.entidadeEm(m, p);
     if (alvo) { this.selecionar(alvo); return; }
     /* Terreno vazio com tropas selecionadas: ordem simples de deslocamento. */
     if (this.temTropasSelecionadas()) { this.ordemNoTerreno(p); return; }
     this.selecionar(null);
   };
 
-  UI.prototype.entidadeEm = function (m) {
-    var sim = this.sim, melhor = null, melhorD = 1.1;
+  /* A ESCOLHA É PELO QUE ESTÁ DESENHADO, não pelo pé da unidade.
+     Antes media-se a distância em coordenada de MUNDO até `u.x, u.y`, que é o
+     ponto do chão onde a unidade pisa. Duas consequências ruins:
+
+       - o DRONE era impossível de selecionar. Ele é desenhado 26 px acima do
+         chão, então tocar no desenho dele devolvia um ponto de chão longe do
+         pé, e nada era encontrado. O jogador teria de tocar no vazio embaixo.
+       - todo o resto era difícil. O sprite tem dois metros de altura na tela e
+         o ponto de chão sob o dedo, quando se toca no peito da figura, cai uma
+         célula ATRÁS dela.
+
+     Agora o teste é na tela, contra a caixa que a figura de fato ocupa —
+     incluindo o voo. É o que qualquer jogo isométrico faz, e é o que o jogador
+     espera: clicou no boneco, pegou o boneco. */
+  UI.prototype.entidadeEm = function (m, tela) {
+    var sim = this.sim, melhor = null, melhorD = Infinity;
+    var z = this.render.cam.zoom;
+    var alturas = UF.Anima && UF.Anima.ALTURA;
+    if (!tela) tela = this.render.paraTela(m.x, m.y);
     for (var i = 0; i < sim.unidades.length; i++) {
       var u = sim.unidades[i];
       if (u.morta) continue;
       if (u.lado === 'inimigo' && !sim.world.veCelula(Math.floor(u.x), Math.floor(u.y))) continue;
-      var d = U.dist(u.x, u.y, m.x, m.y);
+      var t = this.render.paraTela(u.x, u.y);
+      var voo = u.voa ? 26 * z : 0;
+      var alt = ((alturas && alturas[u.tipo]) || 1.3) * 32 * z;
+      var meia = Math.max(9, alt * 0.34);
+      var centroY = t.y - voo - alt * 0.5;
+      var dx = Math.abs(tela.x - t.x), dy = Math.abs(tela.y - centroY);
+      if (dx > meia || dy > alt * 0.62) continue;
+      /* Entre as que o toque acerta, ganha a mais PRÓXIMA DO DEDO na vertical:
+         num amontoado, é a da frente — a que o jogador está vendo. */
+      var d = dx * 0.6 + dy;
       if (d < melhorD) { melhorD = d; melhor = u; }
     }
     if (melhor) return melhor;
@@ -391,7 +417,7 @@
      prioridade de fogo, e em estrutura não faz sentido nenhum. */
   UI.prototype.selecionarTodosDoTipo = function (p) {
     var sim = this.sim, m = this.render.paraMundo(p.x, p.y);
-    var base = this.entidadeEm(m);
+    var base = this.entidadeEm(m, p);
     if (!base || base.w || base.lado !== 'aliado') { this.tocar(p); return; }
 
     var cv = $('jogo'), larg = cv.clientWidth, alt = cv.clientHeight;

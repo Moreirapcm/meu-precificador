@@ -817,6 +817,29 @@
   };
 
   /* ------------------------------------------------------- fim de partida */
+  /* CORPO ENTRE UNIDADES: TENTADO E REVERTIDO, e fica registrado para não ser
+     tentado de novo do mesmo jeito.
+
+     O diagnóstico é certo e continua valendo: `andar` só consulta `world.occ`,
+     que guarda ESTRUTURA, e vinte fuzileiros ficam nas mesmas coordenadas — um
+     sprite só com dezenove cópias por baixo. As unidades ganharam `raio` em
+     `data.js` nesta mesma leva, e ele já serve ao desenho e ao toque.
+
+     O que falhou foi o EMPURRÃO MACIO: separação por sobreposição, com grade
+     por célula, sem refazer rota. Medido com `equilibrio.cjs`, quatro dos seis
+     setores deixaram de TERMINAR — Marginal Tietê parou na onda 1 de 11 depois
+     de 45 minutos de simulação, com doze operários vivos e nenhuma onda
+     avançando. Empurrar sem refazer rota encunha a unidade contra a estrutura:
+     ela é empurrada para fora do caminho, o guarda de `world.livre` recusa o
+     passo, e ela fica presa — e o invasor preso nunca chega, então a onda nunca
+     acaba.
+
+     Quem for refazer: o empurrão tem de INVALIDAR A ROTA de quem foi movido, e
+     precisa de um teste que rode as seis partidas inteiras antes de entrar. O
+     Brood War resolve isto com colisão dura mais um sistema de desencalhe; o
+     Age of Empires II tem dois sistemas de obstrução e cinco pessoas que
+     trabalharam neles. Não é uma tarde de trabalho. */
+
   S.verificarVitoria = function (ondasCompletas) {
     if (this.fase !== 'jogando') return;
     if (this.modo !== 'campanha') {
