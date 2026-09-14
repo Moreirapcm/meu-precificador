@@ -200,6 +200,11 @@
          fazia qualquer toque no mapa apagar a lista — `ordemNoTerreno` termina
          em `cancelarModo`, e a lista ia junto. */
       if (k === 'escape') {
+        /* Um nível de cada vez: da lista de um grupo volta para os grupos, dos
+           grupos volta para os comandos, e só então cancela o modo. */
+        if (self.paginaAcoes && self.paginaAcoes.indexOf(':') > 0) {
+          self.paginaAcoes = 'construir'; self.atualizarAcoes(); return;
+        }
         if (self.paginaAcoes) { self.paginaAcoes = null; self.atualizarAcoes(); return; }
         self.cancelarModo();
         return;

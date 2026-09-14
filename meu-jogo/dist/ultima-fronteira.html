@@ -7322,6 +7322,11 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
          fazia qualquer toque no mapa apagar a lista — `ordemNoTerreno` termina
          em `cancelarModo`, e a lista ia junto. */
       if (k === 'escape') {
+        /* Um nível de cada vez: da lista de um grupo volta para os grupos, dos
+           grupos volta para os comandos, e só então cancela o modo. */
+        if (self.paginaAcoes && self.paginaAcoes.indexOf(':') > 0) {
+          self.paginaAcoes = 'construir'; self.atualizarAcoes(); return;
+        }
         if (self.paginaAcoes) { self.paginaAcoes = null; self.atualizarAcoes(); return; }
         self.cancelarModo();
         return;
@@ -8043,6 +8048,8 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     sentinela: '↑', gelo: '❄', artilharia: '◎', plasma: 'ϟ'
   };
 
+  var ICONE_GRUPO = { base: '⌂', defesa: '⛨', producao: '⚔', tecnologia: '⚗' };
+
   function botao(rotulo, icone, sub, aoClicar, opcoes) {
     opcoes = opcoes || {};
     var b = doc.createElement('button');
@@ -8141,12 +8148,21 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   UI.atualizarAcoes = function () {
     var self = this, sim = this.sim, cx = $('acoesContexto');
     cx.innerHTML = '';
-    if (this.paginaAcoes === 'construir') {
-      $('selNome').textContent = 'Construir';
+    if (this.paginaAcoes && this.paginaAcoes.indexOf('construir') === 0) {
+      var grupo = this.paginaAcoes.split(':')[1] || null;
       $('selVida').hidden = true;
-      $('selDetalhe').textContent = 'Escolha a estrutura. Apagada é o que ainda não dá.';
       this.filaNaBarra(null);
-      this.paginaConstruir(cx);
+      if (!grupo) {
+        $('selNome').textContent = 'Construir';
+        $('selDetalhe').textContent = 'Escolha o grupo. O número diz quanto já dá.';
+        this.paginaConstruir(cx);
+      } else {
+        var nomeGrupo = '';
+        for (var g = 0; g < CATEGORIAS.length; g++) if (CATEGORIAS[g].id === grupo) nomeGrupo = CATEGORIAS[g].nome;
+        $('selNome').textContent = nomeGrupo.charAt(0) + nomeGrupo.slice(1).toLowerCase();
+        $('selDetalhe').textContent = 'Apagada é o que ainda não dá.';
+        this.paginaGrupo(cx, grupo);
+      }
       return;
     }
     var sel = this.selecionado ? sim.alvoPorId(this.selecionado) : null;
@@ -8279,6 +8295,22 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }, { tecla: 'b' });
   };
 
+  /* Estruturas de um grupo, sem a Central (que não se constrói). */
+  function tiposDoGrupo(id) {
+    return Object.keys(ESTR).filter(function (t) {
+      return ESTR[t].cat === id && t !== 'central';
+    });
+  }
+
+  /* PÁGINA DE GRUPOS.
+     Nem o StarCraft nem o Age of Empires rolavam a barra de lado: onde não
+     cabia, PAGINAVAM. O StarCraft parte em básica e avançada, oito estruturas
+     por página mais o Cancelar; o Age parte em prédio econômico e prédio
+     militar. Aqui a partição já existia em `data.js` desde sempre, no campo
+     `cat`, e cabe no mesmo teto: base 6, defesa 8, produção 2, tecnologia 3.
+
+     A conta de cada grupo diz o que dá AGORA — "5 de 8" — que é a pergunta
+     que o jogador faz antes de abrir. */
   UI.paginaConstruir = function (cx) {
     var self = this, sim = this.sim;
     cx.appendChild(botao('Voltar', '↩', 'fecha a lista', function () {
@@ -8287,30 +8319,44 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }, { tecla: 'esc' }));
 
     CATEGORIAS.forEach(function (cat) {
-      var tipos = Object.keys(ESTR).filter(function (t) {
-        return ESTR[t].cat === cat.id && t !== 'central';
-      });
+      var tipos = tiposDoGrupo(cat.id);
       if (!tipos.length) return;
-      var risco = doc.createElement('span');
-      risco.className = 'divisor-acao';
-      risco.dataset.grupo = cat.nome;
-      cx.appendChild(risco);
+      var livres = 0;
+      tipos.forEach(function (t) { if (!sim.requisitoFaltante(ESTR[t])) livres++; });
+      var b = botao(cat.nome.charAt(0) + cat.nome.slice(1).toLowerCase(),
+        ICONE_GRUPO[cat.id] || '▪', livres + ' de ' + tipos.length, function () {
+          self.paginaAcoes = 'construir:' + cat.id;
+          self.atualizarAcoes();
+        }, { desativado: !livres, motivo: livres ? null : 'Nada liberado neste grupo ainda.' });
+      if (!livres) b.classList.add('sem-recurso');
+      cx.appendChild(b);
+    });
+  };
 
-      tipos.forEach(function (tipo) {
-        var def = ESTR[tipo];
-        var falta = sim.requisitoFaltante(def);
-        /* Recurso que falta NÃO desabilita: o preço já está escrito no botão e
-           daqui a dez segundos ele dá. Requisito de tecnologia, sim — esse não
-           muda sozinho, e o jogador precisa saber o que destrava. */
-        var b = botao(def.nome, ICONE_ESTRUTURA[tipo] || '▪', self.precoDe(def), function () {
-          var impede = sim.requisitoFaltante(def);
-          if (impede) { self.mostrarAviso(impede, 'atencao'); UF.audio.evento('negado'); return; }
-          self.paginaAcoes = null;
-          self.iniciarConstrucao(tipo);
-        }, { desativado: !!falta, motivo: falta || def.desc });
-        if (!falta && !sim.temRecurso(sim.custoDe(def))) b.classList.add('sem-recurso');
-        cx.appendChild(b);
-      });
+  /* PÁGINA DE UM GRUPO. Volta para os grupos, não para os comandos — é um
+     nível de cada vez, como o Esc do StarCraft. */
+  UI.paginaGrupo = function (cx, id) {
+    var self = this, sim = this.sim;
+    cx.appendChild(botao('Voltar', '↩', 'outros grupos', function () {
+      self.paginaAcoes = 'construir';
+      self.atualizarAcoes();
+    }, { tecla: 'esc' }));
+
+    tiposDoGrupo(id).forEach(function (tipo) {
+      var def = ESTR[tipo];
+      var falta = sim.requisitoFaltante(def);
+      /* Recurso que falta NÃO desabilita: o preço já está escrito no botão e
+         daqui a dez segundos ele dá. Requisito de tecnologia, sim — esse não
+         muda sozinho, e o jogador precisa saber o que destrava. Os dois
+         clássicos fazem exatamente essa distinção, cada um do seu jeito. */
+      var b = botao(def.nome, ICONE_ESTRUTURA[tipo] || '▪', self.precoDe(def), function () {
+        var impede = sim.requisitoFaltante(def);
+        if (impede) { self.mostrarAviso(impede, 'atencao'); UF.audio.evento('negado'); return; }
+        self.paginaAcoes = null;
+        self.iniciarConstrucao(tipo);
+      }, { desativado: !!falta, motivo: falta || def.desc });
+      if (!falta && !sim.temRecurso(sim.custoDe(def))) b.classList.add('sem-recurso');
+      cx.appendChild(b);
     });
   };
 
