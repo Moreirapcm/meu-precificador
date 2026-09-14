@@ -6447,6 +6447,76 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     return pronto;
   };
 
+  /* SOMBRA.
+     É a peça que o Age of Empires II e o StarCraft nunca dispensaram, e que nós
+     não tínhamos: sem ela a figura fica de adesivo colado no chão, e o olho
+     perde a que está no ar — o drone voando parecia andar.
+
+     Os clássicos DESENHAVAM a sombra como quadro separado, um por pose. Nós
+     temos 136 peças e nenhuma sombra desenhada; fazer 136 seria semanas de
+     geração. Aqui a sombra sai da própria figura: a silhueta dela, achatada
+     contra o chão e inclinada para o lado oposto à luz, que no nosso desenho
+     vem de cima e da esquerda.
+
+     Vale a pena porque é automática — unidade nova ganha sombra sem arte nova —
+     e porque o que o jogador lê é a MANCHA no chão, não o recorte dela. O preço
+     é a sombra ser a figura de pé deitada, e não a projeção verdadeira de um
+     corpo tridimensional; no tamanho em que aparece, não se distingue.
+
+     Guardada por (imagem, altura) como o contorno, e pelo mesmo motivo: o zoom
+     muda o tamanho e refazer a cada quadro custaria caro. */
+  R.silhuetaChapada = function (img, largPx, altPx) {
+    if (!this.cacheSombra) { this.cacheSombra = {}; this.cacheSombraN = 0; }
+    var a = Math.max(6, Math.round(altPx));
+    var l = Math.max(4, Math.round(largPx * a / altPx));
+    if (!img.uf_id) { img.uf_id = ++this.cacheContornoN; }
+    var chave = img.uf_id + ':' + a;
+    var pronto = this.cacheSombra[chave];
+    if (pronto) return pronto;
+
+    var cv = global.document.createElement('canvas');
+    cv.width = l; cv.height = a;
+    var c = cv.getContext('2d');
+    c.drawImage(img, 0, 0, l, a);
+    c.globalCompositeOperation = 'source-in';
+    c.fillStyle = '#000';
+    c.fillRect(0, 0, l, a);
+
+    pronto = { cv: cv, l: l, a: a };
+    var chaves = Object.keys(this.cacheSombra);
+    if (chaves.length > 260) delete this.cacheSombra[chaves[0]];
+    this.cacheSombra[chave] = pronto;
+    return pronto;
+  };
+
+  /* `pe` é o chão; `voo` é o quanto a unidade está acima dele. A sombra fica
+     SEMPRE no chão: é ela que diz que o drone está voando, e a distância entre
+     a figura e a mancha é a altura. */
+  R.sombraDeSprite = function (ctx, img, larg, alt, voo) {
+    if (!img || alt < 6) return;
+    var s = this.silhuetaChapada(img, larg, alt);
+    ctx.save();
+    /* Mais alto, mais espalhada e mais fraca — como sombra de verdade. */
+    var altura = Math.max(0, voo || 0);
+    var espalha = 1 + Math.min(0.6, altura / 60);
+    ctx.globalAlpha = 0.46 / espalha;
+    ctx.translate(0, altura);
+    /* A mancha DEITA no chão para a frente e para a direita — a luz do nosso
+       desenho vem de cima e da esquerda. A primeira tentativa deitou a sombra
+       para trás e para cima, e ela sumiu inteira atrás da própria figura: no
+       isométrico, "para baixo na tela" é para a frente, na direção de quem
+       olha, e é ali que a sombra tem de ficar para ser vista.
+       O `y` do desenho começa em zero e cresce, então a figura é deitada a
+       partir do PÉ, e não em cima dele. */
+    /* Inclinação CURTA. Com 0,62 a mancha virava um rastro comprido atravessando
+       duas células — lia-se como borrão, não como sombra. O que os clássicos
+       põem no chão é compacto: a figura deitada até pouco mais da metade,
+       encostada no pé. */
+    ctx.transform(1, 0, 0.34, 0.26, 0, 0);
+    ctx.drawImage(s.cv, -larg / 2 * espalha, 0, larg * espalha, alt * espalha);
+    ctx.restore();
+  };
+
   /* Desenha com contorno quando a figura está pequena o bastante para precisar
      dele. Grande, o contorno vira uma borda grossa e feia. */
   R.imagemComSilhueta = function (ctx, img, x, y, larg, alt) {
@@ -6590,6 +6660,10 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       ctx.filter = 'brightness(2.6) saturate(0.5)';
     }
     ctx.translate(p.x + pose.desviaX, pe);
+    /* A SOMBRA vai ANTES do giro e do espelho, e de propósito: ela é do chão,
+       não do corpo. Girar a sombra junto faria a mancha tombar com a figura,
+       que é o que sombra nenhuma faz. */
+    this.sombraDeSprite(ctx, img, larg, alt, voo);
     if (pose.giro) ctx.rotate(pose.giro);
     if (pose.espelhar) ctx.scale(-1, 1);
 
