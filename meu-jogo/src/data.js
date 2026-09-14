@@ -22,7 +22,7 @@
   var ESTRUTURAS = {
     central: {
       nome: 'Central de Comando', cat: 'base', w: 4, h: 4, hp: 3200, tempo: 0,
-      custo: { m: 0 }, papel: 'deposito', produz: ['operario'], visao: 11, fornece: 8,
+      custo: { m: 0 }, papel: 'deposito', produz: ['operario', 'trator'], visao: 11, fornece: 8,
       desc: 'Produz operários, recebe minério e concentra as ordens globais. Fornece 8 de energia. Perdê-la encerra a partida.'
     },
     alojamento: {
@@ -62,7 +62,7 @@
     quartel: {
       nome: 'Quartel', cat: 'producao', w: 3, h: 3, hp: 950, tempo: 16,
       custo: { m: 150 }, energia: 4, visao: 7, req: { ed: 'central' },
-      produz: ['fuzileiro', 'incendiario', 'medico'],
+      produz: ['fuzileiro', 'cao', 'incendiario', 'medico'],
       desc: 'Produz fuzileiros e tropas de apoio. Define ponto de encontro.'
     },
     oficina: {
@@ -151,6 +151,40 @@
       nome: 'Fuzileiro', custo: { m: 60 }, pop: 1, tempo: 11, hp: 130, vel: 2.7, visao: 8, blind: 0,
       arma: { dano: 12, cad: 0.7, alc: 5.5, solo: true, ar: true, vel: 18, cor: '#ffe9a8' },
       desc: 'Tiro rápido contra solo e ar. Frágil quando cercado.'
+    },
+    /* TRATOR DE LIMPEZA. A cidade arruinada é o mapa inteiro, e até agora ela
+       era só obstáculo: ruína bloqueia, entulho não deixa construir. O trator
+       transforma terreno em espaço — derruba a ruína (vira entulho, e abre
+       caminho onde não havia) e limpa o entulho (vira chão aberto, e aí dá
+       para construir).
+
+       É a única unidade do jogo que MUDA O MAPA, e por isso é lenta, cara para
+       o que faz e não atira. `limpeza` são os segundos por célula. Sai da
+       Central porque é máquina de obra, não de guerra, e porque assim o
+       jogador tem a escolha da primeira hora: mais um operário ou o trator que
+       abre a quadra ao lado. */
+    trator: {
+      nome: 'Trator de limpeza', custo: { m: 110 }, pop: 2, tempo: 14, hp: 260, vel: 1.9,
+      visao: 6, blind: 2, operario: false, limpeza: 4.5,
+      desc: 'Derruba ruína e limpa entulho: abre caminho e libera terreno para construir.'
+    },
+    /* CÃO DE GUERRA. O papel que faltava na nossa lista: a unidade rápida e
+       barata que chega ANTES. Todo mundo que já tínhamos é lento — o mais
+       veloz em terra era o Fuzileiro, com 2,7 — e por isso ninguém conseguia
+       alcançar o Corredor (4,1), que é justamente quem vai atrás dos
+       operários. O cão corre 4,6 e resolve essa conta.
+
+       Paga por isso sendo de vidro: 80 de vida, nenhuma blindagem e mordida de
+       perto. Morre em um golpe de área, e é assim que não vira a resposta para
+       tudo — contra o Incendiário ou o Cuspidor, mandar cães é jogá-los fora.
+       Enxerga 10, mais que qualquer um: o cão também é o batedor.
+
+       Alcance 1,2 é corpo a corpo de verdade: abaixo de 1,6 o dano é aplicado
+       na hora e o desenho mostra arco de garra, sem projétil nenhum. */
+    cao: {
+      nome: 'Cão de guerra', custo: { m: 55 }, pop: 1, tempo: 8, hp: 80, vel: 4.6, visao: 10, blind: 0,
+      arma: { dano: 15, cad: 0.5, alc: 1.2, solo: true, ar: false, vel: 12 },
+      desc: 'Rápido e barato. Alcança quem foge e enxerga longe; morre fácil em área.'
     },
     incendiario: {
       nome: 'Incendiário', custo: { m: 90 }, pop: 2, tempo: 15, hp: 200, vel: 2.4, visao: 7, blind: 1,

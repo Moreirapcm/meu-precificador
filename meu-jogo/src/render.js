@@ -639,6 +639,13 @@
     if (this.terrenoSemTextura && UF.sprites && UF.sprites.chaoPronto()) {
       this.prepararTerreno();
     }
+    /* O trator mudou o chão: repinta. Uma vez por quadro no máximo, mesmo que
+       várias células tenham caído juntas — `prepararTerreno` desenha o mapa
+       inteiro, e chamá-la por célula limpa custaria mais que a limpeza. */
+    if (this.terrenoSujo) {
+      this.terrenoSujo = false;
+      this.prepararTerreno();
+    }
 
     /* Chão: só o pedaço que aparece na tela é copiado, não o mapa inteiro. */
     var z = this.cam.zoom, d = this.deslocamentoTerreno, ct = this.cvTerreno;

@@ -359,6 +359,11 @@
   UI.casasDeTropa = function (tropas) {
     var self = this, casas = [];
     var temOperario = tropas.some(function (u) { return u.operario; });
+    /* Quem NÃO tem arma não recebe ordem de combate. Valia só para o operário,
+       que já era tratado à parte; com o trator entrando, a regra passou a ser
+       a de verdade: ter arma. O médico também cai aqui, e está certo — mandar
+       o médico "atacar" nunca fez nada. */
+    var temDesarmado = tropas.some(function (u) { return !u.def.arma; });
     casas[CASAS_TROPA.mover] = botao('Mover', '→', 'sem perseguir',
       function () { self.iniciarOrdem('mover'); }, { tecla: 'm' });
     /* PARAR estava só no teclado. É um dos três comandos que toda unidade tem
@@ -366,7 +371,7 @@
        existia — a tropa mandada para o lugar errado não tinha como ser detida. */
     casas[CASAS_TROPA.parar] = botao('Parar', '■', 'cancela a ordem',
       function () { self.pararSelecionados(); }, { tecla: 's' });
-    if (!temOperario) {
+    if (!temOperario && !temDesarmado) {
       casas[CASAS_TROPA.atacar] = botao('Atacar', '⚔', 'avança atacando',
         function () { self.iniciarOrdem('moverAtacando'); }, { tecla: 'a' });
       casas[CASAS_TROPA.patrulhar] = botao('Patrulhar', '↔', 'entre dois pontos',
@@ -388,6 +393,13 @@
         self.mostrarAviso('Operários voltaram à mineração.', 'info');
       }, { tecla: 'g' });
       casas[CASAS_TROPA.construir] = this.botaoConstruir();
+    }
+    /* O trator ocupa a casa do trabalho, que no operário é Minerar: é o mesmo
+       lugar da grade para "o que esta unidade faz de útil". */
+    if (tropas.some(function (x) { return x.def.limpeza; })) {
+      casas[CASAS_TROPA.minerar] = botao('Limpar', '⛏', 'toque na área', function () {
+        self.iniciarOrdem('limpar');
+      }, { tecla: 'g' });
     }
     return casas;
   };
@@ -578,7 +590,8 @@
       ocioso: 'sem tarefa', minerar: 'minerando', construir: 'construindo', reparar: 'reparando',
       mover: 'a caminho', fugindo: 'fugindo do combate', defender: 'defendendo a área',
       moverAtacando: 'avançando', patrulhar: 'patrulhando', recuar: 'recuando',
-      focar: 'fogo concentrado', voltandoAoPosto: 'voltando ao posto'
+      focar: 'fogo concentrado', voltandoAoPosto: 'voltando ao posto',
+      limpar: 'limpando o terreno'
     }[tarefa] || tarefa;
     this.mostrarSelecao(u.def.nome, u.hp, u.hpMax, rotuloTarefa +
       (u.carga ? ' · carga ' + u.carga : '') + (u.bloqueado ? ' · SEM ROTA' : ''));

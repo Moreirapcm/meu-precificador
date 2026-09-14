@@ -904,6 +904,13 @@
           e.ladoAlvo === 'inimigo' ? '#7eba2e' : '#7a1a18');
       } else if (e.tipo === 'cura') {
         this.efeitoMundo('cura', e.x, e.y, { vida: 0.5 });
+      } else if (e.tipo === 'terrenoLimpo') {
+        this.terrenoSujo = true;
+        /* Poeira no lugar: sem ela a célula simplesmente TROCA DE COR de um
+           quadro para o outro, e troca de cor sem causa não se lê como
+           trabalho feito. */
+        this.efeitoMundo('fumaca', e.x + 0.5, e.y + 0.5, { vida: 0.9, raio: 0.9 });
+        this.lancarCacos(e.x + 0.5, e.y + 0.5, e.era === 'ruina' ? 10 : 5, 2.2, '#b9ab93');
       } else if (e.tipo === 'entrega') {
         /* O "+8" da carga entregue ia para um array `marcadores` que ninguém
            desenhava e ninguém esvaziava: o número nunca aparecia na tela e a

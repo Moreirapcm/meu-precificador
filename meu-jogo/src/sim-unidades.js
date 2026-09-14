@@ -227,6 +227,11 @@
     }
 
     if (tarefa.tipo === 'ocioso') {
+      /* O trator não se auto-emprega: não minera nem repara. Parado, ele fica
+         parado até receber ordem de limpeza — mandar um trator para a jazida
+         seria gastar duzentos e dez minerais de máquina fazendo o trabalho de
+         um operário de cinquenta. */
+      if (!u.operario) return;
       if (this.reparoAuto.ativo && this.jogador.pesquisas.autonomia) {
         var alvoReparo = this.estruturaMaisFeridaProxima(u.x, u.y);
         if (alvoReparo && this.jogador.m > this.reparoAuto.reserva) {
@@ -271,6 +276,68 @@
         this.liberarObra(u);
         this.distribuirObras();
       }
+      return;
+    }
+
+    /* LIMPEZA DE TERRENO. O trator vai até a célula, trabalha um tempo fixo e
+       sobe um degrau: ruína vira entulho, entulho vira chão aberto. Terminada
+       uma célula, ele procura a próxima limpável dentro do raio da ordem —
+       assim uma ordem só limpa uma área, e não um quadradinho.
+
+       O trabalho é por TEMPO e não por dano, porque não há nada com vida do
+       outro lado: o que muda é o terreno. E o tempo é longo de propósito — o
+       trator abre espaço de construção e caminho novo, que são as duas coisas
+       mais fortes que uma unidade pode dar de graça. */
+    if (tarefa.tipo === 'limpar') {
+      var al = tarefa.alvo;
+      if (!al || !w.limpavel(al.x, al.y)) {
+        /* A próxima célula é procurada em volta do TRATOR, não do ponto que o
+           jogador tocou. Foi assim que ele se comportou no teste e é assim que
+           deve ser: terminada uma quadra, ele segue para o entulho ao lado em
+           vez de parar e esperar ordem nova. Limpeza é serviço contínuo, e
+           obrigar um toque a cada seis células seria imposto de dedo.
+           Quem quiser o trator em outro lugar manda Mover, que troca a tarefa. */
+        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10);
+        if (!prox) { u.tarefa = { tipo: 'ocioso' }; return; }
+        tarefa.alvo = prox;
+        tarefa.progresso = 0;
+        tarefa.posto = null;
+        u.rota = null;
+        return;
+      }
+      /* TRABALHA DO LADO DE FORA, e isto não é detalhe: ruína é célula SÓLIDA,
+         e pedir rota para dentro dela sempre falha. O trator ficava indo e
+         voltando, trocando de alvo a cada quadro sem nunca derrubar nada.
+         O posto de trabalho é a célula livre mais próxima da ruína; o serviço
+         acontece quando ele está a menos de duas células do centro dela. */
+      var meio = { x: al.x + 0.5, y: al.y + 0.5 };
+      if (U.dist(u.x, u.y, meio.x, meio.y) > 1.9) {
+        if (!tarefa.posto || !w.livre(tarefa.posto.x, tarefa.posto.y)) {
+          var lado = this.nav.celulaLivreProxima(al.x, al.y, 4);
+          if (!lado) { tarefa.alvo = null; u.bloqueado = true; return; }
+          tarefa.posto = lado;
+          u.rota = null;
+        }
+        var destinoPosto = { x: tarefa.posto.x + 0.5, y: tarefa.posto.y + 0.5 };
+        if (!u.rota && !this.pedirRota(u, destinoPosto, { raioChegada: 1 })) {
+          tarefa.alvo = null; tarefa.posto = null; u.bloqueado = true;
+          return;
+        }
+        this.andar(u, dt);
+        return;
+      }
+      u.rota = null;
+      u.bloqueado = false;
+      tarefa.progresso = (tarefa.progresso || 0) + dt / (u.def.limpeza || 4);
+      if (tarefa.progresso < 1) return;
+      tarefa.progresso = 0;
+      var oque = w.limparCelula(al.x, al.y);
+      if (oque) {
+        this.emitir('terrenoLimpo', { x: al.x, y: al.y, era: oque });
+        if (oque === 'ruina') this.aviso('Passagem aberta no entulho.', 'info');
+      }
+      tarefa.alvo = null;
+      tarefa.posto = null;
       return;
     }
 
@@ -380,6 +447,24 @@
     }
     u.tarefa = { tipo: 'ocioso' };
     u.rota = null;
+  };
+
+  /* A célula limpável mais perto do centro da ordem, dentro do raio. Varre em
+     anéis para pegar primeiro a que está mais perto — limpar de fora para
+     dentro deixaria buracos. */
+  S.celulaLimpavelProxima = function (centro, raio) {
+    var w = this.world;
+    var cx = Math.floor(centro.x), cy = Math.floor(centro.y);
+    for (var r = 0; r <= raio; r++) {
+      for (var dx = -r; dx <= r; dx++) {
+        for (var dy = -r; dy <= r; dy++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          var x = cx + dx, y = cy + dy;
+          if (w.limpavel(x, y)) return { x: x, y: y };
+        }
+      }
+    }
+    return null;
   };
 
   S.estruturaMaisFeridaProxima = function (x, y) {

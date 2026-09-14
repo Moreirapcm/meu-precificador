@@ -1,0 +1,7 @@
+Crie UMA unidade de um jogo de estrategia isometrico, em RENDERIZACAO 3D LIMPA e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050, a humanidade resiste a uma invasao alienigena. Equipamento militar surrado, metal pintado de cinza-azulado e caqui, remendos e fita, nada limpo nem futurista demais.
+
+NAO E DESENHO ANIMADO. Sem contorno preto em volta da figura, sem traco de caneta, sem cel shading. Figura com VOLUME e sombra suave, como uma miniatura renderizada em tres dimensoes.
+
+A UNIDADE: um CAO DE GUERRA altamente treinado, um pastor belga malinois musculoso, pelo curto castanho escuro com o focinho preto. Ele usa COLETE TATICO militar caqui preso no peito e na barriga, com fivelas e uma pequena camera presa nas costas, e uma coleira grossa reforcada. Postura de trabalho: corpo baixo, atento, orelhas em pe, olhando para a frente. E um animal de verdade em equipamento de verdade, nao um robo e nao um monstro.
+
+A figura e PEQUENA no jogo: silhueta forte, nada de detalhe miudo. As quatro patas apoiadas no chao, o corpo inteiro dentro do quadro.

@@ -37,6 +37,41 @@
     return t === T.ROCHA || t === T.AGUA || t === T.RUINA;
   };
 
+  /* LIMPEZA DO TERRENO, um degrau por vez.
+     Ruína é prédio arruinado DE PÉ: bloqueia tudo. Derrubar deixa entulho, que
+     já dá para atravessar mas não para construir. Limpar o entulho deixa chão
+     aberto. São dois trabalhos diferentes e por isso dois degraus, e não um
+     passe de mágica de ruína para asfalto.
+
+     Derrubar ruína muda a NAVEGABILIDADE — abre caminho onde não havia — e por
+     isso mexe em `versaoRota`, que é o que faz cada unidade refazer a rota.
+     Limpar entulho não mexe: já se andava ali. */
+  World.prototype.limparCelula = function (x, y) {
+    if (!this.dentro(x, y)) return null;
+    var i = this.idx(x, y);
+    var t = this.terreno[i];
+    if (this.occ[i] || this.recurso[i]) return null;   /* tem coisa em cima */
+    if (t === T.RUINA) {
+      this.terreno[i] = T.ESCOMBRO;
+      this.versaoRota++;
+      return 'ruina';
+    }
+    if (t === T.ESCOMBRO) {
+      this.terreno[i] = T.ASFALTO;
+      return 'escombro';
+    }
+    return null;
+  };
+
+  /* O que ainda vale a pena limpar aqui. */
+  World.prototype.limpavel = function (x, y) {
+    if (!this.dentro(x, y)) return false;
+    var i = this.idx(x, y);
+    if (this.occ[i] || this.recurso[i]) return false;
+    var t = this.terreno[i];
+    return t === T.RUINA || t === T.ESCOMBRO;
+  };
+
   World.prototype.construivel = function (x, y) {
     if (!this.dentro(x, y)) return false;
     var i = this.idx(x, y);

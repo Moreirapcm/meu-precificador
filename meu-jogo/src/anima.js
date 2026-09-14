@@ -31,6 +31,9 @@
   Anima.ALTURA = {
     operario: 2.2, fuzileiro: 2.2, incendiario: 2.2, medico: 2.15,
     lanceiro: 2.4, tanque: 1.7, drone: 1.5,
+    /* O cão é baixo e o trator é largo e baixo: nenhum dos dois tem altura de
+       gente, e desenhá-los com 2,2 faria um cachorro do tamanho de um soldado. */
+    cao: 1.15, trator: 1.6,
     /* Nos invasores a altura acompanha o `raio` de data.js, que é a escala que a
        simulação já usa: o Titã e a Matriarca precisam ocupar a tela como ocupam
        o campo, senão o chefe chega e não assusta ninguém. */
@@ -63,7 +66,7 @@
   /* Quem é MÁQUINA. Serve para a morte: veículo não tomba de lado como gente.
      Fica aqui junto das outras tabelas de corpo porque é a mesma pergunta —
      que tipo de coisa é esta unidade — respondida para um fim diferente. */
-  Anima.VEICULO = { tanque: true, drone: true };
+  Anima.VEICULO = { tanque: true, drone: true, trator: true };
 
   Anima.GALOPE = {
     corredor:  { salto: 3.4, balanco: 0.07, peso: 0.05 },
@@ -71,7 +74,9 @@
     cuspidor:  { salto: 1.3, balanco: 0.03, peso: 0.07 },
     couracado: { salto: 1.1, balanco: 0.025, peso: 0.08 },
     detonador: { salto: 2.6, balanco: 0.06, peso: 0.05 },
-    matriarca: { salto: 1.4, balanco: 0.03, peso: 0.07 }
+    matriarca: { salto: 1.4, balanco: 0.03, peso: 0.07 },
+    /* O cão é o mais leve de todos: salta alto e quase não afunda. */
+    cao:       { salto: 3.8, balanco: 0.08, peso: 0.04 }
   };
 
   /* BRAÇO SOLTO: tentado e descartado, e fica registrado para ninguém tentar de

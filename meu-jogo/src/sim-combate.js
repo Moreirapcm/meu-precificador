@@ -825,7 +825,11 @@
       u = this.unidades[i];
       if (u.morta) continue;
       if (u.lado === 'inimigo') this.atualizarInvasor(u, dt);
-      else if (u.operario) this.atualizarOperario(u, dt);
+      /* O trator não é operário — não minera, não conta como mão de obra — mas
+         é máquina de OBRA e não de guerra: o laço dele é o dos trabalhos, onde
+         mora a limpeza de terreno. Sem esta linha ele caía no laço do soldado,
+         que exige arma e não sabe o que é limpar. */
+      else if (u.operario || u.def.limpeza) this.atualizarOperario(u, dt);
       else this.atualizarSoldado(u, dt);
     }
 

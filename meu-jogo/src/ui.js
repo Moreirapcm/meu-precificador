@@ -609,7 +609,7 @@
   /* =============================================== ordens =============== */
   UI.prototype.iniciarOrdem = function (tipo) {
     if (!this.temTropasSelecionadas()) { this.mostrarAviso('Selecione tropas ou operários primeiro.', 'atencao'); return; }
-    var rotulos = { mover: 'Toque no destino', moverAtacando: 'Toque no destino (ataca no caminho)', recuar: 'Toque no ponto seguro', patrulhar: 'Toque no outro extremo da patrulha' };
+    var rotulos = { mover: 'Toque no destino', moverAtacando: 'Toque no destino (ataca no caminho)', recuar: 'Toque no ponto seguro', patrulhar: 'Toque no outro extremo da patrulha', limpar: 'Toque onde começar a limpeza' };
     this.modo = { tipo: 'ordem', ordem: tipo };
     this.mostrarModo(rotulos[tipo] || 'Toque no destino');
   };
@@ -626,6 +626,20 @@
       var u = unidades[i];
       var destino = { x: cel.x + (i % 3) - 1, y: cel.y + Math.floor(i / 3) % 3 - 1 };
       if (!sim.world.livre(destino.x, destino.y)) destino = cel;
+      /* LIMPEZA: a ordem é uma ÁREA, não uma célula. Limpar um quadradinho por
+         toque seria imposto de dedo — o trator varre o raio inteiro sozinho,
+         de dentro para fora, e só para quando não sobra nada limpável. */
+      if (u.def.limpeza) {
+        if (ordem === 'limpar' || !ordem) {
+          /* O ponto tocado é só o PRIMEIRO alvo: daí em diante o trator segue
+             sozinho pelo entulho ao redor. */
+          sim.darTarefa(u, { tipo: 'limpar', raio: 10,
+            alvo: sim.world.limpavel(cel.x, cel.y) ? { x: cel.x, y: cel.y } : null }, true);
+        } else {
+          sim.darTarefa(u, { tipo: 'mover', destino: destino }, true);
+        }
+        continue;
+      }
       if (u.operario) {
         /* Operário: tocar numa jazida vira ordem de minerar; no resto, deslocar. */
         var jid = sim.world.recurso[sim.world.idx(cel.x, cel.y)];

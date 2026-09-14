@@ -1,0 +1,7 @@
+Crie UMA maquina de um jogo de estrategia isometrico, em RENDERIZACAO 3D LIMPA e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050, a humanidade limpa os escombros de uma cidade destruida na guerra contra uma invasao alienigena. Equipamento surrado de canteiro de obra, metal pintado de AMARELO DE OBRA encardido com faixas pretas e brancas de sinalizacao, ferrugem nos cantos, remendos soldados.
+
+NAO E DESENHO ANIMADO. Sem contorno preto em volta da figura, sem traco de caneta, sem cel shading. Figura com VOLUME e sombra suave, como uma miniatura renderizada em tres dimensoes.
+
+A MAQUINA: um TRATOR DE ESTEIRA DE LIMPEZA, baixo e largo, com ESTEIRAS grossas no lugar de rodas e uma LAMINA DE ARRASTO larga na frente, um pouco levantada do chao, riscada e amassada de tanto empurrar entulho. Cabine pequena e blindada, com vidro grosso e uma grade de protecao na frente, farol em cima. Um escapamento curto no capo, soltando um fio de fumaca. Sem arma nenhuma: e maquina de obra, nao de guerra.
+
+A figura e PEQUENA no jogo: silhueta forte e reconhecivel pela lamina, nada de detalhe miudo. A maquina inteira dentro do quadro, apoiada no chao.
