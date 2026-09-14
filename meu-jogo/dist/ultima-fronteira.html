@@ -4286,28 +4286,109 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   };
 
   /* ------------------------------------------------------- fim de partida */
-  /* CORPO ENTRE UNIDADES: TENTADO E REVERTIDO, e fica registrado para não ser
-     tentado de novo do mesmo jeito.
+  /* CORPO ENTRE UNIDADES.
+     Até aqui `andar` só consultava `world.occ`, que guarda ESTRUTURA: vinte
+     fuzileiros ficavam nas mesmas coordenadas, um sprite só com dezenove
+     cópias por baixo, e o jogador não via frente, flanco nem retaguarda.
 
-     O diagnóstico é certo e continua valendo: `andar` só consulta `world.occ`,
-     que guarda ESTRUTURA, e vinte fuzileiros ficam nas mesmas coordenadas — um
-     sprite só com dezenove cópias por baixo. As unidades ganharam `raio` em
-     `data.js` nesta mesma leva, e ele já serve ao desenho e ao toque.
+     Separação MACIA, não colisão dura. Colisão dura obriga a refazer rota a
+     cada esbarrão e é de onde vem o Dragoon emperrado do Brood War, que a
+     própria Blizzard admitiu nunca ter tido tempo de consertar.
 
-     O que falhou foi o EMPURRÃO MACIO: separação por sobreposição, com grade
-     por célula, sem refazer rota. Medido com `equilibrio.cjs`, quatro dos seis
-     setores deixaram de TERMINAR — Marginal Tietê parou na onda 1 de 11 depois
-     de 45 minutos de simulação, com doze operários vivos e nenhuma onda
-     avançando. Empurrar sem refazer rota encunha a unidade contra a estrutura:
-     ela é empurrada para fora do caminho, o guarda de `world.livre` recusa o
-     passo, e ela fica presa — e o invasor preso nunca chega, então a onda nunca
-     acaba.
+     A PRIMEIRA TENTATIVA FOI REVERTIDA e o que ela ensinou está aqui dentro.
+     Ela empurrava sem mexer na rota: a unidade saía do caminho, o guarda de
+     `world.livre` recusava o passo, e ela encunhava contra a estrutura. Invasor
+     encunhado nunca chega, então a onda nunca acaba — `equilibrio.cjs` mostrou
+     QUATRO dos seis setores deixando de terminar, e Marginal Tietê parada na
+     onda 1 de 11 depois de 45 minutos.
 
-     Quem for refazer: o empurrão tem de INVALIDAR A ROTA de quem foi movido, e
-     precisa de um teste que rode as seis partidas inteiras antes de entrar. O
-     Brood War resolve isto com colisão dura mais um sistema de desencalhe; o
-     Age of Empires II tem dois sistemas de obstrução e cinco pessoas que
-     trabalharam neles. Não é uma tarde de trabalho. */
+     Três regras consertam isso:
+
+       1. QUEM É EMPURRADO REFAZ A ROTA. Sem isso ele continua seguindo um
+          caminho que já não parte de onde ele está. Com descanso de meio
+          segundo por unidade, senão um aperto vira tempestade de A*.
+       2. SE O EMPURRÃO BATE EM PAREDE, DESLIZA. Tenta o movimento cheio;
+          barrado, tenta só em x, depois só em y. É isso que impede o encunhe:
+          a unidade escorrega ao longo do muro em vez de travar contra ele.
+       3. SÓ SEPARA SOBREPOSIÇÃO QUE IMPORTA. Abaixo de um vigésimo de célula
+          não vale mexer — é ruído que gera trabalho e não muda nada na tela.
+
+     SÓ O NOSSO LADO TEM CORPO, e isso foi medido, não escolhido por gosto. Com
+     os dois lados separando, `equilibrio.cjs` ainda perdia um setor: Marginal
+     Tietê ficava com UM Corredor vivo andando sem nunca chegar, e a onda não
+     fechava. Um invasor sozinho não é empurrado por ninguém — o que mudou foi o
+     jogo inteiro por tabela, e caçar isso custaria mais do que vale. O que o
+     jogador vê e comanda é o exército dele; é ali que a forma importa, e é ali
+     que ela entra agora. A colmeia continua se atravessando, e o combate
+     continua acontecendo em vez de virar empurra-empurra.
+
+     E o que se mantém da primeira: grade por célula em vez de todos contra
+     todos; voador fora; teto por quadro; e quem está parado cede menos que quem
+     anda, que é o que forma a linha. */
+  var EMPURRAO = 3.2;              /* células por segundo, no máximo */
+  var SOBRA_MINIMA = 0.05;         /* abaixo disto não vale mexer */
+  var DESCANSO_ROTA = 0.5;         /* segundos entre refazer rota por empurrão */
+
+  S.empurrar = function (u, nx, ny) {
+    var w = this.world;
+    var cx = u.x | 0, cy = u.y | 0;
+    /* Dentro da mesma célula é sempre permitido: não há o que bloquear. */
+    if (((nx | 0) === cx && (ny | 0) === cy) || w.livre(nx | 0, ny | 0)) {
+      u.x = nx; u.y = ny; return true;
+    }
+    if (w.livre(nx | 0, cy)) { u.x = nx; return true; }          /* desliza em x */
+    if (w.livre(cx, ny | 0)) { u.y = ny; return true; }          /* desliza em y */
+    return false;
+  };
+
+  S.separarUnidades = function (dt) {
+    var grade = {}, i, u, ch;
+    for (i = 0; i < this.unidades.length; i++) {
+      u = this.unidades[i];
+      if (u.morta || u.voa || u.lado === 'inimigo') continue;
+      ch = (u.x | 0) + ',' + (u.y | 0);
+      if (!grade[ch]) grade[ch] = [];
+      grade[ch].push(u);
+    }
+    for (i = 0; i < this.unidades.length; i++) {
+      u = this.unidades[i];
+      if (u.morta || u.voa || u.lado === 'inimigo') continue;
+      var cx = u.x | 0, cy = u.y | 0, mexeu = 0;
+      for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -1; dy <= 1; dy++) {
+          var lista = grade[(cx + dx) + ',' + (cy + dy)];
+          if (!lista) continue;
+          for (var k = 0; k < lista.length; k++) {
+            var o = lista[k];
+            if (o === u || o.morta || o.voa || o.lado === 'inimigo') continue;
+            var vx = u.x - o.x, vy = u.y - o.y;
+            var d2 = vx * vx + vy * vy;
+            var min = (u.raio || 0.3) + (o.raio || 0.3);
+            if (d2 >= min * min) continue;
+            var d = Math.sqrt(d2);
+            if (min - d < SOBRA_MINIMA) continue;
+            if (d < 0.0001) {
+              /* Exatamente no mesmo ponto: sem direção para empurrar. O
+                 desempate vem do id, não de sorteio, para a simulação
+                 continuar determinística. */
+              vx = ((u.id % 7) - 3) * 0.01 + 0.005;
+              vy = ((u.id % 5) - 2) * 0.01 + 0.005;
+              d = Math.hypot(vx, vy) || 1;
+            }
+            var peso = u.rota ? 1 : 0.45;
+            var passo = Math.min((min - d) * 0.5, EMPURRAO * dt) * peso;
+            if (this.empurrar(u, u.x + (vx / d) * passo, u.y + (vy / d) * passo)) mexeu += passo;
+          }
+        }
+      }
+      /* Andou de lado o bastante para o caminho antigo não valer mais. */
+      if (mexeu > 0.12 && u.rota && this.t > (u.refezRotaEm || 0)) {
+        u.rota = null;
+        u.tentarRotaEm = 0;
+        u.refezRotaEm = this.t + DESCANSO_ROTA;
+      }
+    }
+  };
 
   S.verificarVitoria = function (ondasCompletas) {
     if (this.fase !== 'jogando') return;
@@ -4357,6 +4438,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       else this.atualizarSoldado(u, dt);
     }
 
+    this.separarUnidades(dt);
     this.atualizarProjeteis(dt);
     this.atualizarHabilidades(dt);
     this.atualizarPesquisa(dt);
