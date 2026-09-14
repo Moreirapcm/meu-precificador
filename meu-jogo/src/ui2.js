@@ -248,7 +248,8 @@
 
     if (tropas.length > 1 || this.grupoSelecionado) {
       var nomes = { soldados: 'Soldados', operarios: 'Operários', aereos: 'Aéreos', feridos: 'Feridos' };
-      $('selNome').textContent = (nomes[this.grupoSelecionado] || 'Grupo') + ' · ' + tropas.length;
+      $('selNome').textContent = (this.rotuloSelecao || nomes[this.grupoSelecionado] || 'Grupo') +
+        ' · ' + tropas.length;
       $('selDetalhe').textContent = 'Toque no terreno para dar a ordem.';
       this.acoesDeTropa(cx, tropas);
       return;

@@ -50,6 +50,7 @@
        No celular o toque longo é o que substitui o botão direito que não existe. */
     var caixa = null;            /* {x0,y0,x1,y1} em pixels de tela */
     var relogioLongo = 0;
+    var ultimoToque = null;      /* {x,y,t} do toque anterior, para o duplo */
 
     function pos(e) {
       var r = cv.getBoundingClientRect();
@@ -142,7 +143,21 @@
       }
       caixa = null; self.render.caixaSelecao = null;
       if (self.modo && self.modo.tipo === 'muro' && self.modo.inicio) { self.concluirTracado(); return; }
-      if (moveu <= LIMIAR) self.tocar(p);
+      if (moveu <= LIMIAR) {
+        /* DUPLO TOQUE: seleciona todas as unidades do mesmo tipo que estão na
+           TELA. É o gesto mais antigo e mais usado do gênero, e faltava.
+           A janela é de 340 ms e 24 px — larga o bastante para o dedo, que
+           nunca cai duas vezes no mesmo pixel, e curta o bastante para não
+           confundir dois toques separados em unidades diferentes.
+           Ctrl+clique faz o mesmo, que é o atalho do StarCraft para quem está
+           no teclado e não quer arriscar o tempo do duplo clique. */
+        var agora = Date.now();
+        var perto = ultimoToque &&
+          Math.abs(p.x - ultimoToque.x) < 24 && Math.abs(p.y - ultimoToque.y) < 24;
+        var duplo = perto && (agora - ultimoToque.t) < 340;
+        if (duplo || e.ctrlKey || e.metaKey) { ultimoToque = null; self.selecionarTodosDoTipo(p); }
+        else { ultimoToque = { x: p.x, y: p.y, t: agora }; self.tocar(p); }
+      }
       moveu = 0;
     }
     cv.addEventListener('pointerup', soltar);
@@ -275,6 +290,7 @@
 
   UI.prototype.selecionar = function (ent) {
     this.grupoSelecionado = null;
+    this.rotuloSelecao = null;
     /* Trocar de seleção fecha a segunda página: a lista de construções era do
        operário que estava selecionado, não da torre em que se acabou de tocar. */
     this.paginaAcoes = null;
@@ -314,10 +330,50 @@
     if (soldados.length) ids = soldados;
 
     this.grupoSelecionado = null;
+    this.rotuloSelecao = null;
     this.selecionado = ids.length === 1 ? ids[0] : 0;
     this.jazidaSelecionada = null;
     this.render.selecao = ids;
     if (ids.length) UF.audio.evento('clique');
+    this.atualizarTudo();
+  };
+
+  /* TODAS DO MESMO TIPO QUE ESTÃO NA TELA.
+     O escopo é a tela, não o mapa — é assim nos dois clássicos, e a razão é de
+     jogo, não de implementação: seleção que alcança o outro lado do mapa tira
+     do jogador o controle de quem ele está mandando. Quem quer o mapa inteiro
+     usa as categorias (1 a 4) ou um grupo gravado.
+
+     Só vale para unidade ALIADA. Dois toques num invasor continuam marcando
+     prioridade de fogo, e em estrutura não faz sentido nenhum. */
+  UI.prototype.selecionarTodosDoTipo = function (p) {
+    var sim = this.sim, m = this.render.paraMundo(p.x, p.y);
+    var base = this.entidadeEm(m);
+    if (!base || base.w || base.lado !== 'aliado') { this.tocar(p); return; }
+
+    var cv = $('jogo'), larg = cv.clientWidth, alt = cv.clientHeight;
+    var margem = 40;                 /* quem está meio para fora ainda conta */
+    var ids = [];
+    for (var i = 0; i < sim.unidades.length; i++) {
+      var u = sim.unidades[i];
+      if (u.lado !== 'aliado' || u.morta || u.tipo !== base.tipo) continue;
+      var t = this.render.paraTela(u.x, u.y);
+      if (t.x < -margem || t.x > larg + margem) continue;
+      if (t.y < -margem || t.y > alt + margem) continue;
+      ids.push(u.id);
+    }
+    if (!ids.length) ids = [base.id];
+
+    this.grupoSelecionado = null;
+    this.paginaAcoes = null;
+    this.jazidaSelecionada = null;
+    this.selecionado = ids.length === 1 ? ids[0] : 0;
+    this.render.selecao = ids;
+    /* Guarda o nome para a barra dizer "Operário · 7" em vez de "Grupo · 7":
+       o jogador precisa ver que pegou UM tipo, e qual. */
+    this.rotuloSelecao = ids.length > 1 ? base.def.nome : null;
+    UF.audio.evento('clique');
+    if (ids.length > 1) this.mostrarAviso(ids.length + ' × ' + base.def.nome + ' na tela.', 'info');
     this.atualizarTudo();
   };
 
