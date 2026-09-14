@@ -149,7 +149,7 @@
     },
     fuzileiro: {
       nome: 'Fuzileiro', raio: 0.27, custo: { m: 60 }, pop: 1, tempo: 11, hp: 130, vel: 2.7, visao: 8, blind: 0,
-      arma: { dano: 12, cad: 0.7, alc: 5.5, solo: true, ar: true, vel: 18, cor: '#ffe9a8' },
+      arma: { dano: 24, cad: 1.4, alc: 5.5, solo: true, ar: true, vel: 18, cor: '#ffe9a8' },
       desc: 'Tiro rápido contra solo e ar. Frágil quando cercado.'
     },
     /* TRATOR DE LIMPEZA. A cidade arruinada é o mapa inteiro, e até agora ela
@@ -183,12 +183,12 @@
        na hora e o desenho mostra arco de garra, sem projétil nenhum. */
     cao: {
       nome: 'Cão de guerra', raio: 0.24, custo: { m: 55 }, pop: 1, tempo: 8, hp: 80, vel: 4.6, visao: 10, blind: 0,
-      arma: { dano: 15, cad: 0.5, alc: 1.2, solo: true, ar: false, vel: 12 },
+      arma: { dano: 26, cad: 0.87, alc: 1.2, solo: true, ar: false, vel: 12 },
       desc: 'Rápido e barato. Alcança quem foge e enxerga longe; morre fácil em área.'
     },
     incendiario: {
       nome: 'Incendiário', raio: 0.3, custo: { m: 90 }, pop: 2, tempo: 15, hp: 200, vel: 2.4, visao: 7, blind: 1,
-      arma: { dano: 20, cad: 1.1, alc: 2.6, solo: true, ar: false, vel: 14, area: 1.5, cor: '#ff8a4c' },
+      arma: { dano: 34, cad: 1.87, alc: 2.6, solo: true, ar: false, vel: 14, area: 1.5, cor: '#ff8a4c' },
       desc: 'Dano em cone curto contra enxames no solo.'
     },
     medico: {
@@ -203,7 +203,7 @@
     },
     drone: {
       nome: 'Drone antiaéreo', raio: 0.3, custo: { m: 140, c: 30 }, pop: 2, tempo: 16, hp: 160, vel: 3.6, visao: 9, voa: true,
-      arma: { dano: 26, cad: 0.85, alc: 6.2, solo: false, ar: true, vel: 22, cor: '#8fd9ff' },
+      arma: { dano: 45, cad: 1.47, alc: 6.2, solo: false, ar: true, vel: 22, cor: '#8fd9ff' },
       desc: 'Interceta voadores. Não consegue atacar alvos terrestres.'
     },
     tanque: {
@@ -219,13 +219,13 @@
   var INVASORES = {
     predador: {
       nome: 'Predador', hp: 150, vel: 2.6, blind: 1, valor: 6, mira: 'tropa', visao: 7,
-      arma: { dano: 10, cad: 0.8, alc: 1.2, solo: true, ar: false, vel: 12 },
+      arma: { dano: 20, cad: 1.6, alc: 1.2, solo: true, ar: false, vel: 12 },
       cor: '#f06a6a', raio: 0.32,
       desc: 'Pressiona muros e soldados próximos; entra assim que surge uma brecha.'
     },
     corredor: {
       nome: 'Corredor', hp: 95, vel: 4.1, blind: 0, valor: 5, mira: 'economia', visao: 9,
-      arma: { dano: 7, cad: 0.6, alc: 1.1, solo: true, ar: false, vel: 12 },
+      arma: { dano: 14, cad: 1.2, alc: 1.1, solo: true, ar: false, vel: 12 },
       cor: '#ffa14a', raio: 0.28,
       desc: 'Busca aberturas e rotas econômicas desprotegidas.'
     },
@@ -249,7 +249,7 @@
     },
     asa: {
       nome: 'Asa corrosiva', hp: 165, vel: 3.4, blind: 1, valor: 12, mira: 'economia', visao: 9, voa: true, acido: true,
-      arma: { dano: 14, cad: 0.9, alc: 2.2, solo: true, ar: false, vel: 14 },
+      arma: { dano: 24, cad: 1.54, alc: 2.2, solo: true, ar: false, vel: 14 },
       cor: '#c58cff', raio: 0.3,
       desc: 'Cruza o perímetro e pressiona operários ou estruturas relevantes.'
     },
