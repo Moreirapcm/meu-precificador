@@ -312,8 +312,13 @@
       r.escalaY *= 1 + (alto - 0.5) * gal.peso;
     }
 
-    /* Inclinação para a frente enquanto corre: quanto mais rápida, mais deitada. */
-    if (u.rota && noChao) {
+    /* Inclinação para a frente enquanto corre: quanto mais rápida, mais deitada.
+       Só para quem TEM CORPO. Máquina sobre esteira ou roda não se inclina para
+       correr — a esteira continua encostada no chão — e o trator, que é largo e
+       baixo, saía visivelmente torto na tela: foi a primeira coisa que o Pedro
+       notou nele. O tanque sofria do mesmo, só que menos, por ser mais alto que
+       comprido. */
+    if (u.rota && noChao && !Anima.VEICULO[u.tipo]) {
       r.giro += (r.espelhar ? 0.09 : -0.09) * Math.min(1.6, (u.def.vel || 2.5) / 2.8);
     }
 

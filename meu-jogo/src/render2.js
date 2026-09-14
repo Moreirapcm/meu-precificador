@@ -904,6 +904,11 @@
           e.ladoAlvo === 'inimigo' ? '#7eba2e' : '#7a1a18');
       } else if (e.tipo === 'cura') {
         this.efeitoMundo('cura', e.x, e.y, { vida: 0.5 });
+      } else if (e.tipo === 'escavando') {
+        /* Pó subindo e um caco saltando: diz "está trabalhando AQUI" sem
+           precisar de barra de progresso em cima do chão. */
+        this.efeitoMundo('fumaca', e.x + 0.5, e.y + 0.5, { vida: 0.55, raio: 0.5 });
+        this.lancarCacos(e.x + 0.5, e.y + 0.5, 2, 1.4, '#b9ab93');
       } else if (e.tipo === 'terrenoLimpo') {
         this.terrenoSujo = true;
         /* Poeira no lugar: sem ela a célula simplesmente TROCA DE COR de um

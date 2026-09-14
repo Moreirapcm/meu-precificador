@@ -253,6 +253,10 @@
         this.tom(784, 0.14, 'triangle', 0.12, 0, 'ui', 0.19);
         break;
       case 'unidadePronta': this.radio(true); break;
+      /* Pá raspando entulho: ruído grave e curto, com teto baixo. */
+      case 'escavando':
+        if (this.pode('escavando', 380)) this.ruido(0.18, 0.09, 420, 140, 1.1);
+        break;
       /* PEDIDO DE APOIO: chiado de rádio DESCENDO — o de subir é boa notícia,
          e este não é — seguido de dois toques curtos de alarme. */
       case 'apoio':

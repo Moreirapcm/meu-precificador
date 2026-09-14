@@ -16,7 +16,11 @@
  *
  * Sem rede, os dois caem no cache — que é o ponto de instalar no celular.
  */
-var VERSAO = 'uf-v2';
+/* Subir esta versão APAGA o cache anterior no próximo carregamento. Suba
+   sempre que uma correção precisar chegar a quem já tem o jogo instalado — foi
+   o que faltou quando o trator saiu corrigido e o navegador continuou servindo
+   o trator quebrado. */
+var VERSAO = 'uf-v3';
 
 /* A lista é gerada à mão de propósito: o jogo não tem etapa de build que possa
    montá-la, e um `import` a mais sem entrada aqui só apareceria como tela preta

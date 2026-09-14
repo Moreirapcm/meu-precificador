@@ -329,6 +329,15 @@
       u.rota = null;
       u.bloqueado = false;
       tarefa.progresso = (tarefa.progresso || 0) + dt / (u.def.limpeza || 4);
+      /* Um baque a cada meio segundo, com poeira. O trabalho leva segundos e,
+         sem nada na tela, a máquina parece parada em cima do entulho — foi o
+         que o Pedro viu e chamou de "não limpa nada". Trabalho que não faz
+         barulho nem levanta pó não parece trabalho. */
+      tarefa.baque = (tarefa.baque || 0) + dt;
+      if (tarefa.baque > 0.5) {
+        tarefa.baque = 0;
+        this.emitir('escavando', { x: al.x, y: al.y, progresso: tarefa.progresso });
+      }
       if (tarefa.progresso < 1) return;
       tarefa.progresso = 0;
       var oque = w.limparCelula(al.x, al.y);
