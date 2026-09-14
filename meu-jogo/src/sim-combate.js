@@ -348,6 +348,45 @@
     b.portaoAberto = !perigo || pedido;
   };
 
+  /* PEDIDO DE APOIO PELO RÁDIO.
+     Chama a reserva: as tropas que estão em `defender` e ao alcance do chamado
+     largam o posto e vão para o ponto do contato. Quem tem ordem MANUAL —
+     outra patrulha, um avanço, um recuo, fogo concentrado — não é arrastado:
+     ordem do jogador vale mais que chamado automático, senão um bicho isolado
+     desmonta a defesa inteira.
+
+     A espera de oito segundos por unidade existe para o rádio não virar
+     chiado contínuo numa onda, onde há contato novo a cada instante. */
+  var ESPERA_APOIO = 8;
+  var ALCANCE_APOIO = 16;
+
+  S.pedirApoio = function (u, alvo) {
+    if (!u || !alvo || alvo.morta) return;
+    if (u.proximoApoio && this.t < u.proximoApoio) return;
+    u.proximoApoio = this.t + ESPERA_APOIO;
+
+    var c = this.centroDe(alvo), vieram = 0;
+    for (var i = 0; i < this.unidades.length; i++) {
+      var o = this.unidades[i];
+      if (o === u || o.lado !== 'aliado' || o.morta || o.operario) continue;
+      if (!o.def.arma || o.def.cura) continue;
+      var t = o.tarefa ? o.tarefa.tipo : null;
+      if (t !== 'defender' && t !== 'voltandoAoPosto' && t !== null) continue;   /* só a reserva */
+      if (U.dist(o.x, o.y, c.x, c.y) > ALCANCE_APOIO) continue;
+      /* Guarda o POSTO. Quem atende o chamado tem de voltar para onde estava —
+         senão o primeiro bicho isolado esvazia a linha de defesa de vez, e a
+         onda de verdade chega numa base sem ninguém. */
+      var posto = (o.tarefa && o.tarefa.centro) || { x: o.x, y: o.y };
+      this.darTarefa(o, { tipo: 'moverAtacando', destino: { x: Math.floor(c.x), y: Math.floor(c.y) },
+        apoio: true, posto: { x: posto.x, y: posto.y }, prazo: this.t + 25 }, false);
+      vieram++;
+    }
+    this.emitir('apoio', {
+      x: u.x, y: u.y, alvoX: c.x, alvoY: c.y,
+      nome: u.def.nome, vieram: vieram, inimigo: alvo.def ? alvo.def.nome : 'inimigo'
+    });
+  };
+
   /* ---------------------------------------------------------- tropas aliadas */
   S.atualizarSoldado = function (u, dt) {
     var tarefa = u.tarefa || (u.tarefa = { tipo: 'defender', centro: { x: u.x, y: u.y }, raio: 7 });
@@ -401,6 +440,11 @@
         tarefa.centro = { x: (tarefa.a.x + tarefa.b.x) / 2, y: (tarefa.a.y + tarefa.b.y) / 2 };
         tarefa.raio = U.dist(tarefa.a.x, tarefa.a.y, tarefa.b.x, tarefa.b.y) / 2 + 5;
       }
+      /* CHAMA APOIO. A ronda existe para AVISAR, não só para trocar tiro: quem
+         anda sozinho na frente e encontra o inimigo morre sozinho se ninguém
+         souber. Só no momento em que o alvo APARECE — enquanto a briga
+         continua, o rádio fica quieto. */
+      if (u.alvo !== alvo.id) this.pedirApoio(u, alvo);
     }
 
     if (alvo) {
@@ -409,7 +453,8 @@
       if (d > arma.alc * 0.92) {
         /* A patrulha tem coleira como a defesa: sem ela, um inimigo que foge
            levava a ronda inteira atrás dele e a linha ficava aberta. */
-        var comColeira = tarefa.tipo === 'defender' || tarefa.tipo === 'patrulhar';
+        var comColeira = tarefa.tipo === 'defender' || tarefa.tipo === 'patrulhar' ||
+          tarefa.tipo === 'voltandoAoPosto';
         var limite = comColeira ? (tarefa.raio || 7) : 99;
         var longe = tarefa.centro ? U.dist(u.x, u.y, tarefa.centro.x, tarefa.centro.y) : 0;
         if (longe < limite) this.irAte(u, alvo, dt, 1);
@@ -429,7 +474,37 @@
     u.alvo = 0;
     if (tarefa.tipo === 'moverAtacando') {
       this.irAte(u, tarefa.destino, dt);
-      if (this.encostouEm(u, tarefa.destino, 0.9)) u.tarefa = { tipo: 'defender', centro: { x: u.x, y: u.y }, raio: 7 };
+      /* Quem foi atender o chamado volta ao POSTO ao terminar; quem foi por
+         ordem do jogador fica onde chegou, que é o que a ordem pediu.
+
+         Voltar assim que some o alvo, como tentei primeiro, não funciona: no
+         quadro seguinte ao chamado o apoio ainda está na base, longe demais
+         para ver o inimigo, e dava meia-volta sem sair do lugar. Tem de CHEGAR.
+
+         O prazo existe para o apoio não marchar para sempre atrás de um ponto
+         que ficou inalcançável — brecha fechada, muro erguido no caminho. */
+      var acabou = this.encostouEm(u, tarefa.destino, 0.9) ||
+        (tarefa.apoio && tarefa.prazo && this.t > tarefa.prazo);
+      if (acabou) {
+        if (tarefa.apoio && tarefa.posto) {
+          u.tarefa = { tipo: 'voltandoAoPosto', destino: tarefa.posto,
+            centro: tarefa.posto, raio: 9 };
+          u.rota = null;
+        } else {
+          u.tarefa = { tipo: 'defender', centro: { x: u.x, y: u.y }, raio: 7 };
+        }
+      }
+      return;
+    }
+    /* A volta é uma tarefa própria e não um `mover`: assim ela continua
+       reagindo a inimigo no caminho — é o mesmo ramo de cima que trata isso —
+       e termina virando `defender` no posto certo, não onde parou. */
+    if (tarefa.tipo === 'voltandoAoPosto') {
+      this.irAte(u, tarefa.destino, dt);
+      if (this.encostouEm(u, tarefa.destino, 1.2)) {
+        u.tarefa = { tipo: 'defender', centro: { x: tarefa.destino.x, y: tarefa.destino.y }, raio: 7 };
+        u.rota = null;
+      }
       return;
     }
     if (tarefa.tipo === 'defender' && tarefa.centro) {

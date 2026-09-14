@@ -841,6 +841,13 @@
     return e;
   };
 
+  /* MARCA DE CONTATO. O rádio diz que houve contato; isto diz ONDE. Três
+     segundos é o tempo de o jogador tirar os olhos do que estava fazendo e
+     achar o ponto — meio segundo, que é a duração dos outros efeitos, não dá. */
+  R.marcarContato = function (x, y) {
+    this.efeitoMundo('contato', x, y, { vida: 3 });
+  };
+
   /* Estilhaços saindo de um ponto. `forca` é o quanto eles voam. */
   R.lancarCacos = function (x, y, quantos, forca, cor) {
     for (var i = 0; i < quantos; i++) {
@@ -994,6 +1001,20 @@
           ctx.stroke();
         }
         ctx.restore();
+      } else if (e.tipo === 'contato') {
+        /* Dois anéis que abrem e fecham, em vermelho de alarme. Pisca em vez
+           de só apagar: coisa que pisca o olho acha na periferia da tela. */
+        var pulso = (e.vida * 2) % 1;
+        ctx.globalAlpha = t * (0.35 + 0.45 * Math.abs(Math.sin(e.vida * 7)));
+        ctx.strokeStyle = '#ff5d46';
+        ctx.lineWidth = 2;
+        for (var an = 0; an < 2; an++) {
+          var rr = (0.35 + pulso * 0.75 + an * 0.3) * LARG * z * 0.5;
+          ctx.beginPath();
+          ctx.ellipse(p.x, p.y, rr, rr * 0.5, 0, 0, 6.283);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
       } else if (e.tipo === 'texto') {
         ctx.globalAlpha = Math.min(1, t * 1.8);
         ctx.fillStyle = e.cor || '#ffd479';

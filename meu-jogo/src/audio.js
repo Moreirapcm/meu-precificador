@@ -253,6 +253,13 @@
         this.tom(784, 0.14, 'triangle', 0.12, 0, 'ui', 0.19);
         break;
       case 'unidadePronta': this.radio(true); break;
+      /* PEDIDO DE APOIO: chiado de rádio DESCENDO — o de subir é boa notícia,
+         e este não é — seguido de dois toques curtos de alarme. */
+      case 'apoio':
+        this.radio(false);
+        this.tom(740, 0.09, 'square', 0.07, 0, 'ui', 0.06);
+        this.tom(740, 0.09, 'square', 0.07, 0, 'ui', 0.2);
+        break;
       case 'entrega':
         if (this.pode('entrega', 220)) this.tom(880, 0.05, 'sine', 0.07, 0, 'ui');
         break;

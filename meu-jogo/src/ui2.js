@@ -505,7 +505,8 @@
     var rotuloTarefa = {
       ocioso: 'sem tarefa', minerar: 'minerando', construir: 'construindo', reparar: 'reparando',
       mover: 'a caminho', fugindo: 'fugindo do combate', defender: 'defendendo a área',
-      moverAtacando: 'avançando', patrulhar: 'patrulhando', recuar: 'recuando', focar: 'fogo concentrado'
+      moverAtacando: 'avançando', patrulhar: 'patrulhando', recuar: 'recuando',
+      focar: 'fogo concentrado', voltandoAoPosto: 'voltando ao posto'
     }[tarefa] || tarefa;
     this.mostrarSelecao(u.def.nome, u.hp, u.hpMax, rotuloTarefa +
       (u.carga ? ' · carga ' + u.carga : '') + (u.bloqueado ? ' · SEM ROTA' : ''));

@@ -283,6 +283,14 @@
         var e = sim.eventos[i];
         UF.audio.evento(e.tipo);
         if (e.tipo === 'aviso') self.ui.mostrarAviso(e.texto, e.nivel);
+        /* O chamado de apoio vira frase na tela e marca na minimapa: o rádio
+           sozinho diz QUE aconteceu, não ONDE. */
+        if (e.tipo === 'apoio') {
+          self.ui.mostrarAviso(e.nome + ' em contato com ' + e.inimigo +
+            (e.vieram ? ' — ' + e.vieram + ' a caminho.' : ' — ninguém por perto.'),
+            e.vieram ? 'atencao' : 'perigo');
+          self.render.marcarContato(e.alvoX, e.alvoY);
+        }
         if (e.tipo === 'fimDePartida') { self.fimDePartida(e.venceu, e.motivo); }
       }
       self.render.consumirEventos();
