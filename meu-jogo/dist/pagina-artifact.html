@@ -3509,7 +3509,15 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       alvoId: alvo.id, lado: origem.lado,
       ultimoX: centroA.x, ultimoY: centroA.y,
       dano: dano, vel: arma.vel || 14, area: area,
-      perfura: !!arma.perfura || (origem.lado !== 'inimigo' && !!this.jogador.pesquisas.penetracao && Math.random() < 1),
+      /* `perfura` é propriedade da ARMA (o Lanceiro atravessa blindagem por
+         desenho), e `metadeBlindagem` é o efeito da pesquisa. Marcar os dois
+         juntos anulava a pesquisa e a tornava melhor do que ela promete: em
+         `aplicarDano`, `perfura` pula a subtração INTEIRA, então o `blind *= 0.5`
+         logo acima nunca chegava a valer. A Munição perfurante ignorava a
+         blindagem toda — 8 no Titã, 10 na Matriarca — enquanto a descrição diz
+         metade. O `Math.random() < 1` que estava na linha era resto de uma
+         chance que nunca chegou a existir: sempre verdadeiro. */
+      perfura: !!arma.perfura,
       metadeBlindagem: origem.lado !== 'inimigo' && !!this.jogador.pesquisas.penetracao,
       lentidao: arma.lentidao || 0, acido: !!(origem.def && origem.def.acido),
       cor: arma.cor || '#ffd7a0', origemId: origem.id
