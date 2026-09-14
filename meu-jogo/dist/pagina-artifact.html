@@ -2612,6 +2612,11 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   /* Anda pela rota. Devolve 'bloqueio' com a estrutura a derrubar, se houver. */
   S.andar = function (u, dt) {
     if (u.voa) return null;
+    /* Rota vazia é a armadilha desta casa: `[]` é VERDADEIRO, então quem testa
+       `if (!u.rota)` para pedir rota nova nunca mais pede, e a unidade fica
+       parada para sempre achando que tem caminho. Zerar aqui fecha o buraco
+       para todo chamador, não só para o trator que o descobriu. */
+    if (u.rota && !u.rota.length) u.rota = null;
     if (!u.rota || u.passo >= u.rota.length) return null;
     if (u.versaoRota !== this.world.versaoRota) {
       /* O terreno mudou: revalida só o trecho à frente. */
@@ -2836,8 +2841,15 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
          buscador de rota entrega. */
       var centroPosto = { x: alvoPosto.x + 0.5, y: alvoPosto.y + 0.5 };
       if (Math.floor(u.x) !== alvoPosto.x || Math.floor(u.y) !== alvoPosto.y) {
+        /* DESTINO INTEIRO, e os dois têm de andar juntos com o raio zero.
+           `path.js` testa a chegada como |x − (px+0,5)| ≤ raio: com destino
+           fracionário e raio 0 isso é impossível para coordenada inteira, e o
+           A* varria o mapa inteiro para devolver nada — o trator desistia de
+           toda célula mesmo cercado de entulho. Com destino fracionário e raio
+           1, o contrário: quatro células diferentes contam como "cheguei", a
+           rota volta vazia e ele congela. Medido nos dois casos. */
         if ((!u.rota || !u.rota.length) &&
-            !this.pedirRota(u, centroPosto, { raioChegada: 0 })) {
+            !this.pedirRota(u, { x: alvoPosto.x, y: alvoPosto.y }, { raioChegada: 0 })) {
           this.desistirDaCelula(tarefa, al);
           u.bloqueado = true;
           return;
