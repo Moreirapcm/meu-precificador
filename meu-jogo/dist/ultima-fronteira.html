@@ -137,6 +137,28 @@ button { cursor: pointer; border: 0; background: none; }
   background: rgba(10,16,26,.82); border: 1px solid var(--borda); border-radius: 8px;
   padding: 7px 10px; font-size: 11.5px; line-height: 1.35;
 }
+/* BOTÃO DE OCIOSO.
+   No Age of Empires II ele mora na barra e carrega o NÚMERO de aldeões parados,
+   e cada toque leva ao PRÓXIMO — não à turma toda. A diferença importa: com o
+   contador o jogador vê que está perdendo dinheiro sem procurar ninguém no
+   mapa, e o ciclo um a um deixa ele dar destino diferente para cada um.
+   Aqui ele só aparece quando há alguém parado: botão que vive na tela mostrando
+   zero vira parte do cenário e para de ser visto. */
+#btnOciosos {
+  position: absolute; left: 8px; bottom: 8px; z-index: 12;
+  display: flex; align-items: center; gap: 5px; padding: 6px 10px 6px 8px;
+  background: rgba(10,16,26,.9); border: 1px solid var(--atencao, #d8a13a);
+  border-radius: 999px; color: var(--texto); box-shadow: 0 2px 10px rgba(0,0,0,.45);
+}
+#btnOciosos[hidden] { display: none; }
+#btnOciosos i { font-style: normal; font-size: 15px; line-height: 1; }
+#btnOciosos b { font-family: var(--hud); font-size: 13px; font-weight: 700; }
+#btnOciosos.pulsa { animation: ocioso-pulsa 1.6s ease-in-out infinite; }
+@keyframes ocioso-pulsa {
+  0%, 100% { box-shadow: 0 2px 10px rgba(0,0,0,.45); }
+  50% { box-shadow: 0 2px 16px rgba(216,161,58,.55); }
+}
+
 #objetivoHud b { display: block; font-family: var(--hud); font-weight: 600; }
 #objetivoHud span { color: var(--suave); font-size: 10.5px; }
 
@@ -486,6 +508,10 @@ button:focus-visible, select:focus-visible, canvas:focus-visible {
     </div>
 
     <div id="objetivoHud"><b id="objetivoTexto"></b><span id="objetivoProgresso"></span></div>
+
+    <button id="btnOciosos" hidden title="Ir para quem está sem trabalho ou sem rota (.)">
+      <i>⚠</i><b id="ociososN">0</b>
+    </button>
     <div id="avisoHud" role="status" aria-live="polite"></div>
     <div id="chefeHud" hidden><span id="chefeNome"></span><div><i id="chefeVida"></i></div></div>
 
@@ -7321,7 +7347,10 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (k === 'w') { self.iniciarHabilidade('escudo'); return; }
       if (k === 's') { self.pararSelecionados(); return; }
       if (k === 'h') { self.voltarParaBase(); return; }
-      if (k === '.' || k === ',') { self.selecionarOciosos(); return; }
+      /* `.` vai ao PRÓXIMO parado e `,` pega todos de uma vez, que é a divisão
+         do Age of Empires (lá, ponto e Ctrl+ponto). */
+      if (k === '.') { self.proximoOcioso(); return; }
+      if (k === ',') { self.selecionarOciosos(); return; }
 
       /* Número: grupo de controle, como em StarCraft. Com Ctrl grava, sozinho
          chama. Antes Ctrl+1 caía direto em "selecionar todos os soldados" —
@@ -7516,20 +7545,71 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
   /* Tropa ociosa: o dado já existia na simulação e nunca virava seleção. É a
      forma mais barata de recuperar controle num mapa grande. */
-  UI.prototype.selecionarOciosos = function () {
+  /* QUEM PRECISA DE ATENÇÃO.
+     O botão de aldeão ocioso do Age of Empires não se traduz direto para cá, e
+     medi antes de escrever: neste jogo ninguém fica ocioso. O operário parado
+     volta sozinho para a jazida e o soldado parado entra em `defender`, que é o
+     trabalho dele. Um botão com a definição clássica marcaria zero a partida
+     inteira e viraria enfeite.
+
+     O que existe de verdade aqui, e que o jogador não tem como enxergar, são
+     dois casos:
+       - operário sem trabalho produtivo — sobra gente e falta jazida livre,
+         que é exatamente o momento de expandir ou construir;
+       - qualquer unidade BLOQUEADA, sem rota até onde foi mandada. Essa é pior
+         que ociosa: ela acha que está trabalhando e não está.
+     Uma definição só, usada pelo contador e pelo ciclo — número no botão que
+     discorda do que o toque encontra é pior que botão nenhum. */
+  var TAREFA_PRODUTIVA = { minerar: 1, construir: 1, reparar: 1 };
+
+  UI.prototype.ociosos = function () {
     var sim = this.sim, ids = [];
+    if (!sim) return ids;
     for (var i = 0; i < sim.unidades.length; i++) {
       var u = sim.unidades[i];
       if (u.lado !== 'aliado' || u.morta) continue;
-      var parado = !u.tarefa || u.tarefa.tipo === 'ocioso';
-      if (parado && !u.alvo) ids.push(u.id);
+      if (u.bloqueado) { ids.push(u.id); continue; }
+      if (!u.operario) continue;
+      var t = u.tarefa ? u.tarefa.tipo : null;
+      if (!TAREFA_PRODUTIVA[t] && !u.rota) ids.push(u.id);
     }
+    return ids;
+  };
+
+  /* UM DE CADA VEZ, e é assim no Age of Empires II: cada toque leva ao PRÓXIMO
+     parado, não à turma toda. Parece detalhe e não é — pegar os cinco juntos
+     obriga a dar a mesma ordem aos cinco, e o motivo de eles estarem parados
+     costuma ser diferente em cada um. O ciclo guarda onde parou. */
+  UI.prototype.proximoOcioso = function () {
+    var ids = this.ociosos();
+    if (!ids.length) { this.mostrarAviso('Ninguém parado.', 'info'); return; }
+    var pos = ids.indexOf(this.ultimoOcioso);
+    var alvo = ids[(pos + 1) % ids.length];      /* -1 + 1 = 0: começa do primeiro */
+    this.ultimoOcioso = alvo;
+    var u = this.sim.unidadePorId(alvo);
+    if (!u) return;
+    this.grupoSelecionado = null;
+    this.rotuloSelecao = null;
+    this.paginaAcoes = null;
+    this.jazidaSelecionada = null;
+    this.selecionado = alvo;
+    this.render.selecao = [alvo];
+    this.render.centralizarEm(u.x, u.y);
+    UF.audio.evento('clique');
+    this.mostrarAviso(u.def.nome + (u.bloqueado ? ' SEM ROTA' : ' sem trabalho') +
+      ' · ' + ids.length + ' precisando de atenção.', 'atencao');
+    this.atualizarTudo();
+  };
+
+  UI.prototype.selecionarOciosos = function () {
+    var ids = this.ociosos();
     if (!ids.length) { this.mostrarAviso('Ninguém parado.', 'info'); return; }
     this.grupoSelecionado = null;
+    this.rotuloSelecao = null;
     this.selecionado = ids.length === 1 ? ids[0] : 0;
     this.jazidaSelecionada = null;
     this.render.selecao = ids;
-    this.render.centralizarEm(sim.unidadePorId(ids[0]).x, sim.unidadePorId(ids[0]).y);
+    this.render.centralizarEm(this.sim.unidadePorId(ids[0]).x, this.sim.unidadePorId(ids[0]).y);
     this.atualizarTudo();
   };
 
@@ -7839,6 +7919,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     $('btnVel').onclick = function () { self.jogo.alternarVelocidade(); };
     $('btnMenu').onclick = function () { self.abrirMenuPartida(); };
     $('btnCancelarModo').onclick = function () { self.cancelarModo(); };
+    $('btnOciosos').onclick = function () { self.proximoOcioso(); };
     $('btnSugerir').onclick = function () { self.sugerirLocalCentral(); };
     $('puxadorGaveta').onclick = function () { self.gavetaAberta ? self.fecharGaveta() : self.abrirGaveta(self.gavetaAtual, true); };
     var abas = doc.querySelectorAll('#abas button');
@@ -7879,6 +7960,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   UI.atualizarHud = function () {
     var sim = this.sim, j = sim.jogador;
     this.atualizarVivos();
+    this.atualizarOciosos();
     $('hudM').textContent = U.num(j.m);
     $('hudC').textContent = U.num(j.c);
     var pop = j.popUsada + j.popReservada;
@@ -7992,6 +8074,21 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       cx.appendChild(vazia);
     }
   }
+
+  /* O contador. Só aparece quando há alguém: botão que vive na tela mostrando
+     zero vira parte do cenário e para de ser visto. Acima de três o anel pulsa
+     — três operários sem trabalho já é uma jazida inteira sem ninguém. */
+  UI.atualizarOciosos = function () {
+    var b = $('btnOciosos');
+    if (!b) return;
+    var n = this.ociosos().length;
+    /* Escreve ANTES de esconder. Saindo cedo quando n é zero, o botão guardava
+       o número velho e reaparecia por uma fração de segundo com ele — número
+       errado na tela é pior que botão nenhum. */
+    $('ociososN').textContent = n;
+    b.classList.toggle('pulsa', n >= 3);
+    b.hidden = !n;
+  };
 
   /* O que MUDA sozinho, atualizado sem refazer a barra.
      `atualizarAcoes` remonta o HTML inteiro e só roda a cada 0,9 s; vida caindo

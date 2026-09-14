@@ -13,6 +13,7 @@
     $('btnVel').onclick = function () { self.jogo.alternarVelocidade(); };
     $('btnMenu').onclick = function () { self.abrirMenuPartida(); };
     $('btnCancelarModo').onclick = function () { self.cancelarModo(); };
+    $('btnOciosos').onclick = function () { self.proximoOcioso(); };
     $('btnSugerir').onclick = function () { self.sugerirLocalCentral(); };
     $('puxadorGaveta').onclick = function () { self.gavetaAberta ? self.fecharGaveta() : self.abrirGaveta(self.gavetaAtual, true); };
     var abas = doc.querySelectorAll('#abas button');
@@ -53,6 +54,7 @@
   UI.atualizarHud = function () {
     var sim = this.sim, j = sim.jogador;
     this.atualizarVivos();
+    this.atualizarOciosos();
     $('hudM').textContent = U.num(j.m);
     $('hudC').textContent = U.num(j.c);
     var pop = j.popUsada + j.popReservada;
@@ -166,6 +168,21 @@
       cx.appendChild(vazia);
     }
   }
+
+  /* O contador. Só aparece quando há alguém: botão que vive na tela mostrando
+     zero vira parte do cenário e para de ser visto. Acima de três o anel pulsa
+     — três operários sem trabalho já é uma jazida inteira sem ninguém. */
+  UI.atualizarOciosos = function () {
+    var b = $('btnOciosos');
+    if (!b) return;
+    var n = this.ociosos().length;
+    /* Escreve ANTES de esconder. Saindo cedo quando n é zero, o botão guardava
+       o número velho e reaparecia por uma fração de segundo com ele — número
+       errado na tela é pior que botão nenhum. */
+    $('ociososN').textContent = n;
+    b.classList.toggle('pulsa', n >= 3);
+    b.hidden = !n;
+  };
 
   /* O que MUDA sozinho, atualizado sem refazer a barra.
      `atualizarAcoes` remonta o HTML inteiro e só roda a cada 0,9 s; vida caindo

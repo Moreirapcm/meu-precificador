@@ -125,6 +125,28 @@ button { cursor: pointer; border: 0; background: none; }
   background: rgba(10,16,26,.82); border: 1px solid var(--borda); border-radius: 8px;
   padding: 7px 10px; font-size: 11.5px; line-height: 1.35;
 }
+/* BOTÃO DE OCIOSO.
+   No Age of Empires II ele mora na barra e carrega o NÚMERO de aldeões parados,
+   e cada toque leva ao PRÓXIMO — não à turma toda. A diferença importa: com o
+   contador o jogador vê que está perdendo dinheiro sem procurar ninguém no
+   mapa, e o ciclo um a um deixa ele dar destino diferente para cada um.
+   Aqui ele só aparece quando há alguém parado: botão que vive na tela mostrando
+   zero vira parte do cenário e para de ser visto. */
+#btnOciosos {
+  position: absolute; left: 8px; bottom: 8px; z-index: 12;
+  display: flex; align-items: center; gap: 5px; padding: 6px 10px 6px 8px;
+  background: rgba(10,16,26,.9); border: 1px solid var(--atencao, #d8a13a);
+  border-radius: 999px; color: var(--texto); box-shadow: 0 2px 10px rgba(0,0,0,.45);
+}
+#btnOciosos[hidden] { display: none; }
+#btnOciosos i { font-style: normal; font-size: 15px; line-height: 1; }
+#btnOciosos b { font-family: var(--hud); font-size: 13px; font-weight: 700; }
+#btnOciosos.pulsa { animation: ocioso-pulsa 1.6s ease-in-out infinite; }
+@keyframes ocioso-pulsa {
+  0%, 100% { box-shadow: 0 2px 10px rgba(0,0,0,.45); }
+  50% { box-shadow: 0 2px 16px rgba(216,161,58,.55); }
+}
+
 #objetivoHud b { display: block; font-family: var(--hud); font-weight: 600; }
 #objetivoHud span { color: var(--suave); font-size: 10.5px; }
 

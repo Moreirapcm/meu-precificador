@@ -225,7 +225,10 @@
       if (k === 'w') { self.iniciarHabilidade('escudo'); return; }
       if (k === 's') { self.pararSelecionados(); return; }
       if (k === 'h') { self.voltarParaBase(); return; }
-      if (k === '.' || k === ',') { self.selecionarOciosos(); return; }
+      /* `.` vai ao PRÓXIMO parado e `,` pega todos de uma vez, que é a divisão
+         do Age of Empires (lá, ponto e Ctrl+ponto). */
+      if (k === '.') { self.proximoOcioso(); return; }
+      if (k === ',') { self.selecionarOciosos(); return; }
 
       /* Número: grupo de controle, como em StarCraft. Com Ctrl grava, sozinho
          chama. Antes Ctrl+1 caía direto em "selecionar todos os soldados" —
@@ -420,20 +423,71 @@
 
   /* Tropa ociosa: o dado já existia na simulação e nunca virava seleção. É a
      forma mais barata de recuperar controle num mapa grande. */
-  UI.prototype.selecionarOciosos = function () {
+  /* QUEM PRECISA DE ATENÇÃO.
+     O botão de aldeão ocioso do Age of Empires não se traduz direto para cá, e
+     medi antes de escrever: neste jogo ninguém fica ocioso. O operário parado
+     volta sozinho para a jazida e o soldado parado entra em `defender`, que é o
+     trabalho dele. Um botão com a definição clássica marcaria zero a partida
+     inteira e viraria enfeite.
+
+     O que existe de verdade aqui, e que o jogador não tem como enxergar, são
+     dois casos:
+       - operário sem trabalho produtivo — sobra gente e falta jazida livre,
+         que é exatamente o momento de expandir ou construir;
+       - qualquer unidade BLOQUEADA, sem rota até onde foi mandada. Essa é pior
+         que ociosa: ela acha que está trabalhando e não está.
+     Uma definição só, usada pelo contador e pelo ciclo — número no botão que
+     discorda do que o toque encontra é pior que botão nenhum. */
+  var TAREFA_PRODUTIVA = { minerar: 1, construir: 1, reparar: 1 };
+
+  UI.prototype.ociosos = function () {
     var sim = this.sim, ids = [];
+    if (!sim) return ids;
     for (var i = 0; i < sim.unidades.length; i++) {
       var u = sim.unidades[i];
       if (u.lado !== 'aliado' || u.morta) continue;
-      var parado = !u.tarefa || u.tarefa.tipo === 'ocioso';
-      if (parado && !u.alvo) ids.push(u.id);
+      if (u.bloqueado) { ids.push(u.id); continue; }
+      if (!u.operario) continue;
+      var t = u.tarefa ? u.tarefa.tipo : null;
+      if (!TAREFA_PRODUTIVA[t] && !u.rota) ids.push(u.id);
     }
+    return ids;
+  };
+
+  /* UM DE CADA VEZ, e é assim no Age of Empires II: cada toque leva ao PRÓXIMO
+     parado, não à turma toda. Parece detalhe e não é — pegar os cinco juntos
+     obriga a dar a mesma ordem aos cinco, e o motivo de eles estarem parados
+     costuma ser diferente em cada um. O ciclo guarda onde parou. */
+  UI.prototype.proximoOcioso = function () {
+    var ids = this.ociosos();
+    if (!ids.length) { this.mostrarAviso('Ninguém parado.', 'info'); return; }
+    var pos = ids.indexOf(this.ultimoOcioso);
+    var alvo = ids[(pos + 1) % ids.length];      /* -1 + 1 = 0: começa do primeiro */
+    this.ultimoOcioso = alvo;
+    var u = this.sim.unidadePorId(alvo);
+    if (!u) return;
+    this.grupoSelecionado = null;
+    this.rotuloSelecao = null;
+    this.paginaAcoes = null;
+    this.jazidaSelecionada = null;
+    this.selecionado = alvo;
+    this.render.selecao = [alvo];
+    this.render.centralizarEm(u.x, u.y);
+    UF.audio.evento('clique');
+    this.mostrarAviso(u.def.nome + (u.bloqueado ? ' SEM ROTA' : ' sem trabalho') +
+      ' · ' + ids.length + ' precisando de atenção.', 'atencao');
+    this.atualizarTudo();
+  };
+
+  UI.prototype.selecionarOciosos = function () {
+    var ids = this.ociosos();
     if (!ids.length) { this.mostrarAviso('Ninguém parado.', 'info'); return; }
     this.grupoSelecionado = null;
+    this.rotuloSelecao = null;
     this.selecionado = ids.length === 1 ? ids[0] : 0;
     this.jazidaSelecionada = null;
     this.render.selecao = ids;
-    this.render.centralizarEm(sim.unidadePorId(ids[0]).x, sim.unidadePorId(ids[0]).y);
+    this.render.centralizarEm(this.sim.unidadePorId(ids[0]).x, this.sim.unidadePorId(ids[0]).y);
     this.atualizarTudo();
   };
 
