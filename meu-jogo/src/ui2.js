@@ -118,8 +118,9 @@
      começaria com duas casas vazias na frente, e num celular isso é espaço
      roubado sem ensinar nada. */
   var CASAS_ESTRUTURA = {
-    produzir: 0, encontro: 1, reparar: 2,
-    portao: 3, energia: 4, vender: 5
+    produzir: 0, pesquisar: 1, encontro: 2,
+    reparar: 3, portao: 4, energia: 5,
+    vender: 6
   };
   var CASAS_GLOBAL = {
     operario: 0, distribuir: 1, recolher: 2,
@@ -246,15 +247,11 @@
       var idLab = +this.paginaAcoes.split(':')[1];
       var lab = sim.estruturas[idLab];
       if (lab && !lab.morta) {
-        var ramoP = this.paginaAcoes.split(':')[2] || null;
-        var nomeRamo = '';
-        for (var ir = 0; ir < RAMOS.length; ir++) if (RAMOS[ir].id === ramoP) nomeRamo = RAMOS[ir].nome;
-        this.mostrarSelecao(ramoP ? nomeRamo.charAt(0) + nomeRamo.slice(1).toLowerCase() : lab.def.nome,
-          lab.hp, lab.hpMax,
-          sim.jogador.pesquisaAtual ? 'Uma pesquisa por vez.'
-            : (ramoP ? 'Apagada é o que ainda não dá.' : 'Escolha o ramo. O número diz quanto já dá.'));
+        this.mostrarSelecao(lab.def.nome, lab.hp, lab.hpMax,
+          sim.jogador.pesquisaAtual ? 'Uma pesquisa por vez, e já há uma.'
+            : 'Melhorias desta estrutura. Apagada é o que ainda não dá.');
         this.filaNaBarra(null);
-        this.paginaPesquisar(cx, ramoP);
+        this.paginaPesquisar(cx, lab.tipo);
         return;
       }
       this.paginaAcoes = null;
@@ -517,12 +514,15 @@
     });
   };
 
-  UI.pesquisasDisponiveis = function () {
-    var sim = this.sim, j = sim.jogador, n = 0;
+  /* O que esta estrutura pesquisa, e quanto disso já dá para começar. */
+  UI.pesquisasDaCasa = function (tipo) {
+    var sim = this.sim, j = sim.jogador, total = 0, livres = 0;
     D.PESQUISAS.forEach(function (p) {
-      if (!j.pesquisas[p.id] && sim.pesquisaDisponivel(p).ok) n++;
+      if (p.casa !== tipo) return;
+      total++;
+      if (!j.pesquisas[p.id] && sim.pesquisaDisponivel(p).ok) livres++;
     });
-    return n;
+    return { total: total, livres: livres };
   };
 
   /* A LISTA DE PESQUISA no painel, PAGINADA POR RAMO — o mesmo desenho da
@@ -533,13 +533,17 @@
      Uma pesquisa por vez é regra do jogo, então enquanto há uma em curso a
      página mostra o progresso e o cancelar em vez da lista — oferecer o que
      não dá para começar seria mentira. */
-  UI.paginaPesquisar = function (cx, ramoId) {
+  UI.paginaPesquisar = function (cx, tipoCasa) {
     var self = this, sim = this.sim, j = sim.jogador;
+    cx.appendChild(botao('Voltar', '↩', 'comandos do prédio', function () {
+      self.paginaAcoes = null; self.atualizarAcoes();
+    }, { tecla: 'esc' }));
 
+    /* Uma pesquisa por vez é regra do jogo. Enquanto há uma em curso a página
+       mostra o progresso e o cancelar em vez da lista — oferecer o que não dá
+       para começar seria mentira. Vale mesmo que a em curso seja de outro
+       prédio: o laboratório é um só. */
     if (j.pesquisaAtual) {
-      cx.appendChild(botao('Voltar', '↩', 'comandos do prédio', function () {
-        self.paginaAcoes = null; self.atualizarAcoes();
-      }, { tecla: 'esc' }));
       var pa = j.pesquisaAtual;
       cx.appendChild(botao(pa.def.nome, '⚗',
         (pa.pausada ? 'PAUSADA · ' : '') + Math.round(pa.progresso * 100) + '%',
@@ -552,38 +556,13 @@
       return;
     }
 
-    if (!ramoId) {
-      cx.appendChild(botao('Voltar', '↩', 'comandos do prédio', function () {
-        self.paginaAcoes = null; self.atualizarAcoes();
-      }, { tecla: 'esc' }));
-      RAMOS.forEach(function (ramo) {
-        var lista = D.PESQUISAS.filter(function (p) { return p.ramo === ramo.id; });
-        if (!lista.length) return;
-        var livres = 0;
-        lista.forEach(function (p) { if (!j.pesquisas[p.id] && sim.pesquisaDisponivel(p).ok) livres++; });
-        var b = botao(ramo.nome.charAt(0) + ramo.nome.slice(1).toLowerCase(),
-          ICONE_RAMO[ramo.id] || '⚗', livres + ' de ' + lista.length, function () {
-            self.paginaAcoes = self.paginaAcoes.split(':').slice(0, 2).join(':') + ':' + ramo.id;
-            self.atualizarAcoes();
-          }, { desativado: !livres, motivo: livres ? null : 'Nada liberado neste ramo ainda.' });
-        if (!livres) b.classList.add('sem-recurso');
-        cx.appendChild(b);
-      });
-      return;
-    }
-
-    cx.appendChild(botao('Voltar', '↩', 'outros ramos', function () {
-      self.paginaAcoes = self.paginaAcoes.split(':').slice(0, 2).join(':');
-      self.atualizarAcoes();
-    }, { tecla: 'esc' }));
-    D.PESQUISAS.filter(function (p) { return p.ramo === ramoId; }).forEach(function (p) {
+    D.PESQUISAS.filter(function (p) { return p.casa === tipoCasa; }).forEach(function (p) {
       var pronto = !!j.pesquisas[p.id];
       var ver = sim.pesquisaDisponivel(p);
-      var b = botao(p.nome, ICONE_RAMO[ramoId] || '⚗', pronto ? '✓ feita' : self.precoDe(p), function () {
+      var b = botao(p.nome, ICONE_RAMO[p.ramo] || '⚗', pronto ? '✓ feita' : self.precoDe(p), function () {
         var r = sim.pesquisar(p.id);
         if (!r.ok) { self.mostrarAviso(r.motivo, 'atencao'); UF.audio.evento('negado'); return; }
         self.mostrarAviso('Pesquisa iniciada: ' + p.nome, 'info');
-        self.paginaAcoes = self.paginaAcoes.split(':').slice(0, 2).join(':');
         self.atualizarTudo();
       }, { desativado: pronto || !ver.ok,
            motivo: pronto ? 'Já concluída.' : (ver.ok ? p.efeito : ver.motivo), ligado: pronto });
@@ -646,23 +625,29 @@
         self.paginaAcoes = 'produzir:' + b.id;
         self.atualizarAcoes();
       }, { tecla: 't' });
-    }
-    /* O LABORATÓRIO não produz unidade nenhuma, então caía na carta vazia: o
-       Pedro construiu o Centro de Pesquisa e não achou nada para pesquisar,
-       porque a lista morava na aba Evolução da gaveta. Mesma falta da
-       construção e da produção, mesma correção. */
-    if (b.tipo === 'pesquisa') {
-      var emCurso = sim.jogador.pesquisaAtual;
-      casas[CASAS_ESTRUTURA.produzir] = botao('Pesquisar', '⚗',
-        emCurso ? Math.round(emCurso.progresso * 100) + '%' : this.pesquisasDisponiveis() + ' disponíveis',
-        function () {
-          self.paginaAcoes = 'pesquisar:' + b.id;
-          self.atualizarAcoes();
-        }, { tecla: 't', ligado: !!emCurso });
+      /* Ponto de encontro só faz sentido em quem produz: é para onde a unidade
+         NOVA vai. Ficou por um momento na Torre de muralha porque a chave
+         fechou no lugar errado — torre não pare ninguém. */
       casas[CASAS_ESTRUTURA.encontro] = botao('Encontro', '⚑', 'ponto de reunião', function () {
         self.modo = { tipo: 'rally', estrutura: b.id };
         self.mostrarModo('Toque onde as novas unidades devem se reunir');
       });
+    }
+    /* CADA PRÉDIO MOSTRA AS PESQUISAS QUE MORAM NELE.
+       Antes a lista inteira vivia na aba Evolução da gaveta, e o Pedro
+       construiu o Centro de Pesquisa sem achar nada para pesquisar. Agora cada
+       melhoria aparece na estrutura que a abriga — o campo `casa` de
+       `data.js` — que é o modelo do Age of Empires. O prédio que não produz
+       unidade ganha, com isso, um segundo emprego. */
+    var minhas = this.pesquisasDaCasa(b.tipo);
+    if (minhas.total) {
+      var emCurso = sim.jogador.pesquisaAtual;
+      casas[CASAS_ESTRUTURA.pesquisar] = botao('Pesquisar', '⚗',
+        emCurso ? Math.round(emCurso.progresso * 100) + '%' : minhas.livres + ' de ' + minhas.total,
+        function () {
+          self.paginaAcoes = 'pesquisar:' + b.id;
+          self.atualizarAcoes();
+        }, { tecla: 'u', ligado: !!emCurso });
     }
     if (b.portao) {
       var proximos = { auto: 'aberto', aberto: 'fechado', fechado: 'auto' };

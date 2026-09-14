@@ -231,6 +231,7 @@
       if (k === 'p') { self.iniciarOrdem('patrulhar'); return; }
       /* `t` de treinar: abre a lista do prédio selecionado que produz. */
       if (k === 't') { self.abrirProducao(); return; }
+      if (k === 'u') { self.abrirPesquisa(); return; }
       if (k === 'c') { self.iniciarOrdem('recuar'); return; }
       if (k === 'g') { self.minerarComSelecionados(); return; }
       if (k === 'e') { self.jogo.alternarVelocidade(); return; }
@@ -550,9 +551,21 @@
       this.mostrarAviso('Selecione um prédio que treina ou pesquisa.', 'atencao');
       return;
     }
-    if (b.tipo === 'pesquisa') this.paginaAcoes = 'pesquisar:' + b.id;
-    else if (b.def.produz) this.paginaAcoes = 'produzir:' + b.id;
-    else { this.mostrarAviso('Este prédio não treina nem pesquisa.', 'atencao'); return; }
+    if (!b.def.produz) { this.mostrarAviso('Este prédio não treina unidades.', 'atencao'); return; }
+    this.paginaAcoes = 'produzir:' + b.id;
+    this.atualizarAcoes();
+  };
+
+  /* `u` de melhoria (upgrade). Separada de `t` porque o Quartel faz as duas
+     coisas: treina soldado e pesquisa armamento. Uma tecla só obrigaria a
+     escolher qual das duas o prédio "é". */
+  UI.prototype.abrirPesquisa = function () {
+    var b = this.selecionado ? this.sim.estruturas[this.selecionado] : null;
+    if (!b || b.morta || !b.construida) { this.mostrarAviso('Selecione um prédio.', 'atencao'); return; }
+    var tem = false;
+    for (var i = 0; i < D.PESQUISAS.length; i++) if (D.PESQUISAS[i].casa === b.tipo) { tem = true; break; }
+    if (!tem) { this.mostrarAviso('Este prédio não abriga pesquisa.', 'atencao'); return; }
+    this.paginaAcoes = 'pesquisar:' + b.id;
     this.atualizarAcoes();
   };
 

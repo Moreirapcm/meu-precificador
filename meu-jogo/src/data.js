@@ -233,37 +233,52 @@
     }
   };
 
+  /* ONDE CADA PESQUISA MORA.
+     O campo `casa` diz em que estrutura a melhoria aparece para ser feita, e é
+     o modelo do Age of Empires: a ferraria faz arma e armadura, o mosteiro faz
+     as do monge. Dá segundo emprego a prédio que só tinha um, e faz o jogador
+     escolher o que construir pensando no que quer pesquisar.
+
+     O Centro de Pesquisa continua sendo PRÉ-REQUISITO de todas — é ele que tem
+     o laboratório — e guarda para si o ramo de Comando, que é o dos degraus de
+     tecnologia. As outras três moram onde fazem sentido: economia na Central,
+     fortificação na Torre de muralha, armamento no Quartel.
+
+     Os três anfitriões foram escolhidos entre os que NÃO exigem tecnologia
+     nenhuma (Central 0, Torre de muralha 45 minerais, Quartel 150): nenhuma
+     pesquisa pode ficar inalcançável por morar em prédio que ela mesma
+     destrava. */
   /* -------------------------------------------------------------- pesquisa */
   var PESQUISAS = [
-    { id: 'tech2', ramo: 'comando', nome: 'Tecnologia II — Fortificação', custo: { m: 250 }, tempo: 40, tech: 2,
+    { id: 'tech2', ramo: 'comando', casa: 'pesquisa', nome: 'Tecnologia II — Fortificação', custo: { m: 250 }, tempo: 40, tech: 2,
       efeito: 'Libera Artilharia, Gelo, Oficina, bomba de petróleo e tropas especializadas.' },
-    { id: 'tech3', ramo: 'comando', nome: 'Tecnologia III — Reconquista', custo: { m: 400, c: 100 }, tempo: 60, tech: 3, req: ['tech2'],
+    { id: 'tech3', ramo: 'comando', casa: 'pesquisa', nome: 'Tecnologia III — Reconquista', custo: { m: 400, c: 100 }, tempo: 60, tech: 3, req: ['tech2'],
       efeito: 'Libera Plasma, sensores avançados e as tecnologias finais.' },
 
-    { id: 'carga', ramo: 'economia', nome: 'Carga reforçada', custo: { m: 120 }, tempo: 28,
+    { id: 'carga', ramo: 'economia', casa: 'central', nome: 'Carga reforçada', custo: { m: 120 }, tempo: 28,
       efeito: 'Operários transportam 12 minerais por viagem em vez de 8.' },
-    { id: 'coleta', ramo: 'economia', nome: 'Ferramenta de corte', custo: { m: 160 }, tempo: 32, req: ['carga'],
+    { id: 'coleta', ramo: 'economia', casa: 'central', nome: 'Ferramenta de corte', custo: { m: 160 }, tempo: 32, req: ['carga'],
       efeito: 'Coleta 30% mais rápida em todas as jazidas.' },
-    { id: 'logistica', ramo: 'economia', nome: 'Logística de setor', custo: { m: 220, c: 20 }, tempo: 40, req: ['coleta'], tech: 2,
+    { id: 'logistica', ramo: 'economia', casa: 'central', nome: 'Logística de setor', custo: { m: 220, c: 20 }, tempo: 40, req: ['coleta'], tech: 2,
       efeito: 'Operários andam 20% mais rápido e o extrator rende 40% a mais.' },
 
-    { id: 'muroReforcado', ramo: 'fortificacao', nome: 'Muro reforçado', custo: { m: 150 }, tempo: 30,
+    { id: 'muroReforcado', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Muro reforçado', custo: { m: 150 }, tempo: 30,
       efeito: 'Muros e portões ganham 60% de integridade.' },
-    { id: 'reparoEficiente', ramo: 'fortificacao', nome: 'Reparo eficiente', custo: { m: 180 }, tempo: 32, req: ['muroReforcado'],
+    { id: 'reparoEficiente', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Reparo eficiente', custo: { m: 180 }, tempo: 32, req: ['muroReforcado'],
       efeito: 'Reparos custam 40% menos e são 50% mais rápidos.' },
-    { id: 'antiacido', ramo: 'fortificacao', nome: 'Resistência a ácido', custo: { m: 260, c: 40 }, tempo: 45, req: ['reparoEficiente'], tech: 3,
+    { id: 'antiacido', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Resistência a ácido', custo: { m: 260, c: 40 }, tempo: 45, req: ['reparoEficiente'], tech: 3,
       efeito: 'Reduz pela metade o dano de Cuspidores e Asas corrosivas.' },
 
-    { id: 'precisao', ramo: 'armamento', nome: 'Precisão de tiro', custo: { m: 140 }, tempo: 28,
+    { id: 'precisao', ramo: 'armamento', casa: 'quartel', nome: 'Precisão de tiro', custo: { m: 140 }, tempo: 28,
       efeito: '+18% de dano para torres e soldados.' },
-    { id: 'penetracao', ramo: 'armamento', nome: 'Munição perfurante', custo: { m: 210 }, tempo: 35, req: ['precisao'], tech: 2,
+    { id: 'penetracao', ramo: 'armamento', casa: 'quartel', nome: 'Munição perfurante', custo: { m: 210 }, tempo: 35, req: ['precisao'], tech: 2,
       efeito: 'Ignora metade da blindagem inimiga.' },
-    { id: 'artilhariaAv', ramo: 'armamento', nome: 'Artilharia avançada', custo: { m: 280, c: 50 }, tempo: 42, req: ['penetracao'], tech: 3,
+    { id: 'artilhariaAv', ramo: 'armamento', casa: 'quartel', nome: 'Artilharia avançada', custo: { m: 280, c: 50 }, tempo: 42, req: ['penetracao'], tech: 3,
       efeito: '+35% de raio de explosão e +15% de alcance nas armas de área.' },
 
-    { id: 'formacao', ramo: 'comando', nome: 'Treinamento de formação', custo: { m: 160 }, tempo: 30,
+    { id: 'formacao', ramo: 'comando', casa: 'pesquisa', nome: 'Treinamento de formação', custo: { m: 160 }, tempo: 30,
       efeito: 'Soldados ganham 20% de integridade.' },
-    { id: 'autonomia', ramo: 'comando', nome: 'Autonomia de reparo', custo: { m: 200 }, tempo: 34, req: ['formacao'], tech: 2,
+    { id: 'autonomia', ramo: 'comando', casa: 'pesquisa', nome: 'Autonomia de reparo', custo: { m: 200 }, tempo: 34, req: ['formacao'], tech: 2,
       efeito: 'Operários ociosos reparam a linha automaticamente dentro da reserva definida.' }
   ];
 
