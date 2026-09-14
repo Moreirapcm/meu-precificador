@@ -192,17 +192,35 @@
       self.ordemNoTerreno({ x: e.clientX - r.left, y: e.clientY - r.top }, true);
     });
 
-    /* minimapa: toque leva a câmera ao ponto */
+    /* MINIMAPA: leva a câmera, e com tropa selecionada MANDA A TROPA.
+       É o primeiro comando do manual do Age of Kings e existe no StarCraft
+       desde 1998. Sem isto o jogador vê o contato piscando na minimapa e ainda
+       precisa arrastar a câmera até lá para dar a ordem — e é justamente na
+       hora do contato que ele não tem esse tempo.
+
+       Arrastar continua movendo a câmera: quem arrasta está procurando, não
+       mandando. A ordem sai no TOQUE, que é deliberado. */
     var mini = $('minimapa');
-    function irPeloMini(e) {
+    function pontoDoMini(e) {
       var r = mini.getBoundingClientRect();
       var w = self.sim.world;
-      var x = (e.clientX - r.left) / r.width * w.w;
-      var y = (e.clientY - r.top) / r.height * w.h;
-      self.render.centralizarEm(x, y);
+      return { x: (e.clientX - r.left) / r.width * w.w,
+               y: (e.clientY - r.top) / r.height * w.h };
     }
-    mini.addEventListener('pointerdown', function (e) { e.stopPropagation(); irPeloMini(e); });
-    mini.addEventListener('pointermove', function (e) { if (e.buttons) irPeloMini(e); });
+    mini.addEventListener('pointerdown', function (e) {
+      e.stopPropagation();
+      var m = pontoDoMini(e);
+      if (self.temTropasSelecionadas() && !self.modo) {
+        self.ordemNoMundo(m);
+        return;
+      }
+      self.render.centralizarEm(m.x, m.y);
+    });
+    mini.addEventListener('pointermove', function (e) {
+      if (!e.buttons) return;
+      var m = pontoDoMini(e);
+      self.render.centralizarEm(m.x, m.y);
+    });
 
     /* teclado */
     doc.addEventListener('keydown', function (e) {
@@ -247,6 +265,7 @@
       /* `t` de treinar: abre a lista do prédio selecionado que produz. */
       if (k === 't') { self.abrirProducao(); return; }
       if (k === 'u') { self.abrirPesquisa(); return; }
+      if (k === 'z') { self.girarPostura(); return; }
       if (k === 'c') { self.iniciarOrdem('recuar'); return; }
       if (k === 'g') { self.minerarComSelecionados(); return; }
       if (k === 'e') { self.jogo.alternarVelocidade(); return; }
@@ -610,6 +629,17 @@
     this.atualizarAcoes();
   };
 
+  UI.prototype.girarPostura = function () {
+    var us = this.unidadesSelecionadas().filter(function (x) { return x.def.arma && !x.operario; });
+    if (!us.length) { this.mostrarAviso('Selecione tropa de combate.', 'atencao'); return; }
+    var ordem = ['defensiva', 'agressiva', 'parado', 'semAtaque'];
+    var nomes = { defensiva: 'defensiva', agressiva: 'agressiva', parado: 'segurar posição', semAtaque: 'sem atacar' };
+    var prox = ordem[(ordem.indexOf(us[0].postura || 'defensiva') + 1) % ordem.length];
+    for (var i = 0; i < us.length; i++) this.sim.definirPostura(us[i], prox);
+    this.mostrarAviso('Postura: ' + nomes[prox] + '.', 'info');
+    this.atualizarTudo();
+  };
+
   UI.prototype.voltarParaBase = function () {
     var c = this.sim.central;
     if (!c) return;
@@ -653,6 +683,14 @@
     var rotulos = { mover: 'Toque no destino', moverAtacando: 'Toque no destino (ataca no caminho)', recuar: 'Toque no ponto seguro', patrulhar: 'Toque no outro extremo da patrulha', limpar: 'Toque onde começar a limpeza' };
     this.modo = { tipo: 'ordem', ordem: tipo };
     this.mostrarModo(rotulos[tipo] || 'Toque no destino');
+  };
+
+  /* A mesma ordem, dita em coordenada de MUNDO. A minimapa não tem ponto de
+     tela para converter — ela JÁ é o mundo — e mandar a ordem passar por uma
+     conversão de ida e volta perderia precisão de graça. */
+  UI.prototype.ordemNoMundo = function (m) {
+    var p = this.render.paraTela(m.x, m.y);
+    this.ordemNoTerreno(p);
   };
 
   UI.prototype.ordemNoTerreno = function (p, automatico) {
@@ -838,9 +876,21 @@
     this.cancelarModo();
   };
 
+  /* PONTO DE ENCONTRO SOBRE A JAZIDA: o operário nasce MINERANDO.
+     O designer do StarCraft II explicou por que isto existe: mandar o
+     trabalhador à mão "não cria uma escolha interessante, porque é sempre a
+     mesma". No celular, cada toque repetido custa o dobro. */
   UI.prototype.confirmarRally = function (cx, cy) {
     var b = this.sim.estruturas[this.modo.estrutura];
-    if (b) { b.rally = { x: cx, y: cy }; this.mostrarAviso('Ponto de encontro definido.', 'info'); }
+    if (!b) { this.cancelarModo(); return; }
+    var jid = this.sim.world.recurso[this.sim.world.idx(cx, cy)];
+    if (jid) {
+      b.rally = { x: cx, y: cy, jazida: jid };
+      this.mostrarAviso('Ponto de encontro na jazida: o operário nasce minerando.', 'info');
+    } else {
+      b.rally = { x: cx, y: cy };
+      this.mostrarAviso('Ponto de encontro definido.', 'info');
+    }
     this.cancelarModo();
   };
 

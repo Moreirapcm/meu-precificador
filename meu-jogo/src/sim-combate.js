@@ -458,7 +458,7 @@
 
     var alvo = (u.alvo && this.alvoPorId(u.alvo)) || null;
     if (alvo && (alvo.morta || this.distanciaEntre(u, alvo) > arma.alc * 1.25)) alvo = null;
-    if (!alvo && arma) {
+    if (!alvo && arma && u.postura !== 'semAtaque') {
       var alcanceBusca = tarefa.tipo === 'mover' ? arma.alc : Math.max(arma.alc, u.def.visao * 0.8);
       alvo = this.procurarAlvo(u, arma, alcanceBusca, 'inimigo', false, this.alvoPrioritario);
     }
@@ -530,10 +530,16 @@
       var d = this.distanciaEntre(u, alvo);
       if (d > arma.alc * 0.92) {
         /* A patrulha tem coleira como a defesa: sem ela, um inimigo que foge
-           levava a ronda inteira atrás dele e a linha ficava aberta. */
+           levava a ronda inteira atrás dele e a linha ficava aberta.
+
+           O TAMANHO da coleira agora é do JOGADOR, não nosso. Era fixo em 7, e
+           7 é uma escolha de desenho que não tinha por que ser nossa: quem
+           defende muro quer 3, quem caça operário invasor quer 14. É a postura
+           do Age of Empires II, e num jogo de defesa de base o padrão certo é
+           a defensiva. */
         var comColeira = tarefa.tipo === 'defender' || tarefa.tipo === 'patrulhar' ||
           tarefa.tipo === 'voltandoAoPosto';
-        var limite = comColeira ? (tarefa.raio || 7) : 99;
+        var limite = comColeira ? (tarefa.raio || this.coleiraDe(u)) : 99;
         var longe = tarefa.centro ? U.dist(u.x, u.y, tarefa.centro.x, tarefa.centro.y) : 0;
         if (longe < limite) this.irAte(u, alvo, dt, 1);
         else { u.rota = null; this.irAte(u, tarefa.centro, dt); }
@@ -620,6 +626,26 @@
     var cura = Math.min(u.def.cura.taxa * dt, u.reservaCura, melhor.hpMax - melhor.hp);
     melhor.hp += cura; u.reservaCura -= cura;
     if (Math.random() < dt * 3) this.emitir('cura', { x: melhor.x, y: melhor.y });
+  };
+
+  /* POSTURA DE COMBATE, como no Age of Empires II.
+       agressiva  — persegue longe, 16 células
+       defensiva  — persegue pouco e volta, 7 (o padrão, e é jogo de defesa)
+       parado     — atira de onde está, não dá um passo
+       semAtaque  — não escolhe alvo nenhum; serve para atravessar o mapa
+     Guardada na UNIDADE e não na tarefa: ela sobrevive à ordem, que é o que
+     "persistente" quer dizer. */
+  var COLEIRA = { agressiva: 16, defensiva: 7, parado: 0, semAtaque: 0 };
+
+  S.coleiraDe = function (u) {
+    var v = COLEIRA[u.postura || 'defensiva'];
+    return v === undefined ? 7 : v;
+  };
+
+  S.definirPostura = function (u, postura) {
+    if (COLEIRA[postura] === undefined) return;
+    u.postura = postura;
+    if (postura === 'semAtaque') u.alvo = 0;
   };
 
   S.irAte = function (u, destino, dt, folga) {

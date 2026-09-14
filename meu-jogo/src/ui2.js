@@ -391,6 +391,25 @@
        de recuo. O rótulo diz isso: mandar a tropa para casa é "Recuar". */
     casas[CASAS_TROPA.base] = botao('Central', '🏠', 'centra a câmera',
       function () { self.voltarParaBase(); }, { tecla: 'h' });
+    /* POSTURA: um botão que gira entre as quatro, na casa que o operário usa
+       para Construir. Soldado não constrói e a casa estava vazia; é a mesma
+       ideia do Age of Empires II, onde a postura fica com os comandos e não
+       escondida num menu. */
+    if (!temOperario && !temDesarmado) {
+      var ordemPostura = ['defensiva', 'agressiva', 'parado', 'semAtaque'];
+      var rotulos = { defensiva: 'Defensiva', agressiva: 'Agressiva',
+                      parado: 'Segurar', semAtaque: 'Sem atacar' };
+      var subs = { defensiva: 'persegue pouco', agressiva: 'persegue longe',
+                   parado: 'atira sem sair', semAtaque: 'ignora o inimigo' };
+      var icones = { defensiva: '⛨', agressiva: '⚔', parado: '⊙', semAtaque: '⊘' };
+      var atual = tropas[0].postura || 'defensiva';
+      casas[CASAS_TROPA.construir] = botao(rotulos[atual], icones[atual], subs[atual], function () {
+        var prox = ordemPostura[(ordemPostura.indexOf(atual) + 1) % ordemPostura.length];
+        tropas.forEach(function (x) { self.sim.definirPostura(x, prox); });
+        self.mostrarAviso('Postura: ' + rotulos[prox].toLowerCase() + '.', 'info');
+        self.atualizarAcoes();
+      }, { tecla: 'z', ligado: atual !== 'defensiva' });
+    }
     if (temOperario) {
       casas[CASAS_TROPA.minerar] = botao('Minerar', '⛏', 'jazida mais próxima', function () {
         tropas.forEach(function (u) {

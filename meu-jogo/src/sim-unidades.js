@@ -676,7 +676,16 @@
          ramo: a máquina nascia e congelava para sempre com a tarefa
          "avançando", e nem o botão de ociosos a encontrava. */
       var pacifico = u.operario || !u.def.arma;
-      if (cel) this.darTarefa(u, { tipo: pacifico ? 'mover' : 'moverAtacando', destino: cel });
+      /* Rally sobre jazida: operário nasce com a picareta na mão. A jazida pode
+         ter acabado entre a ordem e o nascimento — nesse caso ele só anda até
+         lá, que é o comportamento documentado pela Blizzard para alvo que
+         some. */
+      var jaz = b.rally.jazida && this.world.jazidaPorId(b.rally.jazida);
+      if (u.operario && jaz && jaz.estoque > 0) {
+        this.darTarefa(u, { tipo: 'minerar', jazida: jaz.id });
+      } else if (cel) {
+        this.darTarefa(u, { tipo: pacifico ? 'mover' : 'moverAtacando', destino: cel });
+      }
     }
     this.emitir('unidadePronta', { id: u.id, tipo: item.tipo, estrutura: b.id });
   };

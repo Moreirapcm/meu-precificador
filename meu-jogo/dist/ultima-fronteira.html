@@ -3227,7 +3227,16 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
          ramo: a máquina nascia e congelava para sempre com a tarefa
          "avançando", e nem o botão de ociosos a encontrava. */
       var pacifico = u.operario || !u.def.arma;
-      if (cel) this.darTarefa(u, { tipo: pacifico ? 'mover' : 'moverAtacando', destino: cel });
+      /* Rally sobre jazida: operário nasce com a picareta na mão. A jazida pode
+         ter acabado entre a ordem e o nascimento — nesse caso ele só anda até
+         lá, que é o comportamento documentado pela Blizzard para alvo que
+         some. */
+      var jaz = b.rally.jazida && this.world.jazidaPorId(b.rally.jazida);
+      if (u.operario && jaz && jaz.estoque > 0) {
+        this.darTarefa(u, { tipo: 'minerar', jazida: jaz.id });
+      } else if (cel) {
+        this.darTarefa(u, { tipo: pacifico ? 'mover' : 'moverAtacando', destino: cel });
+      }
     }
     this.emitir('unidadePronta', { id: u.id, tipo: item.tipo, estrutura: b.id });
   };
@@ -3851,7 +3860,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
     var alvo = (u.alvo && this.alvoPorId(u.alvo)) || null;
     if (alvo && (alvo.morta || this.distanciaEntre(u, alvo) > arma.alc * 1.25)) alvo = null;
-    if (!alvo && arma) {
+    if (!alvo && arma && u.postura !== 'semAtaque') {
       var alcanceBusca = tarefa.tipo === 'mover' ? arma.alc : Math.max(arma.alc, u.def.visao * 0.8);
       alvo = this.procurarAlvo(u, arma, alcanceBusca, 'inimigo', false, this.alvoPrioritario);
     }
@@ -3923,10 +3932,16 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       var d = this.distanciaEntre(u, alvo);
       if (d > arma.alc * 0.92) {
         /* A patrulha tem coleira como a defesa: sem ela, um inimigo que foge
-           levava a ronda inteira atrás dele e a linha ficava aberta. */
+           levava a ronda inteira atrás dele e a linha ficava aberta.
+
+           O TAMANHO da coleira agora é do JOGADOR, não nosso. Era fixo em 7, e
+           7 é uma escolha de desenho que não tinha por que ser nossa: quem
+           defende muro quer 3, quem caça operário invasor quer 14. É a postura
+           do Age of Empires II, e num jogo de defesa de base o padrão certo é
+           a defensiva. */
         var comColeira = tarefa.tipo === 'defender' || tarefa.tipo === 'patrulhar' ||
           tarefa.tipo === 'voltandoAoPosto';
-        var limite = comColeira ? (tarefa.raio || 7) : 99;
+        var limite = comColeira ? (tarefa.raio || this.coleiraDe(u)) : 99;
         var longe = tarefa.centro ? U.dist(u.x, u.y, tarefa.centro.x, tarefa.centro.y) : 0;
         if (longe < limite) this.irAte(u, alvo, dt, 1);
         else { u.rota = null; this.irAte(u, tarefa.centro, dt); }
@@ -4013,6 +4028,26 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var cura = Math.min(u.def.cura.taxa * dt, u.reservaCura, melhor.hpMax - melhor.hp);
     melhor.hp += cura; u.reservaCura -= cura;
     if (Math.random() < dt * 3) this.emitir('cura', { x: melhor.x, y: melhor.y });
+  };
+
+  /* POSTURA DE COMBATE, como no Age of Empires II.
+       agressiva  — persegue longe, 16 células
+       defensiva  — persegue pouco e volta, 7 (o padrão, e é jogo de defesa)
+       parado     — atira de onde está, não dá um passo
+       semAtaque  — não escolhe alvo nenhum; serve para atravessar o mapa
+     Guardada na UNIDADE e não na tarefa: ela sobrevive à ordem, que é o que
+     "persistente" quer dizer. */
+  var COLEIRA = { agressiva: 16, defensiva: 7, parado: 0, semAtaque: 0 };
+
+  S.coleiraDe = function (u) {
+    var v = COLEIRA[u.postura || 'defensiva'];
+    return v === undefined ? 7 : v;
+  };
+
+  S.definirPostura = function (u, postura) {
+    if (COLEIRA[postura] === undefined) return;
+    u.postura = postura;
+    if (postura === 'semAtaque') u.alvo = 0;
   };
 
   S.irAte = function (u, destino, dt, folga) {
@@ -8126,17 +8161,35 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       self.ordemNoTerreno({ x: e.clientX - r.left, y: e.clientY - r.top }, true);
     });
 
-    /* minimapa: toque leva a câmera ao ponto */
+    /* MINIMAPA: leva a câmera, e com tropa selecionada MANDA A TROPA.
+       É o primeiro comando do manual do Age of Kings e existe no StarCraft
+       desde 1998. Sem isto o jogador vê o contato piscando na minimapa e ainda
+       precisa arrastar a câmera até lá para dar a ordem — e é justamente na
+       hora do contato que ele não tem esse tempo.
+
+       Arrastar continua movendo a câmera: quem arrasta está procurando, não
+       mandando. A ordem sai no TOQUE, que é deliberado. */
     var mini = $('minimapa');
-    function irPeloMini(e) {
+    function pontoDoMini(e) {
       var r = mini.getBoundingClientRect();
       var w = self.sim.world;
-      var x = (e.clientX - r.left) / r.width * w.w;
-      var y = (e.clientY - r.top) / r.height * w.h;
-      self.render.centralizarEm(x, y);
+      return { x: (e.clientX - r.left) / r.width * w.w,
+               y: (e.clientY - r.top) / r.height * w.h };
     }
-    mini.addEventListener('pointerdown', function (e) { e.stopPropagation(); irPeloMini(e); });
-    mini.addEventListener('pointermove', function (e) { if (e.buttons) irPeloMini(e); });
+    mini.addEventListener('pointerdown', function (e) {
+      e.stopPropagation();
+      var m = pontoDoMini(e);
+      if (self.temTropasSelecionadas() && !self.modo) {
+        self.ordemNoMundo(m);
+        return;
+      }
+      self.render.centralizarEm(m.x, m.y);
+    });
+    mini.addEventListener('pointermove', function (e) {
+      if (!e.buttons) return;
+      var m = pontoDoMini(e);
+      self.render.centralizarEm(m.x, m.y);
+    });
 
     /* teclado */
     doc.addEventListener('keydown', function (e) {
@@ -8181,6 +8234,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       /* `t` de treinar: abre a lista do prédio selecionado que produz. */
       if (k === 't') { self.abrirProducao(); return; }
       if (k === 'u') { self.abrirPesquisa(); return; }
+      if (k === 'z') { self.girarPostura(); return; }
       if (k === 'c') { self.iniciarOrdem('recuar'); return; }
       if (k === 'g') { self.minerarComSelecionados(); return; }
       if (k === 'e') { self.jogo.alternarVelocidade(); return; }
@@ -8544,6 +8598,17 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.atualizarAcoes();
   };
 
+  UI.prototype.girarPostura = function () {
+    var us = this.unidadesSelecionadas().filter(function (x) { return x.def.arma && !x.operario; });
+    if (!us.length) { this.mostrarAviso('Selecione tropa de combate.', 'atencao'); return; }
+    var ordem = ['defensiva', 'agressiva', 'parado', 'semAtaque'];
+    var nomes = { defensiva: 'defensiva', agressiva: 'agressiva', parado: 'segurar posição', semAtaque: 'sem atacar' };
+    var prox = ordem[(ordem.indexOf(us[0].postura || 'defensiva') + 1) % ordem.length];
+    for (var i = 0; i < us.length; i++) this.sim.definirPostura(us[i], prox);
+    this.mostrarAviso('Postura: ' + nomes[prox] + '.', 'info');
+    this.atualizarTudo();
+  };
+
   UI.prototype.voltarParaBase = function () {
     var c = this.sim.central;
     if (!c) return;
@@ -8587,6 +8652,14 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var rotulos = { mover: 'Toque no destino', moverAtacando: 'Toque no destino (ataca no caminho)', recuar: 'Toque no ponto seguro', patrulhar: 'Toque no outro extremo da patrulha', limpar: 'Toque onde começar a limpeza' };
     this.modo = { tipo: 'ordem', ordem: tipo };
     this.mostrarModo(rotulos[tipo] || 'Toque no destino');
+  };
+
+  /* A mesma ordem, dita em coordenada de MUNDO. A minimapa não tem ponto de
+     tela para converter — ela JÁ é o mundo — e mandar a ordem passar por uma
+     conversão de ida e volta perderia precisão de graça. */
+  UI.prototype.ordemNoMundo = function (m) {
+    var p = this.render.paraTela(m.x, m.y);
+    this.ordemNoTerreno(p);
   };
 
   UI.prototype.ordemNoTerreno = function (p, automatico) {
@@ -8772,9 +8845,21 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.cancelarModo();
   };
 
+  /* PONTO DE ENCONTRO SOBRE A JAZIDA: o operário nasce MINERANDO.
+     O designer do StarCraft II explicou por que isto existe: mandar o
+     trabalhador à mão "não cria uma escolha interessante, porque é sempre a
+     mesma". No celular, cada toque repetido custa o dobro. */
   UI.prototype.confirmarRally = function (cx, cy) {
     var b = this.sim.estruturas[this.modo.estrutura];
-    if (b) { b.rally = { x: cx, y: cy }; this.mostrarAviso('Ponto de encontro definido.', 'info'); }
+    if (!b) { this.cancelarModo(); return; }
+    var jid = this.sim.world.recurso[this.sim.world.idx(cx, cy)];
+    if (jid) {
+      b.rally = { x: cx, y: cy, jazida: jid };
+      this.mostrarAviso('Ponto de encontro na jazida: o operário nasce minerando.', 'info');
+    } else {
+      b.rally = { x: cx, y: cy };
+      this.mostrarAviso('Ponto de encontro definido.', 'info');
+    }
     this.cancelarModo();
   };
 
@@ -9258,6 +9343,25 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
        de recuo. O rótulo diz isso: mandar a tropa para casa é "Recuar". */
     casas[CASAS_TROPA.base] = botao('Central', '🏠', 'centra a câmera',
       function () { self.voltarParaBase(); }, { tecla: 'h' });
+    /* POSTURA: um botão que gira entre as quatro, na casa que o operário usa
+       para Construir. Soldado não constrói e a casa estava vazia; é a mesma
+       ideia do Age of Empires II, onde a postura fica com os comandos e não
+       escondida num menu. */
+    if (!temOperario && !temDesarmado) {
+      var ordemPostura = ['defensiva', 'agressiva', 'parado', 'semAtaque'];
+      var rotulos = { defensiva: 'Defensiva', agressiva: 'Agressiva',
+                      parado: 'Segurar', semAtaque: 'Sem atacar' };
+      var subs = { defensiva: 'persegue pouco', agressiva: 'persegue longe',
+                   parado: 'atira sem sair', semAtaque: 'ignora o inimigo' };
+      var icones = { defensiva: '⛨', agressiva: '⚔', parado: '⊙', semAtaque: '⊘' };
+      var atual = tropas[0].postura || 'defensiva';
+      casas[CASAS_TROPA.construir] = botao(rotulos[atual], icones[atual], subs[atual], function () {
+        var prox = ordemPostura[(ordemPostura.indexOf(atual) + 1) % ordemPostura.length];
+        tropas.forEach(function (x) { self.sim.definirPostura(x, prox); });
+        self.mostrarAviso('Postura: ' + rotulos[prox].toLowerCase() + '.', 'info');
+        self.atualizarAcoes();
+      }, { tecla: 'z', ligado: atual !== 'defensiva' });
+    }
     if (temOperario) {
       casas[CASAS_TROPA.minerar] = botao('Minerar', '⛏', 'jazida mais próxima', function () {
         tropas.forEach(function (u) {
