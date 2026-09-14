@@ -3364,6 +3364,11 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   S.pedirApoio = function (u, alvo) {
     if (!u || !alvo || alvo.morta) return;
     if (u.proximoApoio && this.t < u.proximoApoio) return;
+    /* Trava GLOBAL além da de cada unidade: numa onda dez soldados avistam o
+       mesmo bando no mesmo segundo, e dez chiados juntos não são aviso, são
+       ruído. Um chamado por vez, e o resto da onda se resolve no tiro. */
+    if (this.proximoApoioGeral && this.t < this.proximoApoioGeral) return;
+    this.proximoApoioGeral = this.t + 6;
     u.proximoApoio = this.t + ESPERA_APOIO;
 
     var c = this.centroDe(alvo), vieram = 0;
@@ -3432,20 +3437,36 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
          sabe aproximar, respeitar alcance mínimo e voltar para o centro. */
       var vigia = arma ? Math.max(arma.alc, u.def.visao * 0.8) : 0;
       if (!alvo || !arma || this.distanciaEntre(u, alvo) > vigia) {
+        /* SAINDO DO COMBATE: joga fora a rota da briga.
+           Sem isto a ronda não voltava. `irAte` segue a rota que já existe, e
+           a que existia era a do caminho ATÉ O INIMIGO — morto o bicho, o
+           soldado continuava andando para onde ele estava, e só depois de
+           gastar a rota inteira é que lembrava da patrulha. Na tela isso é
+           exatamente "matou e não voltou". */
+        if (tarefa.emCombate) { tarefa.emCombate = false; u.rota = null; }
         var destino = tarefa.indo ? tarefa.b : tarefa.a;
         this.irAte(u, destino, dt);
         if (this.encostouEm(u, destino, 1.2)) { tarefa.indo = !tarefa.indo; u.rota = null; }
         return;
       }
+      tarefa.emCombate = true;
       if (!tarefa.centro) {
         tarefa.centro = { x: (tarefa.a.x + tarefa.b.x) / 2, y: (tarefa.a.y + tarefa.b.y) / 2 };
         tarefa.raio = U.dist(tarefa.a.x, tarefa.a.y, tarefa.b.x, tarefa.b.y) / 2 + 5;
       }
-      /* CHAMA APOIO. A ronda existe para AVISAR, não só para trocar tiro: quem
-         anda sozinho na frente e encontra o inimigo morre sozinho se ninguém
-         souber. Só no momento em que o alvo APARECE — enquanto a briga
-         continua, o rádio fica quieto. */
-      if (u.alvo !== alvo.id) this.pedirApoio(u, alvo);
+    }
+
+    /* CHAMA APOIO. Qualquer soldado que AVISTA uma ameaça chama — não só o que
+       está em ronda. Era só a patrulha e o Pedro, jogando, não ouvia o rádio
+       nunca: a tropa parada na base é `defender`, não `patrulhar`, e é ela que
+       encontra a onda primeiro. "Quando ele identificar uma ameaça" vale para
+       todo mundo que identifica.
+
+       Só no momento em que o alvo APARECE, e só se ele for novo — enquanto a
+       briga continua, o rádio fica quieto. */
+    if (alvo && arma && u.alvo !== alvo.id &&
+        (tarefa.tipo === 'patrulhar' || tarefa.tipo === 'defender')) {
+      this.pedirApoio(u, alvo);
     }
 
     if (alvo) {
