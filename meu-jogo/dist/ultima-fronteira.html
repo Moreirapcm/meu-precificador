@@ -2777,6 +2777,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
        mais fortes que uma unidade pode dar de graça. */
     if (tarefa.tipo === 'limpar') {
       var al = tarefa.alvo;
+      if (al && !this.encostavel(al.x, al.y)) al = tarefa.alvo = null;
       if (!al || !w.limpavel(al.x, al.y)) {
         /* A próxima célula é procurada em volta do TRATOR, não do ponto que o
            jogador tocou. Foi assim que ele se comportou no teste e é assim que
@@ -2784,8 +2785,19 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
            vez de parar e esperar ordem nova. Limpeza é serviço contínuo, e
            obrigar um toque a cada seis células seria imposto de dedo.
            Quem quiser o trator em outro lugar manda Mover, que troca a tarefa. */
-        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10);
-        if (!prox) { u.tarefa = { tipo: 'ocioso' }; return; }
+        var prox = this.celulaLimpavelProxima(u, tarefa.raio || 10, tarefa.desistidas);
+        if (!prox) {
+          /* Acabou o que dá para alcançar daqui. PARA e AVISA.
+             A primeira versão limpava a lista de desistências e tentava tudo de
+             novo — e como a célula continuava inalcançável, o trator ficava
+             parado escolhendo a mesma para sempre, que na tela é exatamente
+             "não limpa nada". Se o jogador quiser o resto do quarteirão, move a
+             máquina para o outro lado: é decisão dele, não adivinhação nossa. */
+          u.tarefa = { tipo: 'ocioso' };
+          u.bloqueado = false;
+          this.aviso('Trator sem mais entulho ao alcance. Leve-o para outro ponto.', 'atencao');
+          return;
+        }
         tarefa.alvo = prox;
         tarefa.progresso = 0;
         tarefa.posto = null;
@@ -2799,15 +2811,32 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
          acontece quando ele está a menos de duas células do centro dela. */
       var meio = { x: al.x + 0.5, y: al.y + 0.5 };
       if (U.dist(u.x, u.y, meio.x, meio.y) > 1.9) {
-        if (!tarefa.posto || !w.livre(tarefa.posto.x, tarefa.posto.y)) {
-          var lado = this.nav.celulaLivreProxima(al.x, al.y, 4);
-          if (!lado) { tarefa.alvo = null; u.bloqueado = true; return; }
+        if (!tarefa.posto || !w.livre(tarefa.posto.x, tarefa.posto.y) ||
+            Math.abs(tarefa.posto.x - al.x) + Math.abs(tarefa.posto.y - al.y) > 1) {
+          /* O posto é um VIZINHO de verdade, não "a célula livre mais próxima":
+             `celulaLivreProxima` podia devolver um lugar a três células de
+             distância, e de lá a máquina nunca alcançava o serviço. */
+          var vizinhos = [{ x: al.x - 1, y: al.y }, { x: al.x + 1, y: al.y },
+                          { x: al.x, y: al.y - 1 }, { x: al.x, y: al.y + 1 }];
+          var lado = null, melhor = Infinity;
+          for (var vi = 0; vi < vizinhos.length; vi++) {
+            var v = vizinhos[vi];
+            if (!w.livre(v.x, v.y)) continue;
+            var d = U.dist(u.x, u.y, v.x + 0.5, v.y + 0.5);
+            if (d < melhor) { melhor = d; lado = v; }
+          }
+          if (!lado) { this.desistirDaCelula(tarefa, al); u.bloqueado = true; return; }
           tarefa.posto = lado;
           u.rota = null;
         }
         var destinoPosto = { x: tarefa.posto.x + 0.5, y: tarefa.posto.y + 0.5 };
         if (!u.rota && !this.pedirRota(u, destinoPosto, { raioChegada: 1 })) {
-          tarefa.alvo = null; tarefa.posto = null; u.bloqueado = true;
+          /* Sem rota até o lado da célula. Marcar a célula como desistida é o
+             que impede o laço: sem isso o trator escolhia a MESMA de novo no
+             quadro seguinte, falhava de novo, e ficava parado no lugar
+             "trabalhando" para sempre. */
+          this.desistirDaCelula(tarefa, al);
+          u.bloqueado = true;
           return;
         }
         this.andar(u, dt);
@@ -2948,7 +2977,30 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   /* A célula limpável mais perto do centro da ordem, dentro do raio. Varre em
      anéis para pegar primeiro a que está mais perto — limpar de fora para
      dentro deixaria buracos. */
-  S.celulaLimpavelProxima = function (centro, raio) {
+  /* ALCANÇÁVEL quer dizer: tem pelo menos um vizinho livre onde a máquina possa
+     encostar. Ruína no MEIO de um quarteirão não tem — toda célula em volta
+     também é ruína — e o trator ficava parado olhando para ela, com rota de
+     tamanho zero, para sempre. Era esse o "não limpa nada".
+
+     Exigindo vizinho livre, o bloco é comido pela BORDA: derrubada a casca, as
+     de dentro passam a ter vizinho livre e entram na vez. É como uma máquina
+     de verdade faria, e resolve sozinho o caso que travava. */
+  /* Guarda o que não deu para alcançar, para não tentar a mesma no quadro
+     seguinte e travar. A lista vive na TAREFA: ordem nova começa limpa. */
+  S.desistirDaCelula = function (tarefa, cel) {
+    if (!tarefa.desistidas) tarefa.desistidas = {};
+    tarefa.desistidas[cel.x + ',' + cel.y] = 1;
+    tarefa.alvo = null;
+    tarefa.posto = null;
+  };
+
+  S.encostavel = function (x, y) {
+    var w = this.world;
+    return w.livre(x - 1, y) || w.livre(x + 1, y) ||
+      w.livre(x, y - 1) || w.livre(x, y + 1);
+  };
+
+  S.celulaLimpavelProxima = function (centro, raio, pular) {
     var w = this.world;
     var cx = Math.floor(centro.x), cy = Math.floor(centro.y);
     for (var r = 0; r <= raio; r++) {
@@ -2956,7 +3008,8 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         for (var dy = -r; dy <= r; dy++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
           var x = cx + dx, y = cy + dy;
-          if (w.limpavel(x, y)) return { x: x, y: y };
+          if (pular && pular[x + ',' + y]) continue;
+          if (w.limpavel(x, y) && this.encostavel(x, y)) return { x: x, y: y };
         }
       }
     }
