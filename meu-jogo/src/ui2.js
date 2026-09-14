@@ -138,6 +138,7 @@
   };
 
   var ICONE_GRUPO = { base: '⌂', defesa: '⛨', producao: '⚔', tecnologia: '⚗' };
+  var ICONE_RAMO = { comando: '★', economia: '◆', fortificacao: '⛨', armamento: '⚔' };
   var ICONE_UNIDADE = {
     operario: '👷', fuzileiro: '🔫', lanceiro: '➹', incendiario: '🔥',
     medico: '✚', tanque: '⛟', drone: '✈'
@@ -241,6 +242,23 @@
   UI.atualizarAcoes = function () {
     var self = this, sim = this.sim, cx = $('acoesContexto');
     cx.innerHTML = '';
+    if (this.paginaAcoes && this.paginaAcoes.indexOf('pesquisar:') === 0) {
+      var idLab = +this.paginaAcoes.split(':')[1];
+      var lab = sim.estruturas[idLab];
+      if (lab && !lab.morta) {
+        var ramoP = this.paginaAcoes.split(':')[2] || null;
+        var nomeRamo = '';
+        for (var ir = 0; ir < RAMOS.length; ir++) if (RAMOS[ir].id === ramoP) nomeRamo = RAMOS[ir].nome;
+        this.mostrarSelecao(ramoP ? nomeRamo.charAt(0) + nomeRamo.slice(1).toLowerCase() : lab.def.nome,
+          lab.hp, lab.hpMax,
+          sim.jogador.pesquisaAtual ? 'Uma pesquisa por vez.'
+            : (ramoP ? 'Apagada é o que ainda não dá.' : 'Escolha o ramo. O número diz quanto já dá.'));
+        this.filaNaBarra(null);
+        this.paginaPesquisar(cx, ramoP);
+        return;
+      }
+      this.paginaAcoes = null;
+    }
     if (this.paginaAcoes && this.paginaAcoes.indexOf('produzir:') === 0) {
       var idProd = +this.paginaAcoes.split(':')[1];
       var prod = sim.estruturas[idProd];
@@ -499,6 +517,81 @@
     });
   };
 
+  UI.pesquisasDisponiveis = function () {
+    var sim = this.sim, j = sim.jogador, n = 0;
+    D.PESQUISAS.forEach(function (p) {
+      if (!j.pesquisas[p.id] && sim.pesquisaDisponivel(p).ok) n++;
+    });
+    return n;
+  };
+
+  /* A LISTA DE PESQUISA no painel, PAGINADA POR RAMO — o mesmo desenho da
+     construção, e pelo mesmo motivo: as treze pesquisas numa faixa só davam
+     1780 px de conteúdo em 797 px de tela, e o que não cabe o jogador não acha.
+     Quatro ramos, no máximo quatro pesquisas cada: tudo cabe sem rolar.
+
+     Uma pesquisa por vez é regra do jogo, então enquanto há uma em curso a
+     página mostra o progresso e o cancelar em vez da lista — oferecer o que
+     não dá para começar seria mentira. */
+  UI.paginaPesquisar = function (cx, ramoId) {
+    var self = this, sim = this.sim, j = sim.jogador;
+
+    if (j.pesquisaAtual) {
+      cx.appendChild(botao('Voltar', '↩', 'comandos do prédio', function () {
+        self.paginaAcoes = null; self.atualizarAcoes();
+      }, { tecla: 'esc' }));
+      var pa = j.pesquisaAtual;
+      cx.appendChild(botao(pa.def.nome, '⚗',
+        (pa.pausada ? 'PAUSADA · ' : '') + Math.round(pa.progresso * 100) + '%',
+        function () {}, { desativado: true, motivo: pa.def.efeito, ligado: true }));
+      cx.appendChild(botao('Cancelar', '✕', 'devolve ' + Math.round(D.REGRAS.reembolso * 100) + '%', function () {
+        sim.cancelarPesquisa();
+        self.mostrarAviso('Pesquisa cancelada.', 'atencao');
+        self.atualizarTudo();
+      }, { perigo: true }));
+      return;
+    }
+
+    if (!ramoId) {
+      cx.appendChild(botao('Voltar', '↩', 'comandos do prédio', function () {
+        self.paginaAcoes = null; self.atualizarAcoes();
+      }, { tecla: 'esc' }));
+      RAMOS.forEach(function (ramo) {
+        var lista = D.PESQUISAS.filter(function (p) { return p.ramo === ramo.id; });
+        if (!lista.length) return;
+        var livres = 0;
+        lista.forEach(function (p) { if (!j.pesquisas[p.id] && sim.pesquisaDisponivel(p).ok) livres++; });
+        var b = botao(ramo.nome.charAt(0) + ramo.nome.slice(1).toLowerCase(),
+          ICONE_RAMO[ramo.id] || '⚗', livres + ' de ' + lista.length, function () {
+            self.paginaAcoes = self.paginaAcoes.split(':').slice(0, 2).join(':') + ':' + ramo.id;
+            self.atualizarAcoes();
+          }, { desativado: !livres, motivo: livres ? null : 'Nada liberado neste ramo ainda.' });
+        if (!livres) b.classList.add('sem-recurso');
+        cx.appendChild(b);
+      });
+      return;
+    }
+
+    cx.appendChild(botao('Voltar', '↩', 'outros ramos', function () {
+      self.paginaAcoes = self.paginaAcoes.split(':').slice(0, 2).join(':');
+      self.atualizarAcoes();
+    }, { tecla: 'esc' }));
+    D.PESQUISAS.filter(function (p) { return p.ramo === ramoId; }).forEach(function (p) {
+      var pronto = !!j.pesquisas[p.id];
+      var ver = sim.pesquisaDisponivel(p);
+      var b = botao(p.nome, ICONE_RAMO[ramoId] || '⚗', pronto ? '✓ feita' : self.precoDe(p), function () {
+        var r = sim.pesquisar(p.id);
+        if (!r.ok) { self.mostrarAviso(r.motivo, 'atencao'); UF.audio.evento('negado'); return; }
+        self.mostrarAviso('Pesquisa iniciada: ' + p.nome, 'info');
+        self.paginaAcoes = self.paginaAcoes.split(':').slice(0, 2).join(':');
+        self.atualizarTudo();
+      }, { desativado: pronto || !ver.ok,
+           motivo: pronto ? 'Já concluída.' : (ver.ok ? p.efeito : ver.motivo), ligado: pronto });
+      if (!pronto && ver.ok && !sim.temRecurso(sim.custoDe(p))) b.classList.add('sem-recurso');
+      cx.appendChild(b);
+    });
+  };
+
   UI.acoesDeUnidade = function (cx, u) {
     var self = this, sim = this.sim;
     var tarefa = u.tarefa ? u.tarefa.tipo : '—';
@@ -553,6 +646,19 @@
         self.paginaAcoes = 'produzir:' + b.id;
         self.atualizarAcoes();
       }, { tecla: 't' });
+    }
+    /* O LABORATÓRIO não produz unidade nenhuma, então caía na carta vazia: o
+       Pedro construiu o Centro de Pesquisa e não achou nada para pesquisar,
+       porque a lista morava na aba Evolução da gaveta. Mesma falta da
+       construção e da produção, mesma correção. */
+    if (b.tipo === 'pesquisa') {
+      var emCurso = sim.jogador.pesquisaAtual;
+      casas[CASAS_ESTRUTURA.produzir] = botao('Pesquisar', '⚗',
+        emCurso ? Math.round(emCurso.progresso * 100) + '%' : this.pesquisasDisponiveis() + ' disponíveis',
+        function () {
+          self.paginaAcoes = 'pesquisar:' + b.id;
+          self.atualizarAcoes();
+        }, { tecla: 't', ligado: !!emCurso });
       casas[CASAS_ESTRUTURA.encontro] = botao('Encontro', '⚑', 'ponto de reunião', function () {
         self.modo = { tipo: 'rally', estrutura: b.id };
         self.mostrarModo('Toque onde as novas unidades devem se reunir');

@@ -206,6 +206,11 @@
         if (self.paginaAcoes && self.paginaAcoes.indexOf('construir:') === 0) {
           self.paginaAcoes = 'construir'; self.atualizarAcoes(); return;
         }
+        /* pesquisar:<id>:<ramo> volta para pesquisar:<id> */
+        if (self.paginaAcoes && self.paginaAcoes.split(':').length === 3) {
+          self.paginaAcoes = self.paginaAcoes.split(':').slice(0, 2).join(':');
+          self.atualizarAcoes(); return;
+        }
         if (self.paginaAcoes) { self.paginaAcoes = null; self.atualizarAcoes(); return; }
         self.cancelarModo();
         return;
@@ -541,11 +546,13 @@
 
   UI.prototype.abrirProducao = function () {
     var b = this.selecionado ? this.sim.estruturas[this.selecionado] : null;
-    if (!b || b.morta || !b.construida || !b.def.produz) {
-      this.mostrarAviso('Selecione um prédio que treina unidades.', 'atencao');
+    if (!b || b.morta || !b.construida) {
+      this.mostrarAviso('Selecione um prédio que treina ou pesquisa.', 'atencao');
       return;
     }
-    this.paginaAcoes = 'produzir:' + b.id;
+    if (b.tipo === 'pesquisa') this.paginaAcoes = 'pesquisar:' + b.id;
+    else if (b.def.produz) this.paginaAcoes = 'produzir:' + b.id;
+    else { this.mostrarAviso('Este prédio não treina nem pesquisa.', 'atencao'); return; }
     this.atualizarAcoes();
   };
 
