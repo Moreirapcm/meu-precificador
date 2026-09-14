@@ -168,6 +168,15 @@ button { cursor: pointer; border: 0; background: none; }
   background: rgba(10,16,26,.9); border: 1px solid var(--borda); opacity: 0;
   transition: opacity .25s; pointer-events: none; text-align: center;
 }
+/* Visível, o aviso ACEITA TOQUE — é ele que leva ao ponto do ataque. Escondido,
+   continua atravessável, senão viraria uma faixa invisível engolindo cliques no
+   meio do mapa. */
+#avisoHud.ver { pointer-events: auto; cursor: pointer; }
+#avisoHud.perigo { border-color: var(--perigo); animation: aviso-pisca 1s ease-in-out 3; }
+@keyframes aviso-pisca {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,93,70,0); }
+  50% { box-shadow: 0 0 14px rgba(255,93,70,.7); }
+}
 #avisoHud.ver { opacity: 1; }
 #avisoHud.perigo { border-color: var(--perigo); color: #ffd0ca; }
 #avisoHud.atencao { border-color: var(--atencao); }
@@ -3599,6 +3608,11 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
   S.danoEmArea = function (x, y, raio, dano, ladoOrigem, opts) {
     var alvoLado = ladoOrigem === 'inimigo' ? 'aliado' : 'inimigo', i;
+    /* O LADO tem de viajar junto: sem ele a explosão do Detonador dana a base e
+       o alerta não dispara, porque `aplicarDano` não saberia que veio do
+       inimigo. Era o caso mais barulhento do jogo passando calado. */
+    opts = opts || {};
+    if (opts.lado === undefined) opts.lado = ladoOrigem;
     for (i = 0; i < this.unidades.length; i++) {
       var u = this.unidades[i];
       if (u.morta || u.lado !== alvoLado) continue;
@@ -3615,6 +3629,41 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         this.aplicarDano(b, dano * (1 - 0.45 * (db / raio)), opts);
       }
     }
+  };
+
+  /* ALERTA DE ATAQUE.
+     O buraco mais barato que a pesquisa do capítulo 12 encontrou: o jogo não
+     tinha NENHUM aviso de que algo seu está sendo mordido agora. Havia aviso de
+     onda — o que vem —, nunca do que está acontecendo. E o Corredor existe
+     exatamente para isso: `mira: 'economia'`, ele vai atrás do operário do
+     outro lado do setor, e o jogador que está olhando a fila de produção não
+     fica sabendo.
+
+     Dois timbres, como no Age of Empires II: TROMPA quando é tropa, SINO
+     quando é operário ou estrutura. Não é enfeite — o timbre diz o que fazer
+     sem obrigar a olhar, e são reações diferentes: tropa apanhando pede
+     reforço, operário apanhando pede fuga.
+
+     Agrupado por ÁREA e com descanso por tempo, também como lá: um combate de
+     dez segundos na muralha não pode virar dez avisos. Doze segundos por
+     timbre, e dentro de seis células conta como o mesmo lugar. */
+  var DESCANSO_ALERTA = 12;
+  var MESMO_LUGAR = 6;
+
+  S.alertarAtaque = function (alvo) {
+    var civil = !!alvo.w || !!alvo.operario;
+    var canal = civil ? 'civil' : 'tropa';
+    if (!this.ultimoAlerta) this.ultimoAlerta = {};
+    var ant = this.ultimoAlerta[canal];
+    var c = this.centroDe(alvo);
+    if (ant && this.t - ant.t < DESCANSO_ALERTA &&
+        U.dist(ant.x, ant.y, c.x, c.y) < MESMO_LUGAR) return;
+    if (ant && this.t - ant.t < 3) return;      /* nem dois lugares ao mesmo tempo */
+    this.ultimoAlerta[canal] = { t: this.t, x: c.x, y: c.y };
+    this.emitir(civil ? 'sobAtaqueCivil' : 'sobAtaque', {
+      x: c.x, y: c.y, civil: civil,
+      alvoNome: (alvo.def && alvo.def.nome) || 'unidade'
+    });
   };
 
   S.aplicarDano = function (alvo, dano, opts) {
@@ -3639,6 +3688,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }
     alvo.hp -= dano;
     alvo.ultimoDano = this.t;
+    if (ehAliado && opts.lado === 'inimigo') this.alertarAtaque(alvo);
     if (alvo.hp > 0) return dano;
     this.matar(alvo, opts);
     return dano;
@@ -7519,6 +7569,21 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       ctx.fillStyle = u.lado === 'inimigo' ? '#ff5d5d' : (u.operario ? '#ffd479' : '#9fe0ff');
       ctx.fillRect(u.x * esc - 1, u.y * esc - 1, 2.6, 2.6);
     }
+    /* PING DO ALERTA: anel piscando onde alguma coisa nossa está apanhando.
+       O minimapa já desenha o inimigo em vermelho, mas um ponto a mais entre
+       trinta não chama ninguém — o que chama é piscar. */
+    var ping = this.pingMini;
+    if (ping && this.sim.t < ping.ate) {
+      var pulso = (ping.ate - this.sim.t) % 1;
+      ctx.strokeStyle = '#ff5d46';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.35 + 0.55 * Math.abs(Math.sin(this.sim.t * 7));
+      ctx.beginPath();
+      ctx.arc(ping.x * esc, ping.y * esc, (2 + pulso * 7) * (lado / 150), 0, 6.283);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (ping) { this.pingMini = null; }
+
     /* retângulo da câmera */
     var a = this.paraMundo(0, 0), bb = this.paraMundo(this.cv.clientWidth, this.cv.clientHeight);
     var cc = this.paraMundo(this.cv.clientWidth, 0), dd = this.paraMundo(0, this.cv.clientHeight);
@@ -7788,6 +7853,18 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         this.tom(784, 0.14, 'triangle', 0.12, 0, 'ui', 0.19);
         break;
       case 'unidadePronta': this.radio(true); break;
+      /* DOIS TIMBRES, como o Age of Empires II: trompa quando é tropa
+         apanhando, sino quando é operário ou prédio. O timbre diz o que fazer
+         sem obrigar a olhar. */
+      case 'sobAtaque':
+        this.tom(196, 0.5, 'sawtooth', 0.1, 0, 'ui');
+        this.tom(294, 0.55, 'sawtooth', 0.08, 0, 'ui', 0.14);
+        break;
+      case 'sobAtaqueCivil':
+        this.tom(1046, 0.5, 'sine', 0.1, 0, 'ui');
+        this.tom(1568, 0.6, 'sine', 0.07, 0, 'ui', 0.02);
+        this.tom(1046, 0.5, 'sine', 0.08, 0, 'ui', 0.34);
+        break;
       /* Pá raspando entulho: ruído grave e curto, com teto baixo. */
       case 'escavando':
         if (this.pode('escavando', 380)) this.ruido(0.18, 0.09, 420, 140, 1.1);
@@ -8804,6 +8881,14 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     $('btnMenu').onclick = function () { self.abrirMenuPartida(); };
     $('btnCancelarModo').onclick = function () { self.cancelarModo(); };
     $('btnOciosos').onclick = function () { self.proximoOcioso(); };
+    /* O aviso de ataque LEVA ao lugar. Saber que algo está apanhando e não
+       saber onde é meia informação; no Age of Empires II a mesma tecla que
+       avisa também leva. */
+    $('avisoHud').onclick = function () {
+      if (!self.alertaEm) return;
+      self.render.centralizarEm(self.alertaEm.x, self.alertaEm.y);
+      UF.audio.evento('clique');
+    };
     $('btnSugerir').onclick = function () { self.sugerirLocalCentral(); };
     $('puxadorGaveta').onclick = function () { self.gavetaAberta ? self.fecharGaveta() : self.abrirGaveta(self.gavetaAtual, true); };
     var abas = doc.querySelectorAll('#abas button');
@@ -10279,6 +10364,13 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         if (e.tipo === 'aviso') self.ui.mostrarAviso(e.texto, e.nivel);
         /* O chamado de apoio vira frase na tela e marca na minimapa: o rádio
            sozinho diz QUE aconteceu, não ONDE. */
+        if (e.tipo === 'sobAtaque' || e.tipo === 'sobAtaqueCivil') {
+          self.ui.mostrarAviso((e.civil ? '⚠ ' : '⚔ ') + e.alvoNome +
+            ' sob ataque. Toque aqui para ir.', 'perigo');
+          self.ui.alertaEm = { x: e.x, y: e.y };
+          self.render.pingMini = { x: e.x, y: e.y, ate: self.sim.t + 6 };
+          self.render.marcarContato(e.x, e.y);
+        }
         if (e.tipo === 'apoio') {
           self.ui.mostrarAviso(e.nome + ' em contato com ' + e.inimigo +
             (e.vieram ? ' — ' + e.vieram + ' a caminho.' : ' — ninguém por perto.'),

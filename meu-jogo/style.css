@@ -156,6 +156,15 @@ button { cursor: pointer; border: 0; background: none; }
   background: rgba(10,16,26,.9); border: 1px solid var(--borda); opacity: 0;
   transition: opacity .25s; pointer-events: none; text-align: center;
 }
+/* Visível, o aviso ACEITA TOQUE — é ele que leva ao ponto do ataque. Escondido,
+   continua atravessável, senão viraria uma faixa invisível engolindo cliques no
+   meio do mapa. */
+#avisoHud.ver { pointer-events: auto; cursor: pointer; }
+#avisoHud.perigo { border-color: var(--perigo); animation: aviso-pisca 1s ease-in-out 3; }
+@keyframes aviso-pisca {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,93,70,0); }
+  50% { box-shadow: 0 0 14px rgba(255,93,70,.7); }
+}
 #avisoHud.ver { opacity: 1; }
 #avisoHud.perigo { border-color: var(--perigo); color: #ffd0ca; }
 #avisoHud.atencao { border-color: var(--atencao); }

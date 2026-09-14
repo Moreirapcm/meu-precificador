@@ -215,6 +215,11 @@
 
   S.danoEmArea = function (x, y, raio, dano, ladoOrigem, opts) {
     var alvoLado = ladoOrigem === 'inimigo' ? 'aliado' : 'inimigo', i;
+    /* O LADO tem de viajar junto: sem ele a explosão do Detonador dana a base e
+       o alerta não dispara, porque `aplicarDano` não saberia que veio do
+       inimigo. Era o caso mais barulhento do jogo passando calado. */
+    opts = opts || {};
+    if (opts.lado === undefined) opts.lado = ladoOrigem;
     for (i = 0; i < this.unidades.length; i++) {
       var u = this.unidades[i];
       if (u.morta || u.lado !== alvoLado) continue;
@@ -231,6 +236,41 @@
         this.aplicarDano(b, dano * (1 - 0.45 * (db / raio)), opts);
       }
     }
+  };
+
+  /* ALERTA DE ATAQUE.
+     O buraco mais barato que a pesquisa do capítulo 12 encontrou: o jogo não
+     tinha NENHUM aviso de que algo seu está sendo mordido agora. Havia aviso de
+     onda — o que vem —, nunca do que está acontecendo. E o Corredor existe
+     exatamente para isso: `mira: 'economia'`, ele vai atrás do operário do
+     outro lado do setor, e o jogador que está olhando a fila de produção não
+     fica sabendo.
+
+     Dois timbres, como no Age of Empires II: TROMPA quando é tropa, SINO
+     quando é operário ou estrutura. Não é enfeite — o timbre diz o que fazer
+     sem obrigar a olhar, e são reações diferentes: tropa apanhando pede
+     reforço, operário apanhando pede fuga.
+
+     Agrupado por ÁREA e com descanso por tempo, também como lá: um combate de
+     dez segundos na muralha não pode virar dez avisos. Doze segundos por
+     timbre, e dentro de seis células conta como o mesmo lugar. */
+  var DESCANSO_ALERTA = 12;
+  var MESMO_LUGAR = 6;
+
+  S.alertarAtaque = function (alvo) {
+    var civil = !!alvo.w || !!alvo.operario;
+    var canal = civil ? 'civil' : 'tropa';
+    if (!this.ultimoAlerta) this.ultimoAlerta = {};
+    var ant = this.ultimoAlerta[canal];
+    var c = this.centroDe(alvo);
+    if (ant && this.t - ant.t < DESCANSO_ALERTA &&
+        U.dist(ant.x, ant.y, c.x, c.y) < MESMO_LUGAR) return;
+    if (ant && this.t - ant.t < 3) return;      /* nem dois lugares ao mesmo tempo */
+    this.ultimoAlerta[canal] = { t: this.t, x: c.x, y: c.y };
+    this.emitir(civil ? 'sobAtaqueCivil' : 'sobAtaque', {
+      x: c.x, y: c.y, civil: civil,
+      alvoNome: (alvo.def && alvo.def.nome) || 'unidade'
+    });
   };
 
   S.aplicarDano = function (alvo, dano, opts) {
@@ -255,6 +295,7 @@
     }
     alvo.hp -= dano;
     alvo.ultimoDano = this.t;
+    if (ehAliado && opts.lado === 'inimigo') this.alertarAtaque(alvo);
     if (alvo.hp > 0) return dano;
     this.matar(alvo, opts);
     return dano;

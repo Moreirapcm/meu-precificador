@@ -285,6 +285,13 @@
         if (e.tipo === 'aviso') self.ui.mostrarAviso(e.texto, e.nivel);
         /* O chamado de apoio vira frase na tela e marca na minimapa: o rádio
            sozinho diz QUE aconteceu, não ONDE. */
+        if (e.tipo === 'sobAtaque' || e.tipo === 'sobAtaqueCivil') {
+          self.ui.mostrarAviso((e.civil ? '⚠ ' : '⚔ ') + e.alvoNome +
+            ' sob ataque. Toque aqui para ir.', 'perigo');
+          self.ui.alertaEm = { x: e.x, y: e.y };
+          self.render.pingMini = { x: e.x, y: e.y, ate: self.sim.t + 6 };
+          self.render.marcarContato(e.x, e.y);
+        }
         if (e.tipo === 'apoio') {
           self.ui.mostrarAviso(e.nome + ' em contato com ' + e.inimigo +
             (e.vieram ? ' — ' + e.vieram + ' a caminho.' : ' — ninguém por perto.'),

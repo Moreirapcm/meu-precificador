@@ -14,6 +14,14 @@
     $('btnMenu').onclick = function () { self.abrirMenuPartida(); };
     $('btnCancelarModo').onclick = function () { self.cancelarModo(); };
     $('btnOciosos').onclick = function () { self.proximoOcioso(); };
+    /* O aviso de ataque LEVA ao lugar. Saber que algo está apanhando e não
+       saber onde é meia informação; no Age of Empires II a mesma tecla que
+       avisa também leva. */
+    $('avisoHud').onclick = function () {
+      if (!self.alertaEm) return;
+      self.render.centralizarEm(self.alertaEm.x, self.alertaEm.y);
+      UF.audio.evento('clique');
+    };
     $('btnSugerir').onclick = function () { self.sugerirLocalCentral(); };
     $('puxadorGaveta').onclick = function () { self.gavetaAberta ? self.fecharGaveta() : self.abrirGaveta(self.gavetaAtual, true); };
     var abas = doc.querySelectorAll('#abas button');

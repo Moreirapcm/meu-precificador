@@ -253,6 +253,18 @@
         this.tom(784, 0.14, 'triangle', 0.12, 0, 'ui', 0.19);
         break;
       case 'unidadePronta': this.radio(true); break;
+      /* DOIS TIMBRES, como o Age of Empires II: trompa quando é tropa
+         apanhando, sino quando é operário ou prédio. O timbre diz o que fazer
+         sem obrigar a olhar. */
+      case 'sobAtaque':
+        this.tom(196, 0.5, 'sawtooth', 0.1, 0, 'ui');
+        this.tom(294, 0.55, 'sawtooth', 0.08, 0, 'ui', 0.14);
+        break;
+      case 'sobAtaqueCivil':
+        this.tom(1046, 0.5, 'sine', 0.1, 0, 'ui');
+        this.tom(1568, 0.6, 'sine', 0.07, 0, 'ui', 0.02);
+        this.tom(1046, 0.5, 'sine', 0.08, 0, 'ui', 0.34);
+        break;
       /* Pá raspando entulho: ruído grave e curto, com teto baixo. */
       case 'escavando':
         if (this.pode('escavando', 380)) this.ruido(0.18, 0.09, 420, 140, 1.1);

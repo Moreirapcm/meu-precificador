@@ -1363,6 +1363,21 @@
       ctx.fillStyle = u.lado === 'inimigo' ? '#ff5d5d' : (u.operario ? '#ffd479' : '#9fe0ff');
       ctx.fillRect(u.x * esc - 1, u.y * esc - 1, 2.6, 2.6);
     }
+    /* PING DO ALERTA: anel piscando onde alguma coisa nossa está apanhando.
+       O minimapa já desenha o inimigo em vermelho, mas um ponto a mais entre
+       trinta não chama ninguém — o que chama é piscar. */
+    var ping = this.pingMini;
+    if (ping && this.sim.t < ping.ate) {
+      var pulso = (ping.ate - this.sim.t) % 1;
+      ctx.strokeStyle = '#ff5d46';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.35 + 0.55 * Math.abs(Math.sin(this.sim.t * 7));
+      ctx.beginPath();
+      ctx.arc(ping.x * esc, ping.y * esc, (2 + pulso * 7) * (lado / 150), 0, 6.283);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (ping) { this.pingMini = null; }
+
     /* retângulo da câmera */
     var a = this.paraMundo(0, 0), bb = this.paraMundo(this.cv.clientWidth, this.cv.clientHeight);
     var cc = this.paraMundo(this.cv.clientWidth, 0), dd = this.paraMundo(0, this.cv.clientHeight);
