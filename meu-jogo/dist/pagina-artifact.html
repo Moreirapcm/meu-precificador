@@ -3489,7 +3489,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (acabou) {
         if (tarefa.apoio && tarefa.posto) {
           u.tarefa = { tipo: 'voltandoAoPosto', destino: tarefa.posto,
-            centro: tarefa.posto, raio: 9 };
+            centro: tarefa.posto, raio: 9, prazo: this.t + 30 };
           u.rota = null;
         } else {
           u.tarefa = { tipo: 'defender', centro: { x: u.x, y: u.y }, raio: 7 };
@@ -3502,8 +3502,17 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
        e termina virando `defender` no posto certo, não onde parou. */
     if (tarefa.tipo === 'voltandoAoPosto') {
       this.irAte(u, tarefa.destino, dt);
-      if (this.encostouEm(u, tarefa.destino, 1.2)) {
-        u.tarefa = { tipo: 'defender', centro: { x: tarefa.destino.x, y: tarefa.destino.y }, raio: 7 };
+      /* Chegou, ou o posto sumiu. A segunda parte não é zelo: o posto pode ter
+         virado obra, muro ou ficado do outro lado de uma brecha que fechou, e
+         medindo numa partida de verdade foi o que aconteceu — três soldados
+         ficaram "voltando ao posto" para sempre, andando em círculo a cinco
+         células de um ponto inalcançável. Passado o prazo, o soldado cava onde
+         está: é o que um soldado de verdade faz. */
+      var chegou = this.encostouEm(u, tarefa.destino, 1.2);
+      var desistiu = tarefa.prazo && this.t > tarefa.prazo;
+      if (chegou || desistiu) {
+        var onde = chegou ? tarefa.destino : { x: u.x, y: u.y };
+        u.tarefa = { tipo: 'defender', centro: { x: onde.x, y: onde.y }, raio: 7 };
         u.rota = null;
       }
       return;
