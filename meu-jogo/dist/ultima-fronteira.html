@@ -924,6 +924,26 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       efeito: 'Muros e portões ganham 60% de integridade.' },
     { id: 'reparoEficiente', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Reparo eficiente', custo: { m: 180 }, tempo: 32, req: ['muroReforcado'],
       efeito: 'Reparos custam 40% menos e são 50% mais rápidos.' },
+    /* BLINDAGEM DE TROPA, em dois degraus. É a metade que faltava do nosso
+       próprio sistema de dano: os invasores têm `blind` de 0 a 10 — 6 no
+       Couraçado, 8 no Titã, 10 na Matriarca — e as nossas tropas tinham 0 a 3
+       FIXO, sem nenhuma pesquisa que mexesse nisso. O jogador tinha duas
+       alavancas ofensivas e nenhuma defensiva.
+
+       DOIS degraus de +1, e não três, porque a subtração com piso de 12% é
+       violenta na faixa baixa: contra o tiro de 7 do Corredor, +2 de blindagem
+       já corta o dano quase pela metade. Medido com `equilibrio.cjs` antes e
+       depois.
+
+       Moram no QUARTEL, com a arma, que é o que o Age of Empires faz: a
+       ferraria cuida das duas linhas. O ramo continua sendo fortificação
+       porque é disso que se trata — no manual do Age a ferraria também é
+       econômica, e o ramo nunca foi o mesmo que o prédio. */
+    { id: 'blindagem1', ramo: 'fortificacao', casa: 'quartel', nome: 'Placas de combate', custo: { m: 170 }, tempo: 30,
+      efeito: '+1 de blindagem em toda tropa. Vale mais contra tiro fraco e repetido.' },
+    { id: 'blindagem2', ramo: 'fortificacao', casa: 'quartel', nome: 'Placas compostas', custo: { m: 260, c: 40 }, tempo: 40, req: ['blindagem1'], tech: 2,
+      efeito: '+1 de blindagem em toda tropa, somando 2 com o degrau anterior.' },
+
     { id: 'antiacido', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Resistência a ácido', custo: { m: 260, c: 40 }, tempo: 45, req: ['reparoEficiente'], tech: 3,
       efeito: 'Reduz pela metade o dano de Cuspidores e Asas corrosivas.' },
 
@@ -3594,6 +3614,14 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (!alvo || alvo.morta) return 0;
     opts = opts || {};
     var blind = (alvo.def && alvo.def.blind) || 0;
+    /* A blindagem pesquisada vale para TROPA NOSSA, não para estrutura: prédio
+       tem a linha dele (o muro reforçado), e somar aqui dobraria o efeito. É
+       a mesma divisão do Age of Empires, onde armadura de infantaria e
+       Masonry são pesquisas diferentes. */
+    if (alvo.lado !== 'inimigo' && !alvo.w) {
+      if (this.jogador.pesquisas.blindagem1) blind += 1;
+      if (this.jogador.pesquisas.blindagem2) blind += 1;
+    }
     if (opts.metadeBlindagem) blind *= 0.5;
     if (!opts.perfura) dano = Math.max(dano * 0.12, dano - blind);
     if (opts.acido && this.jogador.pesquisas.antiacido) dano *= 0.5;

@@ -237,6 +237,14 @@
     if (!alvo || alvo.morta) return 0;
     opts = opts || {};
     var blind = (alvo.def && alvo.def.blind) || 0;
+    /* A blindagem pesquisada vale para TROPA NOSSA, não para estrutura: prédio
+       tem a linha dele (o muro reforçado), e somar aqui dobraria o efeito. É
+       a mesma divisão do Age of Empires, onde armadura de infantaria e
+       Masonry são pesquisas diferentes. */
+    if (alvo.lado !== 'inimigo' && !alvo.w) {
+      if (this.jogador.pesquisas.blindagem1) blind += 1;
+      if (this.jogador.pesquisas.blindagem2) blind += 1;
+    }
     if (opts.metadeBlindagem) blind *= 0.5;
     if (!opts.perfura) dano = Math.max(dano * 0.12, dano - blind);
     if (opts.acido && this.jogador.pesquisas.antiacido) dano *= 0.5;
