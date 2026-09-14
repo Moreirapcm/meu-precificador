@@ -317,39 +317,58 @@
         u.rota = null;
         return;
       }
-      /* TRABALHA DO LADO DE FORA, e isto não é detalhe: ruína é célula SÓLIDA,
-         e pedir rota para dentro dela sempre falha. O trator ficava indo e
-         voltando, trocando de alvo a cada quadro sem nunca derrubar nada.
-         O posto de trabalho é a célula livre mais próxima da ruína; o serviço
-         acontece quando ele está a menos de duas células do centro dela. */
-      var meio = { x: al.x + 0.5, y: al.y + 0.5 };
-      if (U.dist(u.x, u.y, meio.x, meio.y) > 1.9) {
-        if (!tarefa.posto || !w.livre(tarefa.posto.x, tarefa.posto.y) ||
-            Math.abs(tarefa.posto.x - al.x) + Math.abs(tarefa.posto.y - al.y) > 1) {
-          /* O posto é um VIZINHO de verdade, não "a célula livre mais próxima":
-             `celulaLivreProxima` podia devolver um lugar a três células de
-             distância, e de lá a máquina nunca alcançava o serviço. */
-          var vizinhos = [{ x: al.x - 1, y: al.y }, { x: al.x + 1, y: al.y },
-                          { x: al.x, y: al.y - 1 }, { x: al.x, y: al.y + 1 }];
-          var lado = null, melhor = Infinity;
-          for (var vi = 0; vi < vizinhos.length; vi++) {
-            var v = vizinhos[vi];
-            if (!w.livre(v.x, v.y)) continue;
-            var d = U.dist(u.x, u.y, v.x + 0.5, v.y + 0.5);
-            if (d < melhor) { melhor = d; lado = v; }
-          }
-          if (!lado) { this.desistirDaCelula(tarefa, al); u.bloqueado = true; return; }
-          tarefa.posto = lado;
-          u.rota = null;
+      /* TRABALHA DO POSTO, e o posto é um VIZINHO ORTOGONAL da célula.
+         Ruína é célula sólida: não dá para entrar nela, então a máquina encosta
+         ao lado e trabalha dali.
+
+         A pergunta é "ESTOU NO POSTO?", e não "estou perto do alvo". A primeira
+         versão perguntava a distância até o ALVO — menos de 1,9 célula — e isso
+         abria uma FAIXA MORTA que travava tudo: `pedirRota` com raio de chegada
+         1 devolve rota VAZIA quando a unidade já está a uma célula do destino,
+         `andar` não tem por onde andar, e `u.rota` fica sendo um vetor vazio,
+         que é verdadeiro — ninguém pede rota de novo. Com o trator a uma célula
+         do posto e a duas do alvo, ele ficava parado achando que tinha chegado
+         e longe demais para trabalhar. Medido: parado em 8,5/1,5 por 79
+         segundos, tarefa `limpar`, progresso zero.
+
+         Com a pergunta certa, a faixa morta não existe: ou ele está no posto e
+         trabalha, ou não está e anda até lá, com raio de chegada ZERO. */
+      var alvoPosto = tarefa.posto;
+      var postoValido = alvoPosto && w.livre(alvoPosto.x, alvoPosto.y) &&
+        Math.abs(alvoPosto.x - al.x) + Math.abs(alvoPosto.y - al.y) === 1;
+      if (!postoValido) {
+        var vizinhos = [{ x: al.x - 1, y: al.y }, { x: al.x + 1, y: al.y },
+                        { x: al.x, y: al.y - 1 }, { x: al.x, y: al.y + 1 }];
+        var lado = null, melhor = Infinity;
+        for (var vi = 0; vi < vizinhos.length; vi++) {
+          var v = vizinhos[vi];
+          if (!w.livre(v.x, v.y)) continue;
+          var d = U.dist(u.x, u.y, v.x + 0.5, v.y + 0.5);
+          if (d < melhor) { melhor = d; lado = v; }
         }
-        var destinoPosto = { x: tarefa.posto.x + 0.5, y: tarefa.posto.y + 0.5 };
-        if (!u.rota && !this.pedirRota(u, destinoPosto, { raioChegada: 1 })) {
-          /* Sem rota até o lado da célula. Marcar a célula como desistida é o
-             que impede o laço: sem isso o trator escolhia a MESMA de novo no
-             quadro seguinte, falhava de novo, e ficava parado no lugar
-             "trabalhando" para sempre. */
+        if (!lado) { this.desistirDaCelula(tarefa, al); u.bloqueado = true; return; }
+        tarefa.posto = alvoPosto = lado;
+        u.rota = null;
+      }
+      /* "Estou no posto?" se responde pela CÉLULA, não por distância a um ponto.
+         Distância cria faixa morta dos dois lados: com 1,9 o trator travava
+         achando que já tinha chegado; com 0,55 ele desistia da célula por estar
+         dentro do posto mas fora do centro. Célula não tem meio-termo — ou o
+         piso das coordenadas bate, ou não bate — e é exatamente o que o
+         buscador de rota entrega. */
+      var centroPosto = { x: alvoPosto.x + 0.5, y: alvoPosto.y + 0.5 };
+      if (Math.floor(u.x) !== alvoPosto.x || Math.floor(u.y) !== alvoPosto.y) {
+        if ((!u.rota || !u.rota.length) &&
+            !this.pedirRota(u, centroPosto, { raioChegada: 0 })) {
           this.desistirDaCelula(tarefa, al);
           u.bloqueado = true;
+          return;
+        }
+        if (!u.rota.length) {
+          /* Rota vazia com a máquina fora da célula do posto: o buscador
+             considera alcançado o que para nós não é. Desiste desta célula em
+             vez de ficar parado — é o laço que travava o trator. */
+          this.desistirDaCelula(tarefa, al);
           return;
         }
         this.andar(u, dt);
