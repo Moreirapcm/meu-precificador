@@ -201,8 +201,9 @@
          em `cancelarModo`, e a lista ia junto. */
       if (k === 'escape') {
         /* Um nível de cada vez: da lista de um grupo volta para os grupos, dos
-           grupos volta para os comandos, e só então cancela o modo. */
-        if (self.paginaAcoes && self.paginaAcoes.indexOf(':') > 0) {
+           grupos volta para os comandos, e só então cancela o modo. A lista de
+           produção tem UM nível só, então volta direto para os comandos. */
+        if (self.paginaAcoes && self.paginaAcoes.indexOf('construir:') === 0) {
           self.paginaAcoes = 'construir'; self.atualizarAcoes(); return;
         }
         if (self.paginaAcoes) { self.paginaAcoes = null; self.atualizarAcoes(); return; }
@@ -223,6 +224,8 @@
       if (k === 'r') { self.repararComSelecionado(); return; }
       if (k === 'l') { self.acaoRepararLinha(); return; }
       if (k === 'p') { self.iniciarOrdem('patrulhar'); return; }
+      /* `t` de treinar: abre a lista do prédio selecionado que produz. */
+      if (k === 't') { self.abrirProducao(); return; }
       if (k === 'c') { self.iniciarOrdem('recuar'); return; }
       if (k === 'g') { self.minerarComSelecionados(); return; }
       if (k === 'e') { self.jogo.alternarVelocidade(); return; }
@@ -534,6 +537,16 @@
     }
     this.mostrarAviso('Operários voltaram à mineração.', 'info');
     this.atualizarTudo();
+  };
+
+  UI.prototype.abrirProducao = function () {
+    var b = this.selecionado ? this.sim.estruturas[this.selecionado] : null;
+    if (!b || b.morta || !b.construida || !b.def.produz) {
+      this.mostrarAviso('Selecione um prédio que treina unidades.', 'atencao');
+      return;
+    }
+    this.paginaAcoes = 'produzir:' + b.id;
+    this.atualizarAcoes();
   };
 
   UI.prototype.voltarParaBase = function () {

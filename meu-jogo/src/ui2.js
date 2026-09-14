@@ -138,6 +138,10 @@
   };
 
   var ICONE_GRUPO = { base: '⌂', defesa: '⛨', producao: '⚔', tecnologia: '⚗' };
+  var ICONE_UNIDADE = {
+    operario: '👷', fuzileiro: '🔫', lanceiro: '➹', incendiario: '🔥',
+    medico: '✚', tanque: '⛟', drone: '✈'
+  };
 
   function botao(rotulo, icone, sub, aoClicar, opcoes) {
     opcoes = opcoes || {};
@@ -237,6 +241,17 @@
   UI.atualizarAcoes = function () {
     var self = this, sim = this.sim, cx = $('acoesContexto');
     cx.innerHTML = '';
+    if (this.paginaAcoes && this.paginaAcoes.indexOf('produzir:') === 0) {
+      var idProd = +this.paginaAcoes.split(':')[1];
+      var prod = sim.estruturas[idProd];
+      if (prod && !prod.morta) {
+        this.mostrarSelecao(prod.def.nome, prod.hp, prod.hpMax, 'Escolha o que treinar.');
+        this.paginaProduzir(cx, idProd);
+        this.filaNaBarra(prod);
+        return;
+      }
+      this.paginaAcoes = null;
+    }
     if (this.paginaAcoes && this.paginaAcoes.indexOf('construir') === 0) {
       var grupo = this.paginaAcoes.split(':')[1] || null;
       $('selVida').hidden = true;
@@ -449,6 +464,41 @@
     });
   };
 
+  /* O QUE DÁ PARA FAZER AQUI DENTRO.
+     Tocar num prédio já mostrava os comandos dele, mas a lista do que ele
+     PRODUZ morava na gaveta, atrás de uma aba — o jogador tocava no Quartel e
+     não via soldado nenhum. Agora é a mesma segunda página da construção, com
+     as mesmas regras, porque é a mesma pergunta: o que dá para fazer agora.
+
+     A diferença em relação à construção é o motivo de estar apagado. Ali só
+     tecnologia trava; aqui trava também POPULAÇÃO, que é limite do jogador e
+     não da tecnologia — por isso ela apaga o botão e diz o porquê, em vez de
+     deixar clicar e recusar depois. */
+  UI.paginaProduzir = function (cx, id) {
+    var self = this, sim = this.sim;
+    var b = sim.estruturas[id];
+    if (!b || b.morta) { this.paginaAcoes = null; this.atualizarAcoes(); return; }
+
+    cx.appendChild(botao('Voltar', '↩', 'comandos do prédio', function () {
+      self.paginaAcoes = null;
+      self.atualizarAcoes();
+    }, { tecla: 'esc' }));
+
+    b.def.produz.forEach(function (tipo) {
+      var def = UNID[tipo];
+      var falta = sim.requisitoFaltante(def);
+      if (!falta && sim.popLivre() < (def.pop || 0)) falta = 'Sem capacidade de população';
+      var bt = botao(def.nome, ICONE_UNIDADE[tipo] || '•', self.precoDe(def), function () {
+        var r = sim.encomendar(b.id, tipo);
+        if (!r.ok) { self.mostrarAviso(r.motivo, 'atencao'); UF.audio.evento('negado'); }
+        else { UF.audio.evento('clique'); self.mostrarAviso(def.nome + ' na fila.', 'info'); }
+        self.atualizarTudo();
+      }, { desativado: !!falta, motivo: falta || (def.desc + ' · ' + (def.pop || 0) + ' pop · ' + def.tempo + 's') });
+      if (!falta && !sim.temRecurso(sim.custoDe(def))) bt.classList.add('sem-recurso');
+      cx.appendChild(bt);
+    });
+  };
+
   UI.acoesDeUnidade = function (cx, u) {
     var self = this, sim = this.sim;
     var tarefa = u.tarefa ? u.tarefa.tipo : '—';
@@ -498,9 +548,10 @@
       }, { tecla: 'r' });
     }
     if (b.def.produz) {
-      casas[CASAS_ESTRUTURA.produzir] = botao('Produzir', '▲', 'abrir fila', function () {
-        self.abrirGaveta('tropas', true); self.estruturaProducao = b.id; self.desenharGaveta();
-      });
+      casas[CASAS_ESTRUTURA.produzir] = botao('Produzir', '▲', b.def.produz.length + (b.def.produz.length === 1 ? ' unidade' : ' unidades'), function () {
+        self.paginaAcoes = 'produzir:' + b.id;
+        self.atualizarAcoes();
+      }, { tecla: 't' });
       casas[CASAS_ESTRUTURA.encontro] = botao('Encontro', '⚑', 'ponto de reunião', function () {
         self.modo = { tipo: 'rally', estrutura: b.id };
         self.mostrarModo('Toque onde as novas unidades devem se reunir');
