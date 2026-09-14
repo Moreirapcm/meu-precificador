@@ -3378,18 +3378,40 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }
 
     if (tarefa.tipo === 'patrulhar') {
-      var destino = tarefa.indo ? tarefa.b : tarefa.a;
-      this.irAte(u, destino, dt);
-      if (this.encostouEm(u, destino, 1.2)) { tarefa.indo = !tarefa.indo; u.rota = null; }
-      if (alvo && arma && this.distanciaEntre(u, alvo) <= arma.alc) { u.alvo = alvo.id; this.atirar(u, alvo, arma, dt); }
-      return;
+      /* PATRULHA ENGAJA. Antes ela só atirava se o inimigo por acaso entrasse no
+         alcance enquanto a tropa passava: dois tiros de passagem e o soldado
+         seguia marchando, deixando o bicho vivo às costas. Medido — o Corredor
+         levava 24 de dano e ficava com 71 de vida enquanto o fuzileiro se
+         afastava para 11 células e nunca mais voltava.
+
+         Nos dois clássicos patrulhar é ordem de COMBATE: a tropa interrompe a
+         ronda para brigar e volta à linha quando acaba. A coleira é a própria
+         linha da patrulha — meio do trajeto como centro, metade do trajeto mais
+         cinco células como raio — para a ronda não virar perseguição pelo mapa.
+
+         Quando há alvo dentro da vigia, cai no ramo comum lá embaixo, que já
+         sabe aproximar, respeitar alcance mínimo e voltar para o centro. */
+      var vigia = arma ? Math.max(arma.alc, u.def.visao * 0.8) : 0;
+      if (!alvo || !arma || this.distanciaEntre(u, alvo) > vigia) {
+        var destino = tarefa.indo ? tarefa.b : tarefa.a;
+        this.irAte(u, destino, dt);
+        if (this.encostouEm(u, destino, 1.2)) { tarefa.indo = !tarefa.indo; u.rota = null; }
+        return;
+      }
+      if (!tarefa.centro) {
+        tarefa.centro = { x: (tarefa.a.x + tarefa.b.x) / 2, y: (tarefa.a.y + tarefa.b.y) / 2 };
+        tarefa.raio = U.dist(tarefa.a.x, tarefa.a.y, tarefa.b.x, tarefa.b.y) / 2 + 5;
+      }
     }
 
     if (alvo) {
       u.alvo = alvo.id;
       var d = this.distanciaEntre(u, alvo);
       if (d > arma.alc * 0.92) {
-        var limite = tarefa.tipo === 'defender' ? (tarefa.raio || 7) : 99;
+        /* A patrulha tem coleira como a defesa: sem ela, um inimigo que foge
+           levava a ronda inteira atrás dele e a linha ficava aberta. */
+        var comColeira = tarefa.tipo === 'defender' || tarefa.tipo === 'patrulhar';
+        var limite = comColeira ? (tarefa.raio || 7) : 99;
         var longe = tarefa.centro ? U.dist(u.x, u.y, tarefa.centro.x, tarefa.centro.y) : 0;
         if (longe < limite) this.irAte(u, alvo, dt, 1);
         else { u.rota = null; this.irAte(u, tarefa.centro, dt); }
