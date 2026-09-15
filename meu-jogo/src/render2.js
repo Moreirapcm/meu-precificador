@@ -869,6 +869,22 @@
       ctx.beginPath(); ctx.arc(p.x, p.y - voo, raio * 2.1, 0, 6.283); ctx.stroke();
     }
 
+    /* DIVISAS do posto, no pé da unidade e não sobre a cabeça: em cima já moram
+       a carga, o travamento e a barra de vida, e o posto não é aviso — é ficha
+       da unidade, coisa que se lê ao olhar, não que pede atenção. Uma barra por
+       posto, empilhada, como o galão do C&C. */
+    if (u.posto && z >= 0.5) {
+      var lg = raio * 1.8, x0 = p.x - lg / 2, y0 = p.y - voo + raio * 0.55;
+      /* Fundo escuro atrás das barras: o chão do jogo é claro na maior parte
+         dos setores, e barra branca sobre areia não se lê. */
+      ctx.fillStyle = 'rgba(6,10,16,0.65)';
+      ctx.fillRect(x0 - 1 * z, y0 - 1 * z, lg + 2 * z, u.posto * 2.6 * z + 1 * z);
+      ctx.fillStyle = u.posto >= 3 ? '#ffd479' : '#e6edf5';
+      for (var q = 0; q < u.posto; q++) {
+        ctx.fillRect(x0, y0 + q * 2.6 * z, lg, 1.6 * z);
+      }
+    }
+
     if (u.carga > 0) this.icone(ctx, p.x, topo - 5 * z, u.cargaTipo === 'petroleo' ? '#e8a33d' : '#ffd479', '◆');
     if (u.tarefa && u.tarefa.tipo === 'fugindo') this.icone(ctx, p.x, topo - 5 * z, '#ff9a6b', '!');
     else if (u.bloqueado) this.icone(ctx, p.x, topo - 5 * z, '#ff7a6b', '⊘');

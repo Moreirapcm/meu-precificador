@@ -463,8 +463,38 @@
     custoBombardeio: 50,
     custoEscudo: 35,
     reembolso: 0.6,
-    reservaReparo: 120
+    reservaReparo: 120,
+    postoDano: 0.05,        /* +5% de dano por posto */
+    postoCadencia: 0.05,    /* -5% no tempo de recarga por posto */
+    postoCura: 0.015        /* fração da vida por segundo, a partir do posto 2 */
   };
+
+  /* VETERANIA. C&C Generals: Veteran, Elite e Heroic, com mais cadência e mais
+     dano a cada posto e auto-cura nos dois últimos. O que ela resolve é o
+     problema que o Rob Pardo nomeou — a *fodder unit*, a tropa que só serve
+     para ser gasta: com posto, preservar o soldado passa a valer alguma coisa,
+     e recuar deixa de ser desperdício.
+
+     A experiência é o `valor` do que se abate, que já existe para o reembolso:
+     Corredor 5, Titã 34, Matriarca 120. Um Fuzileiro vira Veterano com três
+     Corredores e Heroico com vinte — uma campanha inteira, não uma onda.
+
+     Os ganhos são MENORES que os do C&C (lá é +20% de cadência por posto, que
+     no terceiro seria dois e meio tiros pelo preço de um). A nossa tropa vive
+     muitas ondas seguidas, e o mesmo número que é justo num jogo onde a
+     unidade morre rápido vira desequilíbrio aqui.
+
+     5% por posto é NÚMERO MEDIDO, não escolhido. Com 8% o `equilibrio.cjs`
+     virou a vitória do Rio em derrota: com soldado mais forte a onda morria
+     longe da base, o jogador simulado parava de erguer torre (3 contra 8) e
+     chegava à última onda sem defesa estática. O padrão das doze partidas é o
+     portão, e ele voltou a bater com 5%. */
+  var POSTOS = [
+    { nome: '', xp: 0 },
+    { nome: 'Veterano', xp: 15 },
+    { nome: 'Elite', xp: 45 },
+    { nome: 'Heroico', xp: 100 }
+  ];
 
   var DIFICULDADES = {
     recruta: { nome: 'Recruta', orcamento: 0.7, aviso: 1.4, desc: 'Mais avisos e menos pressão.' },
@@ -474,6 +504,7 @@
 
   UF.DATA = {
     TERRENO: TERRENO, ESTRUTURAS: ESTRUTURAS, UNIDADES: UNIDADES, INVASORES: INVASORES,
-    PESQUISAS: PESQUISAS, SETORES: SETORES, REGRAS: REGRAS, DIFICULDADES: DIFICULDADES
+    PESQUISAS: PESQUISAS, SETORES: SETORES, REGRAS: REGRAS, DIFICULDADES: DIFICULDADES,
+    POSTOS: POSTOS
   };
 })(typeof window !== 'undefined' ? window : globalThis);

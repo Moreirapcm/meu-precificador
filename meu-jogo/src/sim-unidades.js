@@ -17,6 +17,7 @@
       alvo: 0, recarga: 0, carga: 0, cargaTipo: 'mineral',
       voa: !!def.voa, raio: def.raio || 0.3, morta: false,
       operario: tipo === 'operario', grupo: null, bloqueado: false,
+      xp: 0, posto: 0,
       reservaCura: def.cura ? def.cura.reserva : 0,
       versaoRota: 0, tentarRotaEm: 0, ordemManual: false, angulo: 0, animacao: Math.random() * 6
     };

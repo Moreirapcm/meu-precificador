@@ -722,5 +722,55 @@ teste('Guarnição sobrevive a salvar e carregar, sem população fantasma', fun
   ok(novo.unidades.filter(function (u) { return u.id === s1.id; })[0], 'não voltou ao mundo');
 });
 
+
+/* Item 9 do capítulo 11: veterania. */
+teste('Veterania: abate dá posto, posto dá dano e cadência, e sobe no save', function () {
+  var sim = partida();
+  var s1 = sim.criarUnidade('fuzileiro', sim.central.x - 3.5, sim.central.y + 0.5, 'aliado');
+  igual(s1.posto, 0, 'nasceu com posto:');
+
+  /* Corredor vale 5: três abates fazem 15, que é o primeiro degrau. */
+  for (var i = 0; i < 3; i++) sim.creditarAbate(s1.id, 5);
+  igual(s1.xp, 15, 'experiência errada:');
+  igual(s1.posto, 1, 'não foi promovido a Veterano:');
+
+  /* o posto entra no tiro: mais dano e menos espera */
+  var inv = sim.criarUnidade('corredor', s1.x + 4, s1.y, 'inimigo');
+  s1.recarga = 0;
+  sim.projeteis.length = 0;
+  sim.atirar(s1, inv, s1.def.arma, 0);
+  igual(sim.projeteis.length, 1, 'não saiu tiro:');
+  /* Os fatores saem de `REGRAS`, não escritos à mão: o número foi medido com
+     `equilibrio.cjs` e vai mudar de novo; teste que repete a constante quebra
+     no próximo ajuste sem nada estar errado. */
+  perto(sim.projeteis[0].dano, s1.def.arma.dano * (1 + D.REGRAS.postoDano), 0.01, 'o posto não somou dano:');
+  perto(s1.recarga, s1.def.arma.cad * (1 - D.REGRAS.postoCadencia), 0.001, 'o posto não encurtou a recarga:');
+
+  /* torre NÃO ganha posto: estrutura não aprende */
+  var t = concluir(construirPerto(sim, 'sentinela', 4, 10));
+  sim.creditarAbate(t.id, 120);
+  ok(!t.posto, 'a torre foi promovida');
+
+  /* operário também não: não é tropa */
+  var op = sim.unidades.filter(function (u) { return u.operario; })[0];
+  sim.creditarAbate(op.id, 120);
+  ok(!op.posto, 'o operário foi promovido');
+
+  /* auto-cura só a partir do segundo posto */
+  s1.hp = 10;
+  sim.curarPorPosto(s1, 1);
+  igual(s1.hp, 10, 'curou no posto 1:');
+  s1.posto = 2;
+  sim.curarPorPosto(s1, 1);
+  ok(s1.hp > 10, 'o Elite não se curou sozinho');
+
+  /* o posto atravessa o salvamento */
+  var novo = UF.Salvar.restaurar(JSON.parse(JSON.stringify(UF.Salvar.serializar(sim))));
+  var s2 = novo.unidadePorId(s1.id);
+  ok(s2, 'a unidade sumiu no save');
+  igual(s2.posto, 2, 'o posto não sobreviveu ao save:');
+  igual(s2.xp, 15, 'a experiência não sobreviveu ao save:');
+});
+
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
 process.exit(falhou ? 1 : 0);

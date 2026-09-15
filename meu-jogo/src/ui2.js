@@ -620,7 +620,14 @@
       focar: 'fogo concentrado', voltandoAoPosto: 'voltando ao posto',
       limpar: 'limpando o terreno'
     }[tarefa] || tarefa;
-    this.mostrarSelecao(u.def.nome, u.hp, u.hpMax, rotuloTarefa +
+    /* O posto vai no NOME, não no estado: é o que a unidade É, e é o que faz o
+       jogador pensar duas vezes antes de gastar aquele soldado. O próximo
+       degrau aparece ao lado para a promoção não ser surpresa. */
+    var pst = D.POSTOS[u.posto || 0];
+    var proximo = D.POSTOS[(u.posto || 0) + 1];
+    this.mostrarSelecao(u.def.nome + (pst && pst.nome ? ' · ' + pst.nome : ''),
+      u.hp, u.hpMax, rotuloTarefa +
+      (proximo ? ' · ' + (u.xp || 0) + '/' + proximo.xp + ' xp' : ' · veterano máximo') +
       (u.carga ? ' · carga ' + u.carga : '') + (u.bloqueado ? ' · SEM ROTA' : ''));
     var casas = this.casasDeTropa([u]);
     if (u.operario) {

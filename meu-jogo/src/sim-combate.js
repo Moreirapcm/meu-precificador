@@ -114,6 +114,42 @@
   };
 
 
+  /* ============================== VETERANIA =============================
+     Item 9 do capítulo 11. A experiência é o `valor` do que se abate, e sobe
+     de posto em degraus de `POSTOS`. Só tropa nossa com arma ou com cura: o
+     operário não luta, a torre é estrutura e o invasor não volta da onda.
+
+     O crédito é do GOLPE FINAL, e não proporcional ao dano. É como o C&C faz, e
+     a alternativa — repartir por dano causado — obrigaria a guardar quem feriu
+     cada bicho durante toda a vida dele, para uma diferença que ninguém lê na
+     tela. */
+  S.creditarAbate = function (idAutor, valor) {
+    if (!idAutor || !valor) return;
+    var u = this.unidadePorId(idAutor) || this.guarnecidas[idAutor];
+    if (!u || u.morta || u.lado !== 'aliado') return;
+    /* Operário e trator ficam de fora, mesmo o operário tendo arma: o posto
+       existe para dar motivo a PRESERVAR soldado, e um operário que matou um
+       Corredor de raspão fez sorte, não carreira. */
+    if (u.operario || u.def.limpeza) return;
+    if (!u.def.arma && !u.def.cura) return;
+    u.xp = (u.xp || 0) + valor;
+    var POSTOS = D.POSTOS, novo = u.posto || 0;
+    while (novo + 1 < POSTOS.length && u.xp >= POSTOS[novo + 1].xp) novo++;
+    if (novo === (u.posto || 0)) return;
+    u.posto = novo;
+    /* O posto CURA na promoção, como no C&C: é o prêmio que o jogador sente na
+       hora, e sem ele a promoção acontece sem nada na tela além da divisa. */
+    u.hp = Math.min(u.hpMax, u.hp + u.hpMax * 0.25);
+    this.emitir('promovido', { id: u.id, x: u.x, y: u.y, posto: novo, rotulo: POSTOS[novo].nome });
+    this.aviso(u.def.nome + ' promovido a ' + POSTOS[novo].nome + '.', 'bom');
+  };
+
+  /* Auto-cura a partir do segundo posto, como Elite e Heroic do C&C. */
+  S.curarPorPosto = function (u, dt) {
+    if ((u.posto || 0) < 2 || u.hp >= u.hpMax) return;
+    u.hp = Math.min(u.hpMax, u.hp + u.hpMax * R.postoCura * dt);
+  };
+
   /* ============================== GUARNIÇÃO =============================
      Item 8 do capítulo 11. Dois clássicos, duas metades: o Age of Empires II
      põe até 5 numa torre e deixa a guarnição atirar junto (5 flechas vazia,
@@ -236,6 +272,7 @@
       /* O ferido se recupera dentro do prédio, como no Age of Empires. É a
          metade do item que o Pedro pediu: lugar seguro para o ferido. */
       if (u.hp < u.hpMax) u.hp = Math.min(u.hpMax, u.hp + u.hpMax * 0.025 * dt);
+      this.curarPorPosto(u, dt);
       var arma = u.def.arma;
       if (!alvo || !arma) continue;
       if (!this.podeAtingir(arma, alvo)) continue;
@@ -280,9 +317,12 @@
   S.atirar = function (origem, alvo, arma, dt) {
     origem.recarga -= dt;
     if (origem.recarga > 0) return;
-    origem.recarga = arma.cad;
+    /* POSTO: mais dano e menos espera entre tiros. Vale só para unidade nossa —
+       torre não ganha posto (estrutura não aprende) e invasor também não. */
+    var posto = (origem.lado !== 'inimigo' && !origem.w && origem.posto) || 0;
+    origem.recarga = arma.cad * (1 - R.postoCadencia * posto);
     var centroO = this.centroDe(origem), centroA = this.centroDe(alvo);
-    var dano = arma.dano;
+    var dano = arma.dano * (1 + R.postoDano * posto);
     if (origem.lado !== 'inimigo' && this.jogador.pesquisas.precisao) dano *= 1.18;
     var area = arma.area || 0;
     if (area && origem.lado !== 'inimigo' && this.jogador.pesquisas.artilhariaAv) area *= 1.35;
@@ -497,6 +537,7 @@
       if (alvo.lado === 'inimigo') {
         this.estatisticas.abates++;
         this.jogador.m += Math.max(1, Math.round((alvo.def.valor || 4) * 0.35));
+        this.creditarAbate(opts.origemId, alvo.def.valor || 4);
       } else {
         if (alvo.operario) {
           this.estatisticas.operariosPerdidos++;
@@ -630,6 +671,7 @@
     var arma = u.def.arma;
 
     if (this.tentarGuarnecer(u, dt)) return;
+    this.curarPorPosto(u, dt);
     if (u.def.cura) { this.atualizarMedico(u, dt); return; }
 
     var alvo = (u.alvo && this.alvoPorId(u.alvo)) || null;
