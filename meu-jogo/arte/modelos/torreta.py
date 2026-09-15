@@ -280,12 +280,16 @@ cena.eevee.gtao_factor = 1.0
 cena.eevee.shadow_cube_size = '2048'
 cena.eevee.shadow_cascade_size = '4096'
 cena.eevee.use_soft_shadows = True
-# BLOOM DESLIGADO, e o motivo vale ficar escrito. Ele espalha alfa RESIDUAL
-# pela moldura inteira — alfa 3, 5, invisível sozinho. Só que o contorno do jogo
-# (`spriteContornado`) desenha a figura oito vezes deslocada antes de chapar de
-# preto: oito vezes cinco vira quarenta, e a torre apareceu na tela dentro de um
-# retângulo preto. O emissivo com força 3,2 já estoura sozinho; o halo é luxo
-# que custou um defeito visível.
+# BLOOM DESLIGADO. Ele espalha alfa residual pela moldura, e o contorno do jogo
+# desenha a figura oito vezes deslocada antes de chapar de preto — nessa conta
+# alfa 5 vira 37, que já é visível. O emissivo com força 3,2 estoura sozinho.
+#
+# ⚠️ Mas o retângulo preto que apareceu na tela NÃO era isto, embora eu tenha
+# culpado o bloom na primeira olhada. Medido depois: o resíduo na moldura era
+# ZERO, e os arquivos publicados estavam sem CANAL ALFA nenhum — RGB opaco com
+# fundo preto, porque a conversão para WebP foi feita à mão com um `-flatten`
+# no meio. `arte/ferramentas/montar-direcoes-torre.sh` existe por causa disso e
+# tem o portão que reprova sprite sem alfa.
 if hasattr(cena.eevee, "use_bloom"):
     cena.eevee.use_bloom = False
 
