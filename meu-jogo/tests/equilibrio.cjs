@@ -95,13 +95,19 @@ function erguerPerimetro(s, raio) {
    encostava nos 250 e ele terminava as doze partidas em tecnologia 1 — que é
    metade do jogo por medir. */
 var ORDEM_PESQUISA = ['tech2', 'precisao', 'blindagem1', 'carga', 'muroReforcado',
-  'alvenaria', 'formacao', 'penetracao', 'tiroRasante', 'blindagem2', 'coleta',
-  'tech3', 'reparoEficiente'];
+  'pontaria', 'alvenaria', 'formacao', 'penetracao', 'tiroRasante', 'blindagem2',
+  'coleta', 'tech3', 'reparoEficiente'];
 
-/* Quanto guardar para a próxima pesquisa da fila que ainda dá para comprar.
-   Zero enquanto não houver laboratório ou enquanto já houver uma em curso. */
-function reservaDePesquisa(s, lab) {
-  if (!lab || s.jogador.pesquisaAtual) return 0;
+/* A PRÓXIMA pesquisa da fila que dá para comprar — a mesma para reservar e
+   para comprar, e é aí que está o conserto.
+
+   Antes a compra era "a primeira da lista que couber no bolso", e isso anulava
+   a reserva: o saldo era guardado para uma de 220, mas assim que passava de
+   140 ele comprava outra mais barata lá de baixo e recomeçava do zero. Medido,
+   `pontaria` (220) nunca era comprada em doze partidas, mesmo com a reserva
+   guardando por ela. Compra ESTRITA na ordem da fila: ou é a próxima, ou é
+   nenhuma, e a reserva junta o dinheiro sem ninguém furar a fila. */
+function proximaPesquisa(s) {
   for (var i = 0; i < ORDEM_PESQUISA.length; i++) {
     var id = ORDEM_PESQUISA[i];
     if (s.jogador.pesquisas[id]) continue;
@@ -110,15 +116,28 @@ function reservaDePesquisa(s, lab) {
     if (!def) continue;
     /* requisito não cumprido: não adianta guardar para o que não se pode
        comprar ainda — a fila anda para a próxima. */
-    if (def.req) {
-      var falta = false;
-      for (var r = 0; r < def.req.length; r++) if (!s.jogador.pesquisas[def.req[r]]) falta = true;
-      if (falta) continue;
-    }
-    if (def.tech && s.jogador.tech < def.tech) continue;
-    return def.custo.m || 0;
+    /* BARRIL QUE NÃO SE TEM não se guarda: a fila anda, e quando o petróleo
+       chegar ela volta a ser a primeira. */
+    if ((def.custo.c || 0) > s.jogador.c) continue;
+    /* Quem decide se está liberada é o JOGO, não uma cópia da regra aqui.
+       A cópia já errou uma vez: ela lia `tech: 2` da própria `tech2` como
+       requisito, e como o jogador está em tecnologia 1 a fila pulava justamente
+       a pesquisa que dá a tecnologia 2 — as doze partidas terminavam em
+       tecnologia 1 de novo. `pesquisaDisponivel` tem a exceção certa, e usá-la
+       é a única forma de o simulador não divergir da regra que ele mede. */
+    var ver = s.pesquisaDisponivel(def);
+    if (ver.ok || ver.motivo === 'Recursos insuficientes') return def;
+    continue;
   }
-  return 0;
+  return null;
+}
+
+/* Quanto guardar para a próxima pesquisa da fila. Zero enquanto não houver
+   laboratório ou enquanto já houver uma em curso. */
+function reservaDePesquisa(s, lab) {
+  if (!lab || s.jogador.pesquisaAtual) return 0;
+  var def = proximaPesquisa(s);
+  return def ? (def.custo.m || 0) : 0;
 }
 
 /* Estratégia B: economia, torres, tropas, pesquisa e reparo — a "linha completa". */
@@ -213,7 +232,8 @@ function completa(s) {
        sem estar na lista, o simulador nunca compra a pesquisa nova e a medição
        de equilíbrio dá diferença zero — foi o que aconteceu com a linha de
        blindagem de tropa na primeira rodada. */
-    for (var i = 0; i < ORDEM_PESQUISA.length; i++) if (s.pesquisar(ORDEM_PESQUISA[i]).ok) return;
+    var alvo = proximaPesquisa(s);
+    if (alvo && s.pesquisar(alvo.id).ok) return;
   }
   if (!s.reparoAuto.ativo && s.listaEstruturas.some(function (b) { return !b.morta && b.hp < b.hpMax * 0.75; })) { s.repararLinha(); return; }
   if (nOper < 12 && mLivre > 400) { s.produzirOperario(); return; }

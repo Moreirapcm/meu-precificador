@@ -866,5 +866,43 @@ teste('Tiro rasante tira o alcance mínimo da nossa arma, e só da nossa', funct
   igual(sim.alcanceMinimo(torre, D.UNIDADES.fuzileiro.arma), 0, 'inventou alcance mínimo:');
 });
 
+
+/* Item 15 do capítulo 11: precisão separada em torre e tropa. */
+teste('Precisão vale para tropa, Pontaria vale para torre, e uma não cobre a outra', function () {
+  var sim = partida();
+  sim.jogador.m = 6000; sim.jogador.c = 400;
+  var torre = concluir(construirPerto(sim, 'sentinela', 4, 10));
+  var sold = sim.criarUnidade('fuzileiro', sim.central.x - 3.5, sim.central.y + 0.5, 'aliado');
+  var inv = sim.criarUnidade('corredor', sim.central.x - 3.5, sim.central.y + 4.5, 'inimigo');
+
+  function tiro(origem, arma) {
+    sim.projeteis.length = 0;
+    origem.recarga = 0;
+    sim.atirar(origem, inv, arma, 0);
+    return sim.projeteis.length ? sim.projeteis[0].dano : null;
+  }
+  var baseTorre = tiro(torre, torre.def.arma);
+  var baseSold = tiro(sold, sold.def.arma);
+  ok(baseTorre && baseSold, 'não saiu tiro de referência');
+
+  /* a da TROPA não pode mexer na torre */
+  sim.jogador.pesquisas.precisao = true;
+  perto(tiro(torre, torre.def.arma), baseTorre, 0.01, 'a precisão de tropa vazou para a torre:');
+  perto(tiro(sold, sold.def.arma), baseSold * 1.18, 0.01, 'a precisão não valeu para a tropa:');
+
+  /* a da TORRE não pode mexer na tropa */
+  delete sim.jogador.pesquisas.precisao;
+  sim.jogador.pesquisas.pontaria = true;
+  perto(tiro(torre, torre.def.arma), baseTorre * 1.18, 0.01, 'a pontaria não valeu para a torre:');
+  perto(tiro(sold, sold.def.arma), baseSold, 0.01, 'a pontaria vazou para a tropa:');
+
+  /* e a Pontaria é MAIS CARA que a da tropa, que é onde mora o freio: sem
+     recurso separado, o preço é o único freio possível (capítulo 06 §9.4) */
+  var dTorre = D.PESQUISAS.filter(function (p) { return p.id === 'pontaria'; })[0];
+  var dTropa = D.PESQUISAS.filter(function (p) { return p.id === 'precisao'; })[0];
+  ok(dTorre && dTropa, 'faltou uma das duas pesquisas');
+  ok(dTorre.custo.m > dTropa.custo.m, 'a pesquisa de torre não é mais cara que a de tropa');
+});
+
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
 process.exit(falhou ? 1 : 0);

@@ -388,8 +388,27 @@
     { id: 'antiacido', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Resistência a ácido', custo: { m: 260, c: 40 }, tempo: 45, req: ['reparoEficiente'], tech: 3,
       efeito: 'Reduz pela metade o dano de Cuspidores e Asas corrosivas.' },
 
+    /* PRECISÃO era UMA pesquisa para torre e tropa ao mesmo tempo, e isso não
+       é como os clássicos fazem. O Age of Empires II podia melhorar a torre
+       junto com o arqueiro porque cobrava PEDRA por ela — recurso separado, e
+       o freio estava no preço. O StarCraft simplesmente não melhora defesa
+       estática. Nós tínhamos o pior dos dois: um botão só, pago com o minério
+       de tudo, que tornava empilhar torre ainda mais atraente.
+
+       Agora são duas compras. A da tropa continua sendo `precisao` e custa o
+       mesmo; a da torre é `pontaria` e custa BEM mais caro, em minério.
+
+       A primeira versão cobrava barril, que seria a pedra do Age no nosso
+       vocabulário. Medido, não funcionou: o petróleo aparece tarde e em poucas
+       partidas, então a torre ficava 18% mais fraca PARA SEMPRE e o
+       `equilibrio.cjs` perdeu a vitória do Rio. Isso não é freio, é remoção —
+       um preço que não se pode pagar não cria decisão nenhuma. O capítulo 06
+       §9.4 já dizia a parte difícil: sem recurso separado, o freio tem de ser
+       o preço, e é isso que 220 de minério faz. */
     { id: 'precisao', ramo: 'armamento', casa: 'quartel', nome: 'Precisão de tiro', custo: { m: 140 }, tempo: 28,
-      efeito: '+18% de dano para torres e soldados.' },
+      efeito: '+18% de dano para soldados e tropa. Não vale para torres.' },
+    { id: 'pontaria', ramo: 'armamento', casa: 'torreMuralha', nome: 'Pontaria automatizada', custo: { m: 220 }, tempo: 30,
+      efeito: '+18% de dano para todas as torres. Cara de propósito: defesa estática tem preço próprio.' },
     { id: 'penetracao', ramo: 'armamento', casa: 'quartel', nome: 'Munição perfurante', custo: { m: 210 }, tempo: 35, req: ['precisao'], tech: 2,
       efeito: 'Ignora metade da blindagem inimiga.' },
     { id: 'artilhariaAv', ramo: 'armamento', casa: 'quartel', nome: 'Artilharia avançada', custo: { m: 280, c: 50 }, tempo: 42, req: ['penetracao'], tech: 3,

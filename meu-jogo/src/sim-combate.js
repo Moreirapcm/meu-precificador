@@ -383,7 +383,13 @@
     origem.recarga = arma.cad * (1 - R.postoCadencia * posto);
     var centroO = this.centroDe(origem), centroA = this.centroDe(alvo);
     var dano = arma.dano * (1 + R.postoDano * posto);
-    if (origem.lado !== 'inimigo' && this.jogador.pesquisas.precisao) dano *= 1.18;
+    /* Duas linhas separadas: a torre lê `pontaria`, a tropa lê `precisao`. Quem
+       está guarnecido dentro de uma torre continua sendo TROPA — a arma é dele,
+       e `origem` não tem largura. */
+    if (origem.lado !== 'inimigo') {
+      var chave = origem.w ? 'pontaria' : 'precisao';
+      if (this.jogador.pesquisas[chave]) dano *= 1.18;
+    }
     var area = arma.area || 0;
     if (area && origem.lado !== 'inimigo' && this.jogador.pesquisas.artilhariaAv) area *= 1.35;
 
