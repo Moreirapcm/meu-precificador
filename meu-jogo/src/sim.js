@@ -21,6 +21,7 @@
     this.unidades = [];
     this.projeteis = [];
     this.obrasPendentes = [];        /* planta posta sobre ruína, esperando o trator */
+    this.guarnecidas = {};           /* id -> unidade que está DENTRO de uma estrutura */
     this.eventos = [];
     this.fase = 'colocacao';          /* colocacao -> jogando -> vitoria | derrota */
     this.pausado = false;
@@ -171,6 +172,14 @@
       var u = this.unidades[i];
       if (u.lado === 'aliado' && !u.morta) usada += u.def.pop || 0;
     }
+    /* Quem está guarnecido saiu de `unidades` para nenhum laço de combate o
+       ver — mas continua vivo e continua ocupando população. Esquecer esta
+       conta devolveria vagas de graça a cada soldado que entrasse numa torre. */
+    for (var k in this.guarnecidas) {
+      if (!Object.prototype.hasOwnProperty.call(this.guarnecidas, k)) continue;
+      var g = this.guarnecidas[k];
+      if (g && !g.morta) usada += g.def.pop || 0;
+    }
     this.jogador.popCap = cap;
     this.jogador.popUsada = usada;
   };
@@ -296,7 +305,7 @@
       fila: [], progresso: 0, rally: null, recarga: 0, alvo: 0,
       portao: !!def.portao, portaoModo: 'auto', portaoAberto: true,
       muro: !!def.muro, torre: def.papel === 'torre', deposito: def.papel === 'deposito',
-      construtores: 0, jazida: 0, acumulado: 0, custo: this.custoDe(def)
+      construtores: 0, jazida: 0, acumulado: 0, dentro: [], custo: this.custoDe(def)
     };
     b.hp = instantanea ? b.hpMax : Math.max(1, b.hpMax * 0.08);
     this.estruturas[b.id] = b;

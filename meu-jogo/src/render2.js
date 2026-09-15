@@ -163,6 +163,14 @@
       var cp = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
       this.icone(ctx, cp.x, cp.y - g.h - 20 * z, '#9fe0ff', '▲');
     }
+    /* O caminho procedural não passa por `avisosEstrutura` — o prédio sem
+       sprite precisa do mesmo contador, senão a guarnição some justamente no
+       muro e na torre de muralha, que são os que ainda não têm arte. */
+    if (b.dentro && b.dentro.length && !emObra) {
+      var cg = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
+      this.icone(ctx, cg.x, cg.y - g.h - 5 * z, '#9fe0ff',
+        '⛨' + b.dentro.length + '/' + b.def.guarnicao);
+    }
   };
 
   /* O que o sprite NÃO sabe mostrar, porque muda durante a partida.
@@ -174,6 +182,13 @@
     var z = this.cam.zoom;
     var c = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
     if (b.semEnergia) this.icone(ctx, c.x, c.y - g.h - 16 * z, '#ffcf5a', 'ϟ');
+    /* "3/5" sobre o prédio guarnecido. Sem isto a tropa que entrou some sem
+       deixar rastro — e sumir é exatamente o que o jogador teme ao guarnecer.
+       O número é o que o Age of Empires põe na torre ocupada. */
+    if (b.dentro && b.dentro.length) {
+      this.icone(ctx, c.x, c.y - g.h - 5 * z, '#9fe0ff',
+        '⛨' + b.dentro.length + '/' + b.def.guarnicao);
+    }
     if (b.portao) {
       ctx.fillStyle = b.portaoAberto ? 'rgba(140,224,127,0.9)' : 'rgba(255,180,90,0.9)';
       ctx.fillRect(c.x - 8 * z, c.y - g.h - 5 * z, 16 * z, 2.6 * z);

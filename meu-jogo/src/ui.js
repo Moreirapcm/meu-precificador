@@ -273,6 +273,7 @@
       if (k === 'w') { self.iniciarHabilidade('escudo'); return; }
       if (k === 's') { self.pararSelecionados(); return; }
       if (k === 'h') { self.voltarParaBase(); return; }
+      if (k === 'x') { self.desocuparSelecionada(); return; }
       /* `.` vai ao PRÓXIMO parado e `,` pega todos de uma vez, que é a divisão
          do Age of Empires (lá, ponto e Ctrl+ponto). */
       if (k === '.') { self.proximoOcioso(); return; }
@@ -701,6 +702,31 @@
     if (!cel) { this.mostrarAviso('Não há célula acessível nesse ponto.', 'atencao'); return; }
     var ordem = (this.modo && this.modo.ordem) || null;
 
+    /* GUARNECER é o toque na PRÓPRIA estrutura, como nos dois clássicos — não
+       há comando separado para aprender. A exceção é o operário diante de um
+       prédio ferido ou em obra: ali o toque continua sendo conserto, que é o
+       que ele já fazia e o que se espera dele. Prédio inteiro, ele entra. */
+    var sob = sim.estruturas[sim.world.occ[sim.world.idx(Math.floor(m.x), Math.floor(m.y))]];
+    if (!ordem && sob && !sob.morta && sob.construida && sim.capacidadeGuarnicao(sob)) {
+      var entraram = 0, cheio = false;
+      for (var g = 0; g < unidades.length; g++) {
+        var ug = unidades[g];
+        if (ug.voa) continue;
+        if (ug.operario && (!sob.construida || sob.hp < sob.hpMax)) continue;
+        if (sim.vagasNaGuarnicao(sob) - entraram <= 0) { cheio = true; break; }
+        sim.darTarefa(ug, { tipo: 'guarnecer', alvo: sob.id }, true);
+        entraram++;
+      }
+      if (entraram) {
+        this.render.efeitos.push(this.marcaDeOrdem({ x: sob.x + sob.w / 2 - 0.5, y: sob.y + sob.h / 2 - 0.5 }, '#7fd4ff'));
+        UF.audio.evento('clique');
+        this.mostrarAviso(entraram + ' a caminho de ' + sob.def.nome +
+          (cheio ? ' · o resto não cabe' : '') + '.', 'info');
+        this.cancelarModo();
+        return;
+      }
+    }
+
     for (var i = 0; i < unidades.length; i++) {
       var u = unidades[i];
       var destino = { x: cel.x + (i % 3) - 1, y: cel.y + Math.floor(i / 3) % 3 - 1 };
@@ -742,6 +768,16 @@
     this.render.efeitos.push(this.marcaDeOrdem(cel, ordem === 'recuar' ? '#ffd479' : '#8ce07f'));
     UF.audio.evento('clique');
     this.cancelarModo();
+  };
+
+  /* `x` esvazia a estrutura selecionada. Sem tecla, desocupar exigiria achar o
+     botão na barra — e quem guarnece está justamente no meio de um ataque. */
+  UI.prototype.desocuparSelecionada = function () {
+    var b = this.selecionado ? this.sim.estruturas[this.selecionado] : null;
+    if (!b || !b.dentro || !b.dentro.length) return;
+    var n = this.sim.desocupar(b);
+    this.mostrarAviso(n + ' unidade(s) saíram de ' + b.def.nome + '.', 'info');
+    this.atualizarTudo();
   };
 
   UI.prototype.marcaDeOrdem = function (cel, cor) {

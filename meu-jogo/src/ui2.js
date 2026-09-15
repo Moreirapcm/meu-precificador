@@ -128,7 +128,7 @@
   var CASAS_ESTRUTURA = {
     produzir: 0, pesquisar: 1, encontro: 2,
     reparar: 3, portao: 4, energia: 5,
-    vender: 6
+    desocupar: 6, vender: 7
   };
   var CASAS_GLOBAL = {
     operario: 0, distribuir: 1, recolher: 2,
@@ -638,8 +638,10 @@
     var self = this, sim = this.sim;
     var estado = !b.construida ? (b.abandonado ? 'posto abandonado' : 'em obra ' + Math.round(b.obra * 100) + '%')
       : b.semEnergia ? 'sem energia' : 'operando';
+    var lotacao = sim.capacidadeGuarnicao(b)
+      ? ' · ' + b.dentro.length + '/' + b.def.guarnicao + ' dentro' : '';
     this.mostrarSelecao(b.def.nome + (b.abandonado && !b.construida ? ' (abandonado)' : ''),
-      b.hp, b.hpMax, estado + (b.construtores ? ' · ' + b.construtores + ' operário(s)' : ''));
+      b.hp, b.hpMax, estado + (b.construtores ? ' · ' + b.construtores + ' operário(s)' : '') + lotacao);
 
     if (!b.construida) {
       cx.appendChild(botao(b.abandonado ? 'Reativar' : 'Acelerar obra', '🔧', 'enviar operário', function () {
@@ -701,6 +703,13 @@
       casas[CASAS_ESTRUTURA.energia] = botao(b.desligada ? 'Ligar' : 'Desligar', 'ϟ', 'poupa energia', function () {
         b.desligada = !b.desligada; self.atualizarAcoes();
       }, { ligado: !b.desligada });
+    }
+    if (b.dentro && b.dentro.length) {
+      casas[CASAS_ESTRUTURA.desocupar] = botao('Desocupar', '⇱', b.dentro.length + ' dentro', function () {
+        var n = sim.desocupar(b);
+        self.mostrarAviso(n + ' unidade(s) saíram de ' + b.def.nome + '.', 'info');
+        self.atualizarAcoes();
+      }, { tecla: 'x' });
     }
     if (b !== sim.central) {
       var volta = Math.round((b.custo.m || 0) * D.REGRAS.reembolso);

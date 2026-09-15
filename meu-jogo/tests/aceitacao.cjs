@@ -590,7 +590,6 @@ teste('Obra sobre ruína: com trator agenda, limpa e constrói sozinha', functio
   sim.world.jazidas.forEach(function (j) { j.estoque = 0; });
   var p = celulaComRuinaPerto(sim);
   var t = sim.criarUnidade('trator', p.x + 2.5, p.y + 0.5, 'aliado');
-  sim.unidades.push(t);
   var mAntes = sim.jogador.m;
 
   var res = sim.construir('muro', p.x, p.y);
@@ -614,7 +613,6 @@ teste('Obra sobre ruína: encomendar de novo no mesmo ponto cancela', function (
   sim.jogador.m = 4000;
   var p = celulaComRuinaPerto(sim);
   var t = sim.criarUnidade('trator', p.x + 2.5, p.y + 0.5, 'aliado');
-  sim.unidades.push(t);
   sim.construir('muro', p.x, p.y);
   igual(sim.obrasPendentes.length, 1, 'não agendou:');
   var res = sim.construir('muro', p.x, p.y);
@@ -656,6 +654,72 @@ teste('Estrutura subtrai blindagem, e a alvenaria melhora o que já existe', fun
   var antes3 = b.hp;
   sim.aplicarDano(b, 20, { lado: 'inimigo' });
   perto(antes3 - b.hp, 18, 0.01, 'a blindagem de tropa vazou para a estrutura:');
+});
+
+
+/* Item 8 do capítulo 11: guarnição em torre. */
+teste('Guarnição: entra, some do mundo, atira junto e sai viva se a torre cai', function () {
+  var sim = partida();
+  sim.jogador.m = 5000;
+  var t = construirPerto(sim, 'sentinela', 4, 10);
+  ok(t, 'não consegui construir a torre');
+  concluir(t);
+  igual(sim.vagasNaGuarnicao(t), 4, 'capacidade errada:');
+
+  var s1 = sim.criarUnidade('fuzileiro', t.x - 2.5, t.y + 0.5, 'aliado');
+  var popAntes = (sim.recalcularPop(), sim.jogador.popUsada);
+
+  ok(sim.guarnecer(s1, t), 'não guarneceu');
+  sim.recalcularPop();
+  igual(sim.unidades.indexOf(s1), -1, 'a unidade continuou na lista do mundo:');
+  igual(t.dentro.length, 1, 'a torre não registrou quem entrou:');
+  igual(sim.jogador.popUsada, popAntes, 'guarnecer devolveu população de graça:');
+
+  /* fora do mundo: nenhum invasor a acha */
+  var inv = sim.criarUnidade('corredor', t.x + 1.5, t.y + 1.5, 'inimigo');
+  var achado = sim.procurarAlvo(inv, inv.def.arma, 30, 'aliado', false, 0);
+  ok(achado !== s1, 'o invasor mirou em quem está dentro da torre');
+
+  /* quem está dentro atira: a torre tem alvo, o fuzileiro descarrega junto.
+     A prova é o PROJÉTIL saindo, e não a vida do bicho caindo — o dano do tiro
+     é aplicado em `atualizarProjeteis`, que este teste não roda de propósito:
+     assim o que se mede é a guarnição, e não a torre atirando também. */
+  t.alvo = inv.id;
+  sim.projeteis.length = 0;
+  for (var i = 0; i < 90; i++) sim.atualizarGuarnicao(t, 1 / 30);
+  ok(sim.projeteis.length > 0, 'a guarnição não atirou no alvo da torre');
+  igual(sim.projeteis[0].alvoId, inv.id, 'a guarnição atirou noutro alvo:');
+
+  /* ferido se recupera dentro */
+  s1.hp = 10;
+  for (var j = 0; j < 30; j++) sim.atualizarGuarnicao(t, 1 / 30);
+  ok(s1.hp > 10, 'o ferido não se recuperou dentro da torre');
+
+  /* torre destruída solta a guarnição viva */
+  sim.matar(t, { silencioso: true });
+  igual(t.dentro.length, 0, 'a torre morta ficou com gente dentro:');
+  ok(sim.unidades.indexOf(s1) >= 0, 'a guarnição não voltou ao mundo');
+  ok(!s1.morta, 'a guarnição morreu junto com a torre');
+});
+
+teste('Guarnição sobrevive a salvar e carregar, sem população fantasma', function () {
+  var sim = partida();
+  sim.jogador.m = 5000;
+  var t = concluir(construirPerto(sim, 'sentinela', 4, 10));
+  var s1 = sim.criarUnidade('fuzileiro', t.x - 2.5, t.y + 0.5, 'aliado');
+  sim.guarnecer(s1, t);
+  sim.recalcularPop();
+  var popAntes = sim.jogador.popUsada;
+
+  var novo = UF.Salvar.restaurar(JSON.parse(JSON.stringify(UF.Salvar.serializar(sim))));
+  ok(novo, 'não restaurou');
+  novo.recalcularPop();
+  var t2 = novo.listaEstruturas.filter(function (b) { return b.tipo === 'sentinela'; })[0];
+  igual(t2.dentro.length, 1, 'a guarnição sumiu no save:');
+  ok(novo.guarnecidas[s1.id], 'a unidade guarnecida não foi restaurada');
+  igual(novo.jogador.popUsada, popAntes, 'população divergiu depois de carregar:');
+  igual(novo.desocupar(t2), 1, 'não saiu ninguém ao desocupar:');
+  ok(novo.unidades.filter(function (u) { return u.id === s1.id; })[0], 'não voltou ao mundo');
 });
 
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');

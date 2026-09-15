@@ -643,7 +643,17 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   /* ------------------------------------------------------------- estruturas */
   /* papel 'deposito' recebe carga de minério; 'torre' atira sozinha.
      energia > 0 consome capacidade elétrica; fornece > 0 gera capacidade. */
-  /* BLINDAGEM DE ESTRUTURA. Nenhum prédio tinha `blind`: torre, muro e Central
+  /* GUARNIÇÃO. `guarnicao` é quantos cabem dentro. O Age of Empires II põe até
+     5 numa torre e a torre vazia atira 5 flechas contra 21 guarnecida; o
+     StarCraft põe 4 no Bunker, que sozinho não atira nada. Ficamos no meio: a
+     torre atira por conta própria E quem está dentro atira junto, com a arma
+     que trouxe — por isso um Lanceiro dentro de uma torre de solo passa a
+     cobrir o ar, que é decisão de quem guarnece e não número nosso.
+
+     A Central leva 10 e NÃO atira: ali a guarnição é abrigo, que é o uso que
+     importa — esconder operário do ataque e dar lugar seguro ao ferido.
+
+     BLINDAGEM DE ESTRUTURA. Nenhum prédio tinha `blind`: torre, muro e Central
      absorviam dano cheio enquanto a tropa já subtraía desde sempre. O Age of
      Empires II nunca fez assim — lá a Watch Tower NASCE com 1/7 de armadura, e
      Masonry/Architecture melhoram isso em todo prédio.
@@ -656,7 +666,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
      exatamente a alavanca que sustentaria. Medido com `equilibrio.cjs`. */
   var ESTRUTURAS = {
     central: {
-      nome: 'Central de Comando', cat: 'base', w: 4, h: 4, hp: 3200, blind: 2, tempo: 0,
+      nome: 'Central de Comando', cat: 'base', w: 4, h: 4, hp: 3200, blind: 2, guarnicao: 10, tempo: 0,
       custo: { m: 0 }, papel: 'deposito', produz: ['operario', 'trator'], visao: 11, fornece: 8,
       desc: 'Produz operários, recebe minério e concentra as ordens globais. Fornece 8 de energia. Perdê-la encerra a partida.'
     },
@@ -737,37 +747,37 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
        Age of Empires — arrastar uma fila delas sairia mais barato que a
        Sentinela por célula coberta e mataria as outras torres. */
     torreMuralha: {
-      nome: 'Torre de muralha', cat: 'defesa', w: 1, h: 1, hp: 620, blind: 1, tempo: 6,
+      nome: 'Torre de muralha', cat: 'defesa', w: 1, h: 1, hp: 620, blind: 1, guarnicao: 2, tempo: 6,
       custo: { m: 45 }, energia: 1, muro: true, papel: 'torre', visao: 7,
       arma: { dano: 9, cad: 0.7, alc: 6, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Encaixa na muralha e atira. Alcance curto: vale pela linha, não sozinha.'
     },
     bastiao: {
-      nome: 'Bastião', cat: 'defesa', w: 2, h: 2, hp: 980, blind: 1, tempo: 13,
+      nome: 'Bastião', cat: 'defesa', w: 2, h: 2, hp: 980, blind: 1, guarnicao: 5, tempo: 13,
       custo: { m: 130 }, energia: 3, muro: true, papel: 'torre', visao: 9, req: { tech: 2 },
       arma: { dano: 21, cad: 0.8, alc: 8, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Ponto forte da muralha: a parede encaixa pelos quatro lados. Caro por célula.'
     },
     sentinela: {
-      nome: 'Sentinela', cat: 'defesa', w: 2, h: 2, hp: 560, blind: 1, tempo: 8,
+      nome: 'Sentinela', cat: 'defesa', w: 2, h: 2, hp: 560, blind: 1, guarnicao: 4, tempo: 8,
       custo: { m: 80 }, energia: 2, papel: 'torre', visao: 9,
       arma: { dano: 14, cad: 0.55, alc: 7.5, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Tiro rápido contra solo e ar. Boa cobertura geral, dano baixo por tiro.'
     },
     gelo: {
-      nome: 'Torre de Gelo', cat: 'defesa', w: 2, h: 2, hp: 520, blind: 1, tempo: 9,
+      nome: 'Torre de Gelo', cat: 'defesa', w: 2, h: 2, hp: 520, blind: 1, guarnicao: 4, tempo: 9,
       custo: { m: 110 }, energia: 2, papel: 'torre', visao: 8, req: { tech: 2 },
       arma: { dano: 7, cad: 0.8, alc: 6.5, ar: false, solo: true, vel: 13, lentidao: 0.45, cor: '#9ff0ff' },
       desc: 'Desacelera alvos terrestres em 45%. Segura a pressão sobre os muros.'
     },
     artilharia: {
-      nome: 'Artilharia', cat: 'defesa', w: 2, h: 2, hp: 620, blind: 1, tempo: 12,
+      nome: 'Artilharia', cat: 'defesa', w: 2, h: 2, hp: 620, blind: 1, guarnicao: 4, tempo: 12,
       custo: { m: 145 }, energia: 3, papel: 'torre', visao: 10, req: { tech: 2 },
       arma: { dano: 51, cad: 2.1, alc: 10, alcMin: 2.2, ar: false, solo: true, vel: 9, area: 1.7, cor: '#ffb457' },
       desc: 'Dano em área contra solo. Alcance mínimo: fica exposta de perto.'
     },
     plasma: {
-      nome: 'Torre de Plasma', cat: 'defesa', w: 2, h: 2, hp: 680, blind: 1, tempo: 14,
+      nome: 'Torre de Plasma', cat: 'defesa', w: 2, h: 2, hp: 680, blind: 1, guarnicao: 4, tempo: 14,
       custo: { m: 190, c: 40 }, energia: 4, papel: 'torre', visao: 9, req: { tech: 3 },
       arma: { dano: 43, cad: 1.15, alc: 8.5, ar: true, solo: true, vel: 20, perfura: true, cor: '#d79bff' },
       desc: 'Ignora blindagem e atinge solo e ar. Exige tecnologia III e barris de petróleo.'
@@ -2139,6 +2149,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.unidades = [];
     this.projeteis = [];
     this.obrasPendentes = [];        /* planta posta sobre ruína, esperando o trator */
+    this.guarnecidas = {};           /* id -> unidade que está DENTRO de uma estrutura */
     this.eventos = [];
     this.fase = 'colocacao';          /* colocacao -> jogando -> vitoria | derrota */
     this.pausado = false;
@@ -2289,6 +2300,14 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       var u = this.unidades[i];
       if (u.lado === 'aliado' && !u.morta) usada += u.def.pop || 0;
     }
+    /* Quem está guarnecido saiu de `unidades` para nenhum laço de combate o
+       ver — mas continua vivo e continua ocupando população. Esquecer esta
+       conta devolveria vagas de graça a cada soldado que entrasse numa torre. */
+    for (var k in this.guarnecidas) {
+      if (!Object.prototype.hasOwnProperty.call(this.guarnecidas, k)) continue;
+      var g = this.guarnecidas[k];
+      if (g && !g.morta) usada += g.def.pop || 0;
+    }
     this.jogador.popCap = cap;
     this.jogador.popUsada = usada;
   };
@@ -2414,7 +2433,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       fila: [], progresso: 0, rally: null, recarga: 0, alvo: 0,
       portao: !!def.portao, portaoModo: 'auto', portaoAberto: true,
       muro: !!def.muro, torre: def.papel === 'torre', deposito: def.papel === 'deposito',
-      construtores: 0, jazida: 0, acumulado: 0, custo: this.custoDe(def)
+      construtores: 0, jazida: 0, acumulado: 0, dentro: [], custo: this.custoDe(def)
     };
     b.hp = instantanea ? b.hpMax : Math.max(1, b.hpMax * 0.08);
     this.estruturas[b.id] = b;
@@ -2895,6 +2914,11 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   S.atualizarOperario = function (u, dt) {
     var tarefa = u.tarefa || (u.tarefa = { tipo: 'ocioso' });
     var w = this.world;
+
+    /* Guarnecer é ordem manual e vem antes da fuga: mandar o operário para
+       dentro da torre É a resposta ao inimigo, não algo a ser interrompido
+       por ele. */
+    if (this.tentarGuarnecer(u, dt)) return;
 
     /* "Evita combate quando possível": sem ordem manual, o operário larga a
        tarefa e corre para o depósito mais próximo enquanto houver inimigo perto. */
@@ -3669,6 +3693,170 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     return melhor;
   };
 
+
+  /* ============================== GUARNIÇÃO =============================
+     Item 8 do capítulo 11. Dois clássicos, duas metades: o Age of Empires II
+     põe até 5 numa torre e deixa a guarnição atirar junto (5 flechas vazia,
+     21 cheia); o StarCraft põe 4 no Bunker, que sozinho não atira nada e dá
+     +1 de alcance a quem está dentro. Ficamos com a torre atirando por conta
+     própria E a guarnição atirando junto com a arma que trouxe.
+
+     Quem entra SAI de `sim.unidades`. Foi a decisão que barateou tudo: há 48
+     laços de unidade espalhados pela simulação, e marcar uma bandeira exigiria
+     lembrar dela em todos — a que fosse esquecida faria o invasor atirar em
+     alguém que está dentro da torre. Fora da lista, nenhum laço a vê. Em troca,
+     `recalcularPop` e o salvamento precisam olhar `sim.guarnecidas`, que são
+     dois lugares e estão escritos.
+
+     A posição da unidade vira o centro da estrutura no momento em que ela
+     entra. Não é enfeite: é o que faz `atirar` funcionar sem nenhuma mudança —
+     o tiro sai da torre, com a arma, a cadência e o lado de quem está dentro. */
+  S.capacidadeGuarnicao = function (b) {
+    return (b && b.construida && !b.morta && b.def.guarnicao) || 0;
+  };
+
+  S.vagasNaGuarnicao = function (b) {
+    return this.capacidadeGuarnicao(b) - ((b && b.dentro) ? b.dentro.length : 0);
+  };
+
+  S.podeGuarnecer = function (u, b) {
+    if (!u || u.morta || u.lado !== 'aliado' || u.voa) return false;
+    return this.vagasNaGuarnicao(b) > 0;
+  };
+
+  S.guarnecer = function (u, b) {
+    if (!this.podeGuarnecer(u, b)) return false;
+    var i = this.unidades.indexOf(u);
+    if (i < 0) return false;
+    this.unidades.splice(i, 1);
+    this.guarnecidas[u.id] = u;
+    u.dentro = b.id;
+    u.rota = null;
+    u.alvo = 0;
+    u.bloqueado = false;
+    u.tarefa = { tipo: 'guarnecido' };
+    u.x = b.x + b.w / 2;
+    u.y = b.y + b.h / 2;
+    if (!b.dentro) b.dentro = [];
+    b.dentro.push(u.id);
+    this.emitir('guarneceu', { id: b.id, x: u.x, y: u.y, tipo: u.tipo });
+    return true;
+  };
+
+  /* Célula de saída, em anéis a partir da borda do prédio. `usadas` impede que
+     a segunda unidade a sair caia exatamente em cima da primeira: a grade não
+     marca unidade, então `livre()` diz que sim para todas elas e as quatro
+     saíam empilhadas no mesmo ponto. A separação empurraria depois, mas o que
+     o jogador vê no instante do desembarque é um só boneco. */
+  S.saidaDaGuarnicao = function (b, usadas) {
+    var cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    for (var r = 1; r <= 8; r++) {
+      var melhor = null, melhorD = Infinity;
+      for (var dy = -r; dy <= r; dy++) {
+        for (var dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          var x = Math.floor(cx) + dx, y = Math.floor(cy) + dy;
+          if (!this.world.livre(x, y)) continue;
+          if (usadas && usadas[x + ',' + y]) continue;
+          var d = U.dist(x + 0.5, y + 0.5, cx, cy);
+          if (d < melhorD) { melhorD = d; melhor = { x: x, y: y }; }
+        }
+      }
+      if (melhor) {
+        if (usadas) usadas[melhor.x + ',' + melhor.y] = 1;
+        return melhor;
+      }
+    }
+    return null;
+  };
+
+  /* Tira UMA unidade e a devolve ao mundo na célula livre mais próxima. */
+  S.liberarDaGuarnicao = function (b, id, usadas) {
+    var u = this.guarnecidas[id];
+    if (!u) return null;
+    delete this.guarnecidas[id];
+    var k = b.dentro ? b.dentro.indexOf(id) : -1;
+    if (k >= 0) b.dentro.splice(k, 1);
+    u.dentro = 0;
+    var cel = this.saidaDaGuarnicao(b, usadas);
+    /* Sem célula livre em oito de raio — prédio no meio de um cerco fechado —
+       a unidade sai em cima do próprio prédio: preso é melhor que sumido, e a
+       separação de unidades empurra assim que abrir. */
+    u.x = cel ? cel.x + 0.5 : b.x + b.w / 2;
+    u.y = cel ? cel.y + 0.5 : b.y + b.h / 2;
+    u.rota = null;
+    u.tarefa = u.operario ? { tipo: 'ocioso' }
+      : { tipo: 'defender', centro: { x: u.x, y: u.y }, raio: 7 };
+    this.unidades.push(u);
+    this.emitir('desocupou', { id: b.id, x: u.x, y: u.y, tipo: u.tipo });
+    return u;
+  };
+
+  S.desocupar = function (b) {
+    if (!b || !b.dentro || !b.dentro.length) return 0;
+    var n = b.dentro.length, usadas = {};
+    /* De trás para frente: `liberarDaGuarnicao` mexe na mesma lista. */
+    for (var i = b.dentro.length - 1; i >= 0; i--) this.liberarDaGuarnicao(b, b.dentro[i], usadas);
+    this.recalcularPop();
+    return n;
+  };
+
+  /* Uma vez por quadro, por estrutura ocupada. Cura lenta sempre; tiro só de
+     torre ligada e com alvo — a Central abriga, não atira. */
+  S.atualizarGuarnicao = function (b, dt) {
+    if (!b.dentro || !b.dentro.length) return;
+    var alvo = null;
+    if (b.torre && !b.semEnergia && !b.desligada && b.alvo) {
+      alvo = this.alvoPorId(b.alvo);
+      if (alvo && alvo.morta) alvo = null;
+    }
+    for (var i = 0; i < b.dentro.length; i++) {
+      var u = this.guarnecidas[b.dentro[i]];
+      if (!u || u.morta) continue;
+      /* O ferido se recupera dentro do prédio, como no Age of Empires. É a
+         metade do item que o Pedro pediu: lugar seguro para o ferido. */
+      if (u.hp < u.hpMax) u.hp = Math.min(u.hpMax, u.hp + u.hpMax * 0.025 * dt);
+      var arma = u.def.arma;
+      if (!alvo || !arma) continue;
+      if (!this.podeAtingir(arma, alvo)) continue;
+      /* +1 de alcance pela altura, que é o bônus do Bunker do StarCraft. */
+      var d = this.distanciaEntre(u, alvo);
+      if (d > arma.alc + 1 || d < (arma.alcMin || 0)) continue;
+      this.atirar(u, alvo, arma, dt);
+    }
+  };
+
+  /* Andar até a estrutura e entrar. Vale para operário e para soldado, e por
+     isso mora aqui e não num dos dois laços: devolve verdadeiro quando consumiu
+     o quadro. */
+  S.tentarGuarnecer = function (u, dt) {
+    var tarefa = u.tarefa;
+    if (!tarefa || tarefa.tipo !== 'guarnecer') return false;
+    var b = this.estruturas[tarefa.alvo];
+    if (!b || b.morta || !b.construida) { u.tarefa = { tipo: 'ocioso' }; return true; }
+    if (this.vagasNaGuarnicao(b) <= 0) {
+      this.aviso(b.def.nome + ' está lotado.', 'atencao');
+      u.tarefa = { tipo: 'ocioso' };
+      return true;
+    }
+    /* Encostar no PRÉDIO, não numa célula: a estrutura ocupa a grade e o
+       destino tem de ser a borda dela. `distToRect` é a mesma medida que o
+       reparo e a construção usam. */
+    if (U.distToRect(u.x, u.y, b.x, b.y, b.w, b.h) <= 1.2) {
+      this.guarnecer(u, b);
+      this.recalcularPop();
+      return true;
+    }
+    var cel = this.nav.celulaLivreProxima(b.x + b.w / 2, b.y + b.h / 2, 8);
+    if (!cel) { u.tarefa = { tipo: 'ocioso' }; return true; }
+    if ((!u.rota || !u.rota.length) && !this.pedirRota(u, cel, { raioChegada: 0 })) {
+      if (u.bloqueado) u.tarefa = { tipo: 'ocioso' };
+      return true;
+    }
+    this.andar(u, dt);
+    return true;
+  };
+
   S.atirar = function (origem, alvo, arma, dt) {
     origem.recarga -= dt;
     if (origem.recarga > 0) return;
@@ -3867,6 +4055,11 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     alvo.hp = 0;
     if (alvo.w) {
       this.ocupar(alvo, 0);                      /* a brecha fica transitável na hora */
+      /* Quem estava dentro SAI, ferido mas vivo — é o Bunker do StarCraft, e
+         não a torre do Age, onde a guarnição morre junto. Num jogo de defesa
+         em que a torre cai toda hora, matar a guarnição junto transformaria
+         guarnecer numa armadilha e ninguém usaria o comando duas vezes. */
+      this.desocupar(alvo);
       if (alvo.jazida) {
         var jaz = this.world.jazidaPorId(alvo.jazida);
         if (jaz) jaz.extrator = 0;
@@ -3933,6 +4126,8 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         }
       }
     }
+
+    if (b.dentro && b.dentro.length) this.atualizarGuarnicao(b, dt);
 
     if (b.torre) {
       if (b.semEnergia) return;
@@ -4014,6 +4209,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var tarefa = u.tarefa || (u.tarefa = { tipo: 'defender', centro: { x: u.x, y: u.y }, raio: 7 });
     var arma = u.def.arma;
 
+    if (this.tentarGuarnecer(u, dt)) return;
     if (u.def.cura) { this.atualizarMedico(u, dt); return; }
 
     var alvo = (u.alvo && this.alvoPorId(u.alvo)) || null;
@@ -4706,6 +4902,12 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         centralId: sim.central ? sim.central.id : 0,
         estruturas: sim.listaEstruturas.map(limparEntidade),
         unidades: sim.unidades.map(limparEntidade),
+        /* Quem está guarnecido não está em `unidades` — está fora de todos os
+           laços, de propósito. Sem esta linha, entrar numa torre e salvar
+           APAGARIA a tropa, e ela reapareceria como vaga de população presa. */
+        guarnecidas: Object.keys(sim.guarnecidas).map(function (k) {
+          return limparEntidade(sim.guarnecidas[k]);
+        }),
         projeteis: JSON.parse(JSON.stringify(sim.projeteis)),
         jazidas: sim.world.jazidas.map(function (j) {
           return { id: j.id, estoque: j.estoque, ocupadas: 0, extrator: j.extrator };
@@ -4776,6 +4978,17 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         u.def = u.lado === 'inimigo' ? D.INVASORES[u.tipo] : D.UNIDADES[u.tipo];
         u.rota = null;
         sim.unidades.push(u);
+      });
+      (dados.guarnecidas || []).forEach(function (e) {
+        var u = e;
+        u.def = u.lado === 'inimigo' ? D.INVASORES[u.tipo] : D.UNIDADES[u.tipo];
+        u.rota = null;
+        sim.guarnecidas[u.id] = u;
+      });
+      /* Lista de dentro sem ninguém do outro lado é vaga fantasma: a estrutura
+         contaria ocupada para sempre e ninguém mais entraria. */
+      sim.listaEstruturas.forEach(function (b) {
+        b.dentro = (b.dentro || []).filter(function (id) { return !!sim.guarnecidas[id]; });
       });
       sim.projeteis = dados.projeteis || [];
       sim.obrasPendentes = (dados.obrasPendentes || []).filter(function (o) {
@@ -6676,6 +6889,14 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       var cp = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
       this.icone(ctx, cp.x, cp.y - g.h - 20 * z, '#9fe0ff', '▲');
     }
+    /* O caminho procedural não passa por `avisosEstrutura` — o prédio sem
+       sprite precisa do mesmo contador, senão a guarnição some justamente no
+       muro e na torre de muralha, que são os que ainda não têm arte. */
+    if (b.dentro && b.dentro.length && !emObra) {
+      var cg = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
+      this.icone(ctx, cg.x, cg.y - g.h - 5 * z, '#9fe0ff',
+        '⛨' + b.dentro.length + '/' + b.def.guarnicao);
+    }
   };
 
   /* O que o sprite NÃO sabe mostrar, porque muda durante a partida.
@@ -6687,6 +6908,13 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var z = this.cam.zoom;
     var c = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
     if (b.semEnergia) this.icone(ctx, c.x, c.y - g.h - 16 * z, '#ffcf5a', 'ϟ');
+    /* "3/5" sobre o prédio guarnecido. Sem isto a tropa que entrou some sem
+       deixar rastro — e sumir é exatamente o que o jogador teme ao guarnecer.
+       O número é o que o Age of Empires põe na torre ocupada. */
+    if (b.dentro && b.dentro.length) {
+      this.icone(ctx, c.x, c.y - g.h - 5 * z, '#9fe0ff',
+        '⛨' + b.dentro.length + '/' + b.def.guarnicao);
+    }
     if (b.portao) {
       ctx.fillStyle = b.portaoAberto ? 'rgba(140,224,127,0.9)' : 'rgba(255,180,90,0.9)';
       ctx.fillRect(c.x - 8 * z, c.y - g.h - 5 * z, 16 * z, 2.6 * z);
@@ -8576,6 +8804,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (k === 'w') { self.iniciarHabilidade('escudo'); return; }
       if (k === 's') { self.pararSelecionados(); return; }
       if (k === 'h') { self.voltarParaBase(); return; }
+      if (k === 'x') { self.desocuparSelecionada(); return; }
       /* `.` vai ao PRÓXIMO parado e `,` pega todos de uma vez, que é a divisão
          do Age of Empires (lá, ponto e Ctrl+ponto). */
       if (k === '.') { self.proximoOcioso(); return; }
@@ -9004,6 +9233,31 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (!cel) { this.mostrarAviso('Não há célula acessível nesse ponto.', 'atencao'); return; }
     var ordem = (this.modo && this.modo.ordem) || null;
 
+    /* GUARNECER é o toque na PRÓPRIA estrutura, como nos dois clássicos — não
+       há comando separado para aprender. A exceção é o operário diante de um
+       prédio ferido ou em obra: ali o toque continua sendo conserto, que é o
+       que ele já fazia e o que se espera dele. Prédio inteiro, ele entra. */
+    var sob = sim.estruturas[sim.world.occ[sim.world.idx(Math.floor(m.x), Math.floor(m.y))]];
+    if (!ordem && sob && !sob.morta && sob.construida && sim.capacidadeGuarnicao(sob)) {
+      var entraram = 0, cheio = false;
+      for (var g = 0; g < unidades.length; g++) {
+        var ug = unidades[g];
+        if (ug.voa) continue;
+        if (ug.operario && (!sob.construida || sob.hp < sob.hpMax)) continue;
+        if (sim.vagasNaGuarnicao(sob) - entraram <= 0) { cheio = true; break; }
+        sim.darTarefa(ug, { tipo: 'guarnecer', alvo: sob.id }, true);
+        entraram++;
+      }
+      if (entraram) {
+        this.render.efeitos.push(this.marcaDeOrdem({ x: sob.x + sob.w / 2 - 0.5, y: sob.y + sob.h / 2 - 0.5 }, '#7fd4ff'));
+        UF.audio.evento('clique');
+        this.mostrarAviso(entraram + ' a caminho de ' + sob.def.nome +
+          (cheio ? ' · o resto não cabe' : '') + '.', 'info');
+        this.cancelarModo();
+        return;
+      }
+    }
+
     for (var i = 0; i < unidades.length; i++) {
       var u = unidades[i];
       var destino = { x: cel.x + (i % 3) - 1, y: cel.y + Math.floor(i / 3) % 3 - 1 };
@@ -9045,6 +9299,16 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.render.efeitos.push(this.marcaDeOrdem(cel, ordem === 'recuar' ? '#ffd479' : '#8ce07f'));
     UF.audio.evento('clique');
     this.cancelarModo();
+  };
+
+  /* `x` esvazia a estrutura selecionada. Sem tecla, desocupar exigiria achar o
+     botão na barra — e quem guarnece está justamente no meio de um ataque. */
+  UI.prototype.desocuparSelecionada = function () {
+    var b = this.selecionado ? this.sim.estruturas[this.selecionado] : null;
+    if (!b || !b.dentro || !b.dentro.length) return;
+    var n = this.sim.desocupar(b);
+    this.mostrarAviso(n + ' unidade(s) saíram de ' + b.def.nome + '.', 'info');
+    this.atualizarTudo();
   };
 
   UI.prototype.marcaDeOrdem = function (cel, cor) {
@@ -9423,7 +9687,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   var CASAS_ESTRUTURA = {
     produzir: 0, pesquisar: 1, encontro: 2,
     reparar: 3, portao: 4, energia: 5,
-    vender: 6
+    desocupar: 6, vender: 7
   };
   var CASAS_GLOBAL = {
     operario: 0, distribuir: 1, recolher: 2,
@@ -9933,8 +10197,10 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var self = this, sim = this.sim;
     var estado = !b.construida ? (b.abandonado ? 'posto abandonado' : 'em obra ' + Math.round(b.obra * 100) + '%')
       : b.semEnergia ? 'sem energia' : 'operando';
+    var lotacao = sim.capacidadeGuarnicao(b)
+      ? ' · ' + b.dentro.length + '/' + b.def.guarnicao + ' dentro' : '';
     this.mostrarSelecao(b.def.nome + (b.abandonado && !b.construida ? ' (abandonado)' : ''),
-      b.hp, b.hpMax, estado + (b.construtores ? ' · ' + b.construtores + ' operário(s)' : ''));
+      b.hp, b.hpMax, estado + (b.construtores ? ' · ' + b.construtores + ' operário(s)' : '') + lotacao);
 
     if (!b.construida) {
       cx.appendChild(botao(b.abandonado ? 'Reativar' : 'Acelerar obra', '🔧', 'enviar operário', function () {
@@ -9996,6 +10262,13 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       casas[CASAS_ESTRUTURA.energia] = botao(b.desligada ? 'Ligar' : 'Desligar', 'ϟ', 'poupa energia', function () {
         b.desligada = !b.desligada; self.atualizarAcoes();
       }, { ligado: !b.desligada });
+    }
+    if (b.dentro && b.dentro.length) {
+      casas[CASAS_ESTRUTURA.desocupar] = botao('Desocupar', '⇱', b.dentro.length + ' dentro', function () {
+        var n = sim.desocupar(b);
+        self.mostrarAviso(n + ' unidade(s) saíram de ' + b.def.nome + '.', 'info');
+        self.atualizarAcoes();
+      }, { tecla: 'x' });
     }
     if (b !== sim.central) {
       var volta = Math.round((b.custo.m || 0) * D.REGRAS.reembolso);

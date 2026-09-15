@@ -311,6 +311,11 @@
     var tarefa = u.tarefa || (u.tarefa = { tipo: 'ocioso' });
     var w = this.world;
 
+    /* Guarnecer é ordem manual e vem antes da fuga: mandar o operário para
+       dentro da torre É a resposta ao inimigo, não algo a ser interrompido
+       por ele. */
+    if (this.tentarGuarnecer(u, dt)) return;
+
     /* "Evita combate quando possível": sem ordem manual, o operário larga a
        tarefa e corre para o depósito mais próximo enquanto houver inimigo perto. */
     if (!u.ordemManual) {

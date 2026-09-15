@@ -76,6 +76,12 @@
         centralId: sim.central ? sim.central.id : 0,
         estruturas: sim.listaEstruturas.map(limparEntidade),
         unidades: sim.unidades.map(limparEntidade),
+        /* Quem está guarnecido não está em `unidades` — está fora de todos os
+           laços, de propósito. Sem esta linha, entrar numa torre e salvar
+           APAGARIA a tropa, e ela reapareceria como vaga de população presa. */
+        guarnecidas: Object.keys(sim.guarnecidas).map(function (k) {
+          return limparEntidade(sim.guarnecidas[k]);
+        }),
         projeteis: JSON.parse(JSON.stringify(sim.projeteis)),
         jazidas: sim.world.jazidas.map(function (j) {
           return { id: j.id, estoque: j.estoque, ocupadas: 0, extrator: j.extrator };
@@ -146,6 +152,17 @@
         u.def = u.lado === 'inimigo' ? D.INVASORES[u.tipo] : D.UNIDADES[u.tipo];
         u.rota = null;
         sim.unidades.push(u);
+      });
+      (dados.guarnecidas || []).forEach(function (e) {
+        var u = e;
+        u.def = u.lado === 'inimigo' ? D.INVASORES[u.tipo] : D.UNIDADES[u.tipo];
+        u.rota = null;
+        sim.guarnecidas[u.id] = u;
+      });
+      /* Lista de dentro sem ninguém do outro lado é vaga fantasma: a estrutura
+         contaria ocupada para sempre e ninguém mais entraria. */
+      sim.listaEstruturas.forEach(function (b) {
+        b.dentro = (b.dentro || []).filter(function (id) { return !!sim.guarnecidas[id]; });
       });
       sim.projeteis = dados.projeteis || [];
       sim.obrasPendentes = (dados.obrasPendentes || []).filter(function (o) {

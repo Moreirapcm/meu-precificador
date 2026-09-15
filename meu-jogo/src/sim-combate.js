@@ -113,6 +113,170 @@
     return melhor;
   };
 
+
+  /* ============================== GUARNIÇÃO =============================
+     Item 8 do capítulo 11. Dois clássicos, duas metades: o Age of Empires II
+     põe até 5 numa torre e deixa a guarnição atirar junto (5 flechas vazia,
+     21 cheia); o StarCraft põe 4 no Bunker, que sozinho não atira nada e dá
+     +1 de alcance a quem está dentro. Ficamos com a torre atirando por conta
+     própria E a guarnição atirando junto com a arma que trouxe.
+
+     Quem entra SAI de `sim.unidades`. Foi a decisão que barateou tudo: há 48
+     laços de unidade espalhados pela simulação, e marcar uma bandeira exigiria
+     lembrar dela em todos — a que fosse esquecida faria o invasor atirar em
+     alguém que está dentro da torre. Fora da lista, nenhum laço a vê. Em troca,
+     `recalcularPop` e o salvamento precisam olhar `sim.guarnecidas`, que são
+     dois lugares e estão escritos.
+
+     A posição da unidade vira o centro da estrutura no momento em que ela
+     entra. Não é enfeite: é o que faz `atirar` funcionar sem nenhuma mudança —
+     o tiro sai da torre, com a arma, a cadência e o lado de quem está dentro. */
+  S.capacidadeGuarnicao = function (b) {
+    return (b && b.construida && !b.morta && b.def.guarnicao) || 0;
+  };
+
+  S.vagasNaGuarnicao = function (b) {
+    return this.capacidadeGuarnicao(b) - ((b && b.dentro) ? b.dentro.length : 0);
+  };
+
+  S.podeGuarnecer = function (u, b) {
+    if (!u || u.morta || u.lado !== 'aliado' || u.voa) return false;
+    return this.vagasNaGuarnicao(b) > 0;
+  };
+
+  S.guarnecer = function (u, b) {
+    if (!this.podeGuarnecer(u, b)) return false;
+    var i = this.unidades.indexOf(u);
+    if (i < 0) return false;
+    this.unidades.splice(i, 1);
+    this.guarnecidas[u.id] = u;
+    u.dentro = b.id;
+    u.rota = null;
+    u.alvo = 0;
+    u.bloqueado = false;
+    u.tarefa = { tipo: 'guarnecido' };
+    u.x = b.x + b.w / 2;
+    u.y = b.y + b.h / 2;
+    if (!b.dentro) b.dentro = [];
+    b.dentro.push(u.id);
+    this.emitir('guarneceu', { id: b.id, x: u.x, y: u.y, tipo: u.tipo });
+    return true;
+  };
+
+  /* Célula de saída, em anéis a partir da borda do prédio. `usadas` impede que
+     a segunda unidade a sair caia exatamente em cima da primeira: a grade não
+     marca unidade, então `livre()` diz que sim para todas elas e as quatro
+     saíam empilhadas no mesmo ponto. A separação empurraria depois, mas o que
+     o jogador vê no instante do desembarque é um só boneco. */
+  S.saidaDaGuarnicao = function (b, usadas) {
+    var cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    for (var r = 1; r <= 8; r++) {
+      var melhor = null, melhorD = Infinity;
+      for (var dy = -r; dy <= r; dy++) {
+        for (var dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          var x = Math.floor(cx) + dx, y = Math.floor(cy) + dy;
+          if (!this.world.livre(x, y)) continue;
+          if (usadas && usadas[x + ',' + y]) continue;
+          var d = U.dist(x + 0.5, y + 0.5, cx, cy);
+          if (d < melhorD) { melhorD = d; melhor = { x: x, y: y }; }
+        }
+      }
+      if (melhor) {
+        if (usadas) usadas[melhor.x + ',' + melhor.y] = 1;
+        return melhor;
+      }
+    }
+    return null;
+  };
+
+  /* Tira UMA unidade e a devolve ao mundo na célula livre mais próxima. */
+  S.liberarDaGuarnicao = function (b, id, usadas) {
+    var u = this.guarnecidas[id];
+    if (!u) return null;
+    delete this.guarnecidas[id];
+    var k = b.dentro ? b.dentro.indexOf(id) : -1;
+    if (k >= 0) b.dentro.splice(k, 1);
+    u.dentro = 0;
+    var cel = this.saidaDaGuarnicao(b, usadas);
+    /* Sem célula livre em oito de raio — prédio no meio de um cerco fechado —
+       a unidade sai em cima do próprio prédio: preso é melhor que sumido, e a
+       separação de unidades empurra assim que abrir. */
+    u.x = cel ? cel.x + 0.5 : b.x + b.w / 2;
+    u.y = cel ? cel.y + 0.5 : b.y + b.h / 2;
+    u.rota = null;
+    u.tarefa = u.operario ? { tipo: 'ocioso' }
+      : { tipo: 'defender', centro: { x: u.x, y: u.y }, raio: 7 };
+    this.unidades.push(u);
+    this.emitir('desocupou', { id: b.id, x: u.x, y: u.y, tipo: u.tipo });
+    return u;
+  };
+
+  S.desocupar = function (b) {
+    if (!b || !b.dentro || !b.dentro.length) return 0;
+    var n = b.dentro.length, usadas = {};
+    /* De trás para frente: `liberarDaGuarnicao` mexe na mesma lista. */
+    for (var i = b.dentro.length - 1; i >= 0; i--) this.liberarDaGuarnicao(b, b.dentro[i], usadas);
+    this.recalcularPop();
+    return n;
+  };
+
+  /* Uma vez por quadro, por estrutura ocupada. Cura lenta sempre; tiro só de
+     torre ligada e com alvo — a Central abriga, não atira. */
+  S.atualizarGuarnicao = function (b, dt) {
+    if (!b.dentro || !b.dentro.length) return;
+    var alvo = null;
+    if (b.torre && !b.semEnergia && !b.desligada && b.alvo) {
+      alvo = this.alvoPorId(b.alvo);
+      if (alvo && alvo.morta) alvo = null;
+    }
+    for (var i = 0; i < b.dentro.length; i++) {
+      var u = this.guarnecidas[b.dentro[i]];
+      if (!u || u.morta) continue;
+      /* O ferido se recupera dentro do prédio, como no Age of Empires. É a
+         metade do item que o Pedro pediu: lugar seguro para o ferido. */
+      if (u.hp < u.hpMax) u.hp = Math.min(u.hpMax, u.hp + u.hpMax * 0.025 * dt);
+      var arma = u.def.arma;
+      if (!alvo || !arma) continue;
+      if (!this.podeAtingir(arma, alvo)) continue;
+      /* +1 de alcance pela altura, que é o bônus do Bunker do StarCraft. */
+      var d = this.distanciaEntre(u, alvo);
+      if (d > arma.alc + 1 || d < (arma.alcMin || 0)) continue;
+      this.atirar(u, alvo, arma, dt);
+    }
+  };
+
+  /* Andar até a estrutura e entrar. Vale para operário e para soldado, e por
+     isso mora aqui e não num dos dois laços: devolve verdadeiro quando consumiu
+     o quadro. */
+  S.tentarGuarnecer = function (u, dt) {
+    var tarefa = u.tarefa;
+    if (!tarefa || tarefa.tipo !== 'guarnecer') return false;
+    var b = this.estruturas[tarefa.alvo];
+    if (!b || b.morta || !b.construida) { u.tarefa = { tipo: 'ocioso' }; return true; }
+    if (this.vagasNaGuarnicao(b) <= 0) {
+      this.aviso(b.def.nome + ' está lotado.', 'atencao');
+      u.tarefa = { tipo: 'ocioso' };
+      return true;
+    }
+    /* Encostar no PRÉDIO, não numa célula: a estrutura ocupa a grade e o
+       destino tem de ser a borda dela. `distToRect` é a mesma medida que o
+       reparo e a construção usam. */
+    if (U.distToRect(u.x, u.y, b.x, b.y, b.w, b.h) <= 1.2) {
+      this.guarnecer(u, b);
+      this.recalcularPop();
+      return true;
+    }
+    var cel = this.nav.celulaLivreProxima(b.x + b.w / 2, b.y + b.h / 2, 8);
+    if (!cel) { u.tarefa = { tipo: 'ocioso' }; return true; }
+    if ((!u.rota || !u.rota.length) && !this.pedirRota(u, cel, { raioChegada: 0 })) {
+      if (u.bloqueado) u.tarefa = { tipo: 'ocioso' };
+      return true;
+    }
+    this.andar(u, dt);
+    return true;
+  };
+
   S.atirar = function (origem, alvo, arma, dt) {
     origem.recarga -= dt;
     if (origem.recarga > 0) return;
@@ -311,6 +475,11 @@
     alvo.hp = 0;
     if (alvo.w) {
       this.ocupar(alvo, 0);                      /* a brecha fica transitável na hora */
+      /* Quem estava dentro SAI, ferido mas vivo — é o Bunker do StarCraft, e
+         não a torre do Age, onde a guarnição morre junto. Num jogo de defesa
+         em que a torre cai toda hora, matar a guarnição junto transformaria
+         guarnecer numa armadilha e ninguém usaria o comando duas vezes. */
+      this.desocupar(alvo);
       if (alvo.jazida) {
         var jaz = this.world.jazidaPorId(alvo.jazida);
         if (jaz) jaz.extrator = 0;
@@ -377,6 +546,8 @@
         }
       }
     }
+
+    if (b.dentro && b.dentro.length) this.atualizarGuarnicao(b, dt);
 
     if (b.torre) {
       if (b.semEnergia) return;
@@ -458,6 +629,7 @@
     var tarefa = u.tarefa || (u.tarefa = { tipo: 'defender', centro: { x: u.x, y: u.y }, raio: 7 });
     var arma = u.def.arma;
 
+    if (this.tentarGuarnecer(u, dt)) return;
     if (u.def.cura) { this.atualizarMedico(u, dt); return; }
 
     var alvo = (u.alvo && this.alvoPorId(u.alvo)) || null;

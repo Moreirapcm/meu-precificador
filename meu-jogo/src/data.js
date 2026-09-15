@@ -19,7 +19,17 @@
   /* ------------------------------------------------------------- estruturas */
   /* papel 'deposito' recebe carga de minério; 'torre' atira sozinha.
      energia > 0 consome capacidade elétrica; fornece > 0 gera capacidade. */
-  /* BLINDAGEM DE ESTRUTURA. Nenhum prédio tinha `blind`: torre, muro e Central
+  /* GUARNIÇÃO. `guarnicao` é quantos cabem dentro. O Age of Empires II põe até
+     5 numa torre e a torre vazia atira 5 flechas contra 21 guarnecida; o
+     StarCraft põe 4 no Bunker, que sozinho não atira nada. Ficamos no meio: a
+     torre atira por conta própria E quem está dentro atira junto, com a arma
+     que trouxe — por isso um Lanceiro dentro de uma torre de solo passa a
+     cobrir o ar, que é decisão de quem guarnece e não número nosso.
+
+     A Central leva 10 e NÃO atira: ali a guarnição é abrigo, que é o uso que
+     importa — esconder operário do ataque e dar lugar seguro ao ferido.
+
+     BLINDAGEM DE ESTRUTURA. Nenhum prédio tinha `blind`: torre, muro e Central
      absorviam dano cheio enquanto a tropa já subtraía desde sempre. O Age of
      Empires II nunca fez assim — lá a Watch Tower NASCE com 1/7 de armadura, e
      Masonry/Architecture melhoram isso em todo prédio.
@@ -32,7 +42,7 @@
      exatamente a alavanca que sustentaria. Medido com `equilibrio.cjs`. */
   var ESTRUTURAS = {
     central: {
-      nome: 'Central de Comando', cat: 'base', w: 4, h: 4, hp: 3200, blind: 2, tempo: 0,
+      nome: 'Central de Comando', cat: 'base', w: 4, h: 4, hp: 3200, blind: 2, guarnicao: 10, tempo: 0,
       custo: { m: 0 }, papel: 'deposito', produz: ['operario', 'trator'], visao: 11, fornece: 8,
       desc: 'Produz operários, recebe minério e concentra as ordens globais. Fornece 8 de energia. Perdê-la encerra a partida.'
     },
@@ -113,37 +123,37 @@
        Age of Empires — arrastar uma fila delas sairia mais barato que a
        Sentinela por célula coberta e mataria as outras torres. */
     torreMuralha: {
-      nome: 'Torre de muralha', cat: 'defesa', w: 1, h: 1, hp: 620, blind: 1, tempo: 6,
+      nome: 'Torre de muralha', cat: 'defesa', w: 1, h: 1, hp: 620, blind: 1, guarnicao: 2, tempo: 6,
       custo: { m: 45 }, energia: 1, muro: true, papel: 'torre', visao: 7,
       arma: { dano: 9, cad: 0.7, alc: 6, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Encaixa na muralha e atira. Alcance curto: vale pela linha, não sozinha.'
     },
     bastiao: {
-      nome: 'Bastião', cat: 'defesa', w: 2, h: 2, hp: 980, blind: 1, tempo: 13,
+      nome: 'Bastião', cat: 'defesa', w: 2, h: 2, hp: 980, blind: 1, guarnicao: 5, tempo: 13,
       custo: { m: 130 }, energia: 3, muro: true, papel: 'torre', visao: 9, req: { tech: 2 },
       arma: { dano: 21, cad: 0.8, alc: 8, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Ponto forte da muralha: a parede encaixa pelos quatro lados. Caro por célula.'
     },
     sentinela: {
-      nome: 'Sentinela', cat: 'defesa', w: 2, h: 2, hp: 560, blind: 1, tempo: 8,
+      nome: 'Sentinela', cat: 'defesa', w: 2, h: 2, hp: 560, blind: 1, guarnicao: 4, tempo: 8,
       custo: { m: 80 }, energia: 2, papel: 'torre', visao: 9,
       arma: { dano: 14, cad: 0.55, alc: 7.5, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Tiro rápido contra solo e ar. Boa cobertura geral, dano baixo por tiro.'
     },
     gelo: {
-      nome: 'Torre de Gelo', cat: 'defesa', w: 2, h: 2, hp: 520, blind: 1, tempo: 9,
+      nome: 'Torre de Gelo', cat: 'defesa', w: 2, h: 2, hp: 520, blind: 1, guarnicao: 4, tempo: 9,
       custo: { m: 110 }, energia: 2, papel: 'torre', visao: 8, req: { tech: 2 },
       arma: { dano: 7, cad: 0.8, alc: 6.5, ar: false, solo: true, vel: 13, lentidao: 0.45, cor: '#9ff0ff' },
       desc: 'Desacelera alvos terrestres em 45%. Segura a pressão sobre os muros.'
     },
     artilharia: {
-      nome: 'Artilharia', cat: 'defesa', w: 2, h: 2, hp: 620, blind: 1, tempo: 12,
+      nome: 'Artilharia', cat: 'defesa', w: 2, h: 2, hp: 620, blind: 1, guarnicao: 4, tempo: 12,
       custo: { m: 145 }, energia: 3, papel: 'torre', visao: 10, req: { tech: 2 },
       arma: { dano: 51, cad: 2.1, alc: 10, alcMin: 2.2, ar: false, solo: true, vel: 9, area: 1.7, cor: '#ffb457' },
       desc: 'Dano em área contra solo. Alcance mínimo: fica exposta de perto.'
     },
     plasma: {
-      nome: 'Torre de Plasma', cat: 'defesa', w: 2, h: 2, hp: 680, blind: 1, tempo: 14,
+      nome: 'Torre de Plasma', cat: 'defesa', w: 2, h: 2, hp: 680, blind: 1, guarnicao: 4, tempo: 14,
       custo: { m: 190, c: 40 }, energia: 4, papel: 'torre', visao: 9, req: { tech: 3 },
       arma: { dano: 43, cad: 1.15, alc: 8.5, ar: true, solo: true, vel: 20, perfura: true, cor: '#d79bff' },
       desc: 'Ignora blindagem e atinge solo e ar. Exige tecnologia III e barris de petróleo.'
