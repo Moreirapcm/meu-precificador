@@ -382,6 +382,17 @@
     var posto = (origem.lado !== 'inimigo' && !origem.w && origem.posto) || 0;
     origem.recarga = arma.cad * (1 - R.postoCadencia * posto);
     var centroO = this.centroDe(origem), centroA = this.centroDe(alvo);
+    /* O TIRO SAI DA BOCA DO CANO, não do meio do prédio. Numa torre 2×2 o
+       centro fica dois metros atrás da arma, e o que se via na tela era o
+       projétil nascendo do chão, debaixo da própria torre. Empurra a origem na
+       direção do alvo pelo tamanho da peça — é o mesmo cano que o desenho gira.
+       Unidade não precisa: o corpo dela tem meio metro. */
+    if (origem.w) {
+      var ddx = centroA.x - centroO.x, ddy = centroA.y - centroO.y;
+      var dd = Math.hypot(ddx, ddy) || 1;
+      var braco = 0.3 + origem.w * 0.34;
+      centroO = { x: centroO.x + ddx / dd * braco, y: centroO.y + ddy / dd * braco };
+    }
     var dano = arma.dano * (1 + R.postoDano * posto);
     /* Duas linhas separadas: a torre lê `pontaria`, a tropa lê `precisao`. Quem
        está guarnecido dentro de uma torre continua sendo TROPA — a arma é dele,
@@ -442,9 +453,12 @@
       perfura: !!arma.perfura,
       metadeBlindagem: origem.lado !== 'inimigo' && !!this.jogador.pesquisas.penetracao,
       lentidao: arma.lentidao || 0, acido: !!(origem.def && origem.def.acido),
-      cor: arma.cor || '#ffd7a0', origemId: origem.id
+      cor: arma.cor || '#ffd7a0', origemId: origem.id,
+      /* altura em pixels de tela: torre atira de cima, soldado de perto do chão */
+      alto: origem.w ? 22 + origem.w * 4 : 12
     });
-    this.emitir('tiro', { x: centroO.x, y: centroO.y, alvo: alvo.id, cor: arma.cor });
+    this.emitir('tiro', { x: centroO.x, y: centroO.y, alvo: alvo.id, cor: arma.cor,
+      alto: origem.w ? 22 + origem.w * 4 : 12 });
     if (origem.def && origem.def.suicida) this.aplicarDano(origem, origem.hp + 1, { silencioso: true });
   };
 

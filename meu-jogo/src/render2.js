@@ -77,6 +77,35 @@
     return { h: Math.max(0, alt - (sul.y - this.paraTela(x + w / 2, y + h / 2).y)) };
   };
 
+  /* TORRE QUE GIRA DE VERDADE, com sprite por direção — o método dos clássicos.
+     StarCraft e Age of Empires II não desenhavam cada ângulo: renderizavam um
+     modelo 3D e exportavam 8, 16 ou 32 direções do mesmo objeto. É a única
+     forma de a peça girar sem trocar de identidade a cada quadro, e é
+     exatamente o que a geração por IA não faz — ela muda a POSE em vez de mover
+     a câmera. O modelo está em `arte/modelos/torreta.py`, renderizado com
+     Blender na nossa projeção 2:1 e com a luz vindo da direita.
+
+     Quem não tiver as oito direções continua no sprite único de sempre: a
+     função devolve nulo e o desenho segue o caminho antigo. */
+  var QUADRANTE = Math.PI / 4;
+  R.spriteDaTorreVirada = function (b) {
+    if (!b.torre || !b.construida || b.morta || !UF.sprites) return null;
+    var alvo = b.alvo && this.sim.alvoPorId(b.alvo);
+    if (alvo && !alvo.morta) {
+      var c = this.sim.centroDe(alvo);
+      var pa = this.paraTela(c.x, c.y);
+      var pb = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
+      /* O quadro 2 é o cano para a direita da tela e o 0 é para baixo, que é
+         como o modelo saiu do Blender. Daí o `2 -` e o sinal: em canvas o y
+         cresce para baixo. */
+      var ang = Math.atan2(pa.y - pb.y, pa.x - pb.x);
+      var q = Math.round(2 - ang / QUADRANTE) % 8;
+      b.dirTorre = (q + 8) % 8;
+    }
+    if (b.dirTorre == null) b.dirTorre = 3;
+    return UF.sprites.estrutura(b.tipo + '-dir' + b.dirTorre);
+  };
+
   /* Para que lado a torre aponta.
 
      TENTEI O CANHÃO PROCEDURAL POR CIMA DO SPRITE e desfiz, olhando a tela: a
@@ -107,11 +136,16 @@
     /* Obra, ruína e posto abandonado continuam procedurais: a altura que sobe
        durante a construção e o escurecimento são informação de jogo, e o sprite
        é uma imagem só, sem esses estados. */
-    var img = (!emObra && !b.morta && !b.abandonado && UF.sprites)
-      ? UF.sprites.estrutura(b.tipo) : null;
+    var img = null;
+    if (!emObra && !b.morta && !b.abandonado && UF.sprites) {
+      img = this.spriteDaTorreVirada(b) || UF.sprites.estrutura(b.tipo);
+    }
+    /* Torre com direção própria não espelha: ela já tem os oito lados. */
+    var temDirecao = !!(img && b.torre && UF.sprites.estrutura(b.tipo + '-dir' + b.dirTorre) === img);
     var g;
     if (img) {
-      g = this.spriteNaFundacao(ctx, img, b.x, b.y, b.w, b.h, this.torreOlhandoAEsquerda(b));
+      g = this.spriteNaFundacao(ctx, img, b.x, b.y, b.w, b.h,
+        temDirecao ? false : this.torreOlhandoAEsquerda(b));
       this.avisosEstrutura(ctx, b, g);
       if (b.fila && b.fila.length) {
         var cf2 = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
@@ -996,7 +1030,7 @@
       var a = this.paraTela(p.antX === undefined ? p.x : p.antX,
         p.antY === undefined ? p.y : p.antY);
       var ax = t.x + (a.x - t.x) * 3.2, ay = t.y + (a.y - t.y) * 3.2;
-      var alto = 12 * z;
+      var alto = (p.alto || 12) * z;
 
       ctx.lineCap = 'round';
       if (p.area) {
@@ -1092,7 +1126,7 @@
            existia no código e não existia na tela. Agora dura o triplo, é
            maior, e vem com uma baforada de fumaça atrás — que é o que faz a
            arma parecer arma e não um ponto piscando. */
-        this.efeitoMundo('clarao', e.x, e.y, { cor: e.cor, vida: 0.15, alto: 12 });
+        this.efeitoMundo('clarao', e.x, e.y, { cor: e.cor, vida: 0.15, alto: e.alto || 12 });
         this.efeitoMundo('fumaca', e.x, e.y, { vida: 0.5, tam: 4 });
       } else if (e.tipo === 'unidadeMorta') {
         this.efeitoMundo('fumaca', e.x, e.y, { vida: 0.9, tam: 6 });

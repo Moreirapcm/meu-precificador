@@ -21,6 +21,25 @@ campanha; economia + tropas + pesquisa + reparo sustentam.
 
 Depois de mexer em `src/`, rode `node build.cjs` para `dist/` não ficar velho.
 
+## Pesquisar antes de implementar
+
+**Regra do Pedro, 15/09/2026: mandar agentes pesquisar ANTES de implementar.**
+Antes de escrever a primeira linha de um item novo — mecânica, arte, efeito,
+técnica —, despachar agentes para levantar como os clássicos e os jogos de
+referência fizeram aquilo, com números e fontes. Implementar depois, com a
+receita na mão.
+
+Por quê: nesta sessão as melhores decisões saíram de pesquisa (a grade fixa de
+comandos, a paginação em vez de rolagem, o Bunker que solta a guarnição viva,
+a onda que vem no relógio) e os piores retrabalhos saíram de eu tentar
+adivinhar (o canhão procedural por cima do sprite, a pesquisa de torre cobrando
+barril, três versões da reserva de pesquisa no medidor).
+
+Como: `Agent` com `general-purpose`, em paralelo quando houver mais de um
+ângulo. No prompt, sempre: **proibido editar `src/` e `v2-referencia/`** —
+diagnóstico e receita apenas —, pode ler o repositório, e a resposta termina
+numa lista numerada de mudanças concretas em ordem de impacto.
+
 ## Regras de arquitetura
 
 Três camadas, e a direção da dependência importa:
