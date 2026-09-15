@@ -882,20 +882,25 @@
     if (pa.progresso < 1) return;
     this.jogador.pesquisas[pa.id] = true;
     if (pa.def.tech) this.jogador.tech = Math.max(this.jogador.tech, pa.def.tech);
-    if (pa.id === 'muroReforcado') this.reforcarMuros();
+    if (pa.id === 'muroReforcado' || pa.id === 'alvenaria') this.reforcarEstruturas();
     if (pa.id === 'formacao') this.reforcarTropas();
     this.aviso('Pesquisa concluída: ' + pa.def.nome, 'bom');
     this.emitir('pesquisaConcluida', { id: pa.id });
     this.jogador.pesquisaAtual = null;
   };
 
-  /* Pesquisas globais valem para o que já existe (página 12). */
-  S.reforcarMuros = function () {
+  /* Pesquisas globais valem para o que já existe (página 12).
+     A conta é sempre `hpMaximo`, e não um multiplicador escrito aqui: com duas
+     pesquisas mexendo em vida de prédio — muro reforçado e alvenaria — a versão
+     antiga (`def.hp * 1.6`) apagaria a outra ao ser aplicada depois. Uma fonte
+     só para o número, e a fração de dano é preservada para a pesquisa não
+     curar nem ferir ninguém. */
+  S.reforcarEstruturas = function () {
     for (var i = 0; i < this.listaEstruturas.length; i++) {
       var b = this.listaEstruturas[i];
-      if (!b.muro || b.morta) continue;
-      var frac = b.hp / b.hpMax;
-      b.hpMax = Math.round(b.def.hp * 1.6);
+      if (b.morta) continue;
+      var frac = b.hpMax > 0 ? b.hp / b.hpMax : 1;
+      b.hpMax = this.hpMaximo(b.def, b.tipo);
       b.hp = Math.round(b.hpMax * frac);
     }
   };

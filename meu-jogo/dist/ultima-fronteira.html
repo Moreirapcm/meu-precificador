@@ -652,14 +652,25 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   /* ------------------------------------------------------------- estruturas */
   /* papel 'deposito' recebe carga de minério; 'torre' atira sozinha.
      energia > 0 consome capacidade elétrica; fornece > 0 gera capacidade. */
+  /* BLINDAGEM DE ESTRUTURA. Nenhum prédio tinha `blind`: torre, muro e Central
+     absorviam dano cheio enquanto a tropa já subtraía desde sempre. O Age of
+     Empires II nunca fez assim — lá a Watch Tower NASCE com 1/7 de armadura, e
+     Masonry/Architecture melhoram isso em todo prédio.
+
+     Os números são baixos de propósito. `aplicarDano` subtrai com piso de 12%,
+     e na faixa baixa isso é violento: contra o tiro de 7 do Corredor, cada
+     ponto vale 14% do dano. Muro e Central levam 2 porque é o que eles existem
+     para fazer — absorver; a torre leva 1 porque o diagnóstico do projeto é que
+     empilhar torre NÃO pode sustentar a campanha, e armadura de torre é
+     exatamente a alavanca que sustentaria. Medido com `equilibrio.cjs`. */
   var ESTRUTURAS = {
     central: {
-      nome: 'Central de Comando', cat: 'base', w: 4, h: 4, hp: 3200, tempo: 0,
+      nome: 'Central de Comando', cat: 'base', w: 4, h: 4, hp: 3200, blind: 2, tempo: 0,
       custo: { m: 0 }, papel: 'deposito', produz: ['operario', 'trator'], visao: 11, fornece: 8,
       desc: 'Produz operários, recebe minério e concentra as ordens globais. Fornece 8 de energia. Perdê-la encerra a partida.'
     },
     alojamento: {
-      nome: 'Alojamento', cat: 'base', w: 2, h: 2, hp: 620, tempo: 10,
+      nome: 'Alojamento', cat: 'base', w: 2, h: 2, hp: 620, blind: 1, tempo: 10,
       custo: { m: 100 }, pop: 10, visao: 6, req: { ed: 'central' },
       desc: 'Aumenta a capacidade de população em 10.'
     },
@@ -668,64 +679,64 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
        continua a mesma de propósito: ela é a base do equilíbrio já medido, e
        trocá-la invalidaria as partidas salvas. Só o nome e a arte mudaram. */
     gerador: {
-      nome: 'Usina solar', cat: 'base', w: 2, h: 2, hp: 520, tempo: 10,
+      nome: 'Usina solar', cat: 'base', w: 2, h: 2, hp: 520, blind: 1, tempo: 10,
       custo: { m: 100 }, fornece: 12, visao: 6, req: { ed: 'central' },
       desc: 'Barata e resistente. Fornece 12 de energia e ocupa pouco. Em déficit, a produção avançada pausa.'
     },
     eolica: {
-      nome: 'Usina eólica', cat: 'base', w: 2, h: 2, hp: 300, tempo: 13,
+      nome: 'Usina eólica', cat: 'base', w: 2, h: 2, hp: 300, blind: 1, tempo: 13,
       custo: { m: 150 }, fornece: 21, visao: 8, req: { ed: 'central' },
       desc: 'Quase o dobro de energia da solar no mesmo espaço. Torre alta e frágil: cai fácil sob fogo.'
     },
     nuclear: {
-      nome: 'Usina nuclear', cat: 'base', w: 3, h: 3, hp: 900, tempo: 26,
+      nome: 'Usina nuclear', cat: 'base', w: 3, h: 3, hp: 900, blind: 1, tempo: 26,
       custo: { m: 300 }, fornece: 55, visao: 7, req: { tech: 2 },
       desc: 'Resolve a energia da base inteira sozinha. Cara, lenta de erguer e grande demais para esconder.'
     },
     fusao: {
-      nome: 'Reator de fusão', cat: 'base', w: 3, h: 3, hp: 1150, tempo: 34,
+      nome: 'Reator de fusão', cat: 'base', w: 3, h: 3, hp: 1150, blind: 1, tempo: 34,
       custo: { m: 480, c: 90 }, fornece: 95, visao: 8, req: { tech: 3 },
       desc: 'Mais energia que todas as outras juntas. Exige tecnologia III e barris de petróleo.'
     },
     deposito: {
-      nome: 'Depósito avançado', cat: 'base', w: 2, h: 2, hp: 700, tempo: 12,
+      nome: 'Depósito avançado', cat: 'base', w: 2, h: 2, hp: 700, blind: 1, tempo: 12,
       custo: { m: 120 }, papel: 'deposito', visao: 7, req: { ed: 'central' },
       desc: 'Recebe carga mineral. Encurta o trajeto de jazidas distantes.'
     },
     quartel: {
-      nome: 'Quartel', cat: 'producao', w: 3, h: 3, hp: 950, tempo: 16,
+      nome: 'Quartel', cat: 'producao', w: 3, h: 3, hp: 950, blind: 1, tempo: 16,
       custo: { m: 150 }, energia: 4, visao: 7, req: { ed: 'central' },
       produz: ['fuzileiro', 'cao', 'incendiario', 'medico'],
       desc: 'Produz fuzileiros e tropas de apoio. Define ponto de encontro.'
     },
     oficina: {
-      nome: 'Oficina', cat: 'producao', w: 3, h: 3, hp: 1150, tempo: 22,
+      nome: 'Oficina', cat: 'producao', w: 3, h: 3, hp: 1150, blind: 1, tempo: 22,
       custo: { m: 220 }, energia: 6, visao: 7, req: { ed: 'quartel', tech: 2 },
       produz: ['lanceiro', 'drone', 'tanque'],
       desc: 'Produz unidades pesadas. Exige Quartel e tecnologia II.'
     },
     pesquisa: {
-      nome: 'Centro de Pesquisa', cat: 'tecnologia', w: 3, h: 3, hp: 860, tempo: 18,
+      nome: 'Centro de Pesquisa', cat: 'tecnologia', w: 3, h: 3, hp: 860, blind: 1, tempo: 18,
       custo: { m: 180 }, energia: 5, visao: 7, req: { ed: 'central' },
       desc: 'Executa uma pesquisa por vez. Destruí-lo pausa a pesquisa em curso.'
     },
     extrator: {
-      nome: 'Bomba de petróleo', cat: 'tecnologia', w: 2, h: 2, hp: 640, tempo: 14,
+      nome: 'Bomba de petróleo', cat: 'tecnologia', w: 2, h: 2, hp: 640, blind: 1, tempo: 14,
       custo: { m: 150 }, energia: 3, visao: 5, sobre: 'petroleo', req: { tech: 2 },
       desc: 'Instalada sobre um afloramento de petróleo. Bombeia sozinha, sem operário.'
     },
     radar: {
-      nome: 'Radar', cat: 'tecnologia', w: 2, h: 2, hp: 540, tempo: 14,
+      nome: 'Radar', cat: 'tecnologia', w: 2, h: 2, hp: 540, blind: 1, tempo: 14,
       custo: { m: 140 }, energia: 3, visao: 17, req: { ed: 'pesquisa' },
       desc: 'Amplia a visão e antecipa a direção e a força do próximo ataque.'
     },
     muro: {
-      nome: 'Muro', cat: 'defesa', w: 1, h: 1, hp: 560, tempo: 2.5,
+      nome: 'Muro', cat: 'defesa', w: 1, h: 1, hp: 560, blind: 2, tempo: 2.5,
       custo: { m: 12 }, arrasto: true, muro: true, visao: 3,
       desc: 'Bloqueia tropas terrestres. Não impede voo nem fogo indireto.'
     },
     portao: {
-      nome: 'Portão', cat: 'defesa', w: 2, h: 1, hp: 660, tempo: 5,
+      nome: 'Portão', cat: 'defesa', w: 2, h: 1, hp: 660, blind: 2, tempo: 5,
       custo: { m: 40 }, portao: true, muro: true, visao: 4,
       desc: 'Abre para aliados e fecha quando um inimigo se aproxima.'
     },
@@ -735,37 +746,37 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
        Age of Empires — arrastar uma fila delas sairia mais barato que a
        Sentinela por célula coberta e mataria as outras torres. */
     torreMuralha: {
-      nome: 'Torre de muralha', cat: 'defesa', w: 1, h: 1, hp: 620, tempo: 6,
+      nome: 'Torre de muralha', cat: 'defesa', w: 1, h: 1, hp: 620, blind: 1, tempo: 6,
       custo: { m: 45 }, energia: 1, muro: true, papel: 'torre', visao: 7,
       arma: { dano: 9, cad: 0.7, alc: 6, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Encaixa na muralha e atira. Alcance curto: vale pela linha, não sozinha.'
     },
     bastiao: {
-      nome: 'Bastião', cat: 'defesa', w: 2, h: 2, hp: 980, tempo: 13,
+      nome: 'Bastião', cat: 'defesa', w: 2, h: 2, hp: 980, blind: 1, tempo: 13,
       custo: { m: 130 }, energia: 3, muro: true, papel: 'torre', visao: 9, req: { tech: 2 },
       arma: { dano: 21, cad: 0.8, alc: 8, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Ponto forte da muralha: a parede encaixa pelos quatro lados. Caro por célula.'
     },
     sentinela: {
-      nome: 'Sentinela', cat: 'defesa', w: 2, h: 2, hp: 560, tempo: 8,
+      nome: 'Sentinela', cat: 'defesa', w: 2, h: 2, hp: 560, blind: 1, tempo: 8,
       custo: { m: 80 }, energia: 2, papel: 'torre', visao: 9,
       arma: { dano: 14, cad: 0.55, alc: 7.5, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
       desc: 'Tiro rápido contra solo e ar. Boa cobertura geral, dano baixo por tiro.'
     },
     gelo: {
-      nome: 'Torre de Gelo', cat: 'defesa', w: 2, h: 2, hp: 520, tempo: 9,
+      nome: 'Torre de Gelo', cat: 'defesa', w: 2, h: 2, hp: 520, blind: 1, tempo: 9,
       custo: { m: 110 }, energia: 2, papel: 'torre', visao: 8, req: { tech: 2 },
       arma: { dano: 7, cad: 0.8, alc: 6.5, ar: false, solo: true, vel: 13, lentidao: 0.45, cor: '#9ff0ff' },
       desc: 'Desacelera alvos terrestres em 45%. Segura a pressão sobre os muros.'
     },
     artilharia: {
-      nome: 'Artilharia', cat: 'defesa', w: 2, h: 2, hp: 620, tempo: 12,
+      nome: 'Artilharia', cat: 'defesa', w: 2, h: 2, hp: 620, blind: 1, tempo: 12,
       custo: { m: 145 }, energia: 3, papel: 'torre', visao: 10, req: { tech: 2 },
       arma: { dano: 51, cad: 2.1, alc: 10, alcMin: 2.2, ar: false, solo: true, vel: 9, area: 1.7, cor: '#ffb457' },
       desc: 'Dano em área contra solo. Alcance mínimo: fica exposta de perto.'
     },
     plasma: {
-      nome: 'Torre de Plasma', cat: 'defesa', w: 2, h: 2, hp: 680, tempo: 14,
+      nome: 'Torre de Plasma', cat: 'defesa', w: 2, h: 2, hp: 680, blind: 1, tempo: 14,
       custo: { m: 190, c: 40 }, energia: 4, papel: 'torre', visao: 9, req: { tech: 3 },
       arma: { dano: 43, cad: 1.15, alc: 8.5, ar: true, solo: true, vel: 20, perfura: true, cor: '#d79bff' },
       desc: 'Ignora blindagem e atinge solo e ar. Exige tecnologia III e barris de petróleo.'
@@ -959,6 +970,17 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       efeito: '+1 de blindagem em toda tropa. Vale mais contra tiro fraco e repetido.' },
     { id: 'blindagem2', ramo: 'fortificacao', casa: 'quartel', nome: 'Placas compostas', custo: { m: 260, c: 40 }, tempo: 40, req: ['blindagem1'], tech: 2,
       efeito: '+1 de blindagem em toda tropa, somando 2 com o degrau anterior.' },
+
+    /* ALVENARIA é o Masonry do Age of Empires: melhora TODO prédio de uma vez,
+       inclusive os já construídos, e por isso salva o investimento em vez de
+       obrigar a demolir e refazer. Um degrau só, não três: a subtração com
+       piso de 12% já é forte, e mais que isso viraria a alavanca que faz
+       empilhar torre sustentar a campanha — que é justamente o que o
+       diagnóstico do projeto diz que não pode acontecer.
+       Mora na Torre de muralha, com o muro reforçado e o reparo: é a linha de
+       fortificação inteira num lugar só. */
+    { id: 'alvenaria', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Alvenaria reforçada', custo: { m: 200 }, tempo: 34, req: ['muroReforcado'],
+      efeito: '+1 de blindagem e +10% de integridade em TODA estrutura, inclusive as já construídas.' },
 
     { id: 'antiacido', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Resistência a ácido', custo: { m: 260, c: 40 }, tempo: 45, req: ['reparoEficiente'], tech: 3,
       efeito: 'Reduz pela metade o dano de Cuspidores e Asas corrosivas.' },
@@ -2420,6 +2442,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   Sim.prototype.hpMaximo = function (def, tipo) {
     var hp = def.hp;
     if (def.muro && this.jogador.pesquisas.muroReforcado) hp *= 1.6;
+    if (this.jogador.pesquisas.alvenaria) hp *= 1.1;
     return Math.round(hp);
   };
 
@@ -3453,20 +3476,25 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (pa.progresso < 1) return;
     this.jogador.pesquisas[pa.id] = true;
     if (pa.def.tech) this.jogador.tech = Math.max(this.jogador.tech, pa.def.tech);
-    if (pa.id === 'muroReforcado') this.reforcarMuros();
+    if (pa.id === 'muroReforcado' || pa.id === 'alvenaria') this.reforcarEstruturas();
     if (pa.id === 'formacao') this.reforcarTropas();
     this.aviso('Pesquisa concluída: ' + pa.def.nome, 'bom');
     this.emitir('pesquisaConcluida', { id: pa.id });
     this.jogador.pesquisaAtual = null;
   };
 
-  /* Pesquisas globais valem para o que já existe (página 12). */
-  S.reforcarMuros = function () {
+  /* Pesquisas globais valem para o que já existe (página 12).
+     A conta é sempre `hpMaximo`, e não um multiplicador escrito aqui: com duas
+     pesquisas mexendo em vida de prédio — muro reforçado e alvenaria — a versão
+     antiga (`def.hp * 1.6`) apagaria a outra ao ser aplicada depois. Uma fonte
+     só para o número, e a fração de dano é preservada para a pesquisa não
+     curar nem ferir ninguém. */
+  S.reforcarEstruturas = function () {
     for (var i = 0; i < this.listaEstruturas.length; i++) {
       var b = this.listaEstruturas[i];
-      if (!b.muro || b.morta) continue;
-      var frac = b.hp / b.hpMax;
-      b.hpMax = Math.round(b.def.hp * 1.6);
+      if (b.morta) continue;
+      var frac = b.hpMax > 0 ? b.hp / b.hpMax : 1;
+      b.hpMax = this.hpMaximo(b.def, b.tipo);
       b.hp = Math.round(b.hpMax * frac);
     }
   };
@@ -3814,13 +3842,17 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (!alvo || alvo.morta) return 0;
     opts = opts || {};
     var blind = (alvo.def && alvo.def.blind) || 0;
-    /* A blindagem pesquisada vale para TROPA NOSSA, não para estrutura: prédio
-       tem a linha dele (o muro reforçado), e somar aqui dobraria o efeito. É
-       a mesma divisão do Age of Empires, onde armadura de infantaria e
-       Masonry são pesquisas diferentes. */
-    if (alvo.lado !== 'inimigo' && !alvo.w) {
-      if (this.jogador.pesquisas.blindagem1) blind += 1;
-      if (this.jogador.pesquisas.blindagem2) blind += 1;
+    /* Duas linhas separadas, como no Age of Empires: armadura de infantaria e
+       Masonry são pesquisas diferentes e nunca se somam. Tropa nossa lê as
+       placas; prédio nosso lê a alvenaria. `alvo.w` é o que distingue os dois
+       — só estrutura tem largura. */
+    if (alvo.lado !== 'inimigo') {
+      if (alvo.w) {
+        if (this.jogador.pesquisas.alvenaria) blind += 1;
+      } else {
+        if (this.jogador.pesquisas.blindagem1) blind += 1;
+        if (this.jogador.pesquisas.blindagem2) blind += 1;
+      }
     }
     if (opts.metadeBlindagem) blind *= 0.5;
     if (!opts.perfura) dano = Math.max(dano * 0.12, dano - blind);

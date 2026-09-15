@@ -121,8 +121,12 @@ function completa(s) {
        lista, o simulador nunca compra a pesquisa nova e a medição de
        equilíbrio não enxerga a mudança — foi o que aconteceu na primeira
        rodada, que deu diferença zero em doze partidas. */
-    var ordem = ['precisao', 'blindagem1', 'tech2', 'carga', 'muroReforcado', 'formacao',
-      'penetracao', 'blindagem2', 'coleta', 'tech3', 'reparoEficiente'];
+    /* `alvenaria` entra logo depois de `muroReforcado`, que é o requisito dela:
+       sem estar na lista, o simulador nunca compra a pesquisa nova e a medição
+       de equilíbrio dá diferença zero — foi o que aconteceu com a linha de
+       blindagem de tropa na primeira rodada. */
+    var ordem = ['precisao', 'blindagem1', 'tech2', 'carga', 'muroReforcado', 'alvenaria',
+      'formacao', 'penetracao', 'blindagem2', 'coleta', 'tech3', 'reparoEficiente'];
     for (var i = 0; i < ordem.length; i++) if (s.pesquisar(ordem[i]).ok) return;
   }
   if (!s.reparoAuto.ativo && s.listaEstruturas.some(function (b) { return !b.morta && b.hp < b.hpMax * 0.75; })) { s.repararLinha(); return; }

@@ -315,6 +315,7 @@
   Sim.prototype.hpMaximo = function (def, tipo) {
     var hp = def.hp;
     if (def.muro && this.jogador.pesquisas.muroReforcado) hp *= 1.6;
+    if (this.jogador.pesquisas.alvenaria) hp *= 1.1;
     return Math.round(hp);
   };
 

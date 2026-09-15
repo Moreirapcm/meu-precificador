@@ -387,7 +387,7 @@ teste('Pesquisa concluída vale para o que já existe', function () {
   ok(m, 'não consegui construir o muro');
   var hpAntes = m.hpMax;
   sim.jogador.pesquisas.muroReforcado = true;
-  sim.reforcarMuros();
+  sim.reforcarEstruturas();
   ok(m.hpMax > hpAntes, 'muro já existente não foi reforçado');
 });
 
@@ -620,6 +620,42 @@ teste('Obra sobre ruína: encomendar de novo no mesmo ponto cancela', function (
   var res = sim.construir('muro', p.x, p.y);
   ok(res.ok && res.cancelada, 'a segunda encomenda não cancelou');
   igual(sim.obrasPendentes.length, 0, 'a obra continuou pendente:');
+});
+
+
+/* Item 7 do capítulo 11: prédio também subtrai blindagem, e a alvenaria melhora
+   o que JÁ está de pé — que é o ponto todo do Masonry do Age of Empires. */
+teste('Estrutura subtrai blindagem, e a alvenaria melhora o que já existe', function () {
+  var sim = partida();
+  sim.jogador.m = 4000;
+  var b = construirPerto(sim, 'sentinela', 4, 10);
+  ok(b, 'não consegui construir a torre');
+  concluir(b);
+  igual(b.def.blind, 1, 'a torre nasceu sem blindagem:');
+
+  /* tiro de 20 contra blindagem 1 tem de entrar como 19 */
+  var antes = b.hp;
+  sim.aplicarDano(b, 20, { lado: 'inimigo' });
+  perto(antes - b.hp, 19, 0.01, 'a blindagem base da estrutura não foi subtraída:');
+
+  /* a alvenaria soma +1 e vale para a torre que já está de pé */
+  var hpMaxAntes = b.hpMax, fracAntes = b.hp / b.hpMax;
+  sim.jogador.pesquisas.alvenaria = true;
+  sim.reforcarEstruturas();
+  perto(b.hpMax, Math.round(b.def.hp * 1.1), 1, 'a alvenaria não melhorou a torre já construída:');
+  perto(b.hp / b.hpMax, fracAntes, 0.01, 'a pesquisa curou ou feriu a torre:');
+  ok(b.hpMax > hpMaxAntes, 'a vida máxima não subiu');
+
+  var antes2 = b.hp;
+  sim.aplicarDano(b, 20, { lado: 'inimigo' });
+  perto(antes2 - b.hp, 18, 0.01, 'a alvenaria não somou ao degrau base:');
+
+  /* a linha de tropa NÃO se soma à de prédio */
+  sim.jogador.pesquisas.blindagem1 = true;
+  sim.jogador.pesquisas.blindagem2 = true;
+  var antes3 = b.hp;
+  sim.aplicarDano(b, 20, { lado: 'inimigo' });
+  perto(antes3 - b.hp, 18, 0.01, 'a blindagem de tropa vazou para a estrutura:');
 });
 
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
