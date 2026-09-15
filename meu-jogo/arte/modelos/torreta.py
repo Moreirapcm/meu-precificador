@@ -133,7 +133,7 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 mat_corpo = material("corpo", cor_corpo)
 mat_escuro = material("escuro", "#1b2228", metal=0.85, rugos=0.3)
 mat_acento = material("acento", "#e07a2a", metal=0.3, rugos=0.4)
-mat_base = material("base", "#4a555e", metal=0.25, rugos=0.8)
+mat_base = material("base", "#39434b", metal=0.25, rugos=0.8)
 mat_luz = material("luz", cor_det, metal=0.0, rugos=0.2, brilho=3.2)
 mat_luz_fraca = material("luzfraca", cor_det, metal=0.0, rugos=0.2, brilho=2.0)
 
@@ -143,47 +143,10 @@ def add(lista, mat):
     o.data.materials.append(mat)
     lista.append(o)
 
-# ------------------------------------------------------------------ PLATAFORMA
-# Octogonal: girada 45 graus é indistinguível de si mesma, então o quadro não
-# denuncia que só a torreta girou.
-bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.86, depth=0.26, location=(0, 0, 0.13))
-add(base, mat_base)
-bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.70, depth=0.34, location=(0, 0, 0.4))
-add(base, mat_base)
-# chapa de advertência numa faceta só: laranja com FUNÇÃO, e assimétrico.
-bpy.ops.mesh.primitive_cube_add(size=1, location=(-0.62, 0.3, 0.3))
-bpy.context.object.scale = (0.05, 0.3, 0.16)
-add(base, mat_acento)
-# ANTENA: sinal de detecção, e o elemento fixo que dá identidade aos 8 quadros.
-bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.035, depth=1.5, location=(-0.5, -0.42, 1.05))
-add(base, mat_escuro)
-bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.24, depth=0.03,
-                                    location=(-0.5, -0.42, 1.8), rotation=(math.radians(32), 0, 0))
-add(base, mat_base)
-
-# --------------------------------------------------------------------- PESCOÇO
-# A cintura da ampulheta. Escura de propósito: cavidade escura é o que faz o
-# ciano do anel parecer luz e não tinta.
-bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.34, depth=0.5, location=(0, 0, 0.82))
-add(topo, mat_escuro)
-bpy.ops.mesh.primitive_torus_add(major_radius=0.355, minor_radius=0.028, location=(0, 0, 0.9),
-                                 major_segments=16, minor_segments=8)
-add(topo, mat_luz)
-
-# --------------------------------------------------------------------- TORRETA
-bpy.ops.mesh.primitive_cube_add(size=1, location=(-0.05, 0, 1.32))
-c = bpy.context.object
-c.scale = (0.72, 0.62, 0.42)
-bpy.ops.object.modifier_add(type='BEVEL')
-c.modifiers["Bevel"].width = 0.11
-c.modifiers["Bevel"].segments = 1
-bpy.ops.object.modifier_apply(modifier="Bevel")
-c.data.materials.append(mat_corpo)
-topo.append(c)
-# CORTES DE VERDADE, por booleano. A primeira versão usava cubos escuros para
-# "simular" o corte — e cubo não corta, cubo cobre: a torreta virou um amontoado
-# de blocos pretos e a cor do corpo sumiu da peça inteira.
 def cortar(alvo, local, escala, rot=(0, 0, 0)):
+    """Corte de verdade, por booleano. Cubo escuro por cima NÃO corta: cobre —
+    e a peça vira um amontoado de blocos pretos, que foi o que aconteceu na
+    primeira tentativa."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=local, rotation=rot)
     faca = bpy.context.object
     faca.scale = escala
@@ -194,34 +157,193 @@ def cortar(alvo, local, escala, rot=(0, 0, 0)):
     bpy.ops.object.modifier_apply(modifier="corte")
     bpy.data.objects.remove(faca, do_unlink=True)
 
-# canto traseiro-superior cortado: assimetria dá direção lida na silhueta.
-cortar(c, (-0.78, 0, 1.66), (0.42, 0.7, 0.42), (0, math.radians(45), 0))
-# sulco único e grande: corte pequeno some na redução para 85px de tela.
-cortar(c, (-0.05, 0, 1.16), (0.8, 0.68, 0.055))
-# VISOR: a fenda emissiva na frente. É o "olho" e identifica a frente nos 8 quadros.
-bpy.ops.mesh.primitive_cube_add(size=1, location=(0.64, 0, 1.4))
-bpy.context.object.scale = (0.05, 0.38, 0.1)
-add(topo, mat_luz)
+def rebite(lista, x, y, z, r=0.032, h=0.03, mat=None):
+    """Rebite é detalhe de SILHUETA INTERNA: sozinho some, em fila lê como chapa
+    aparafusada. Por isso eles sempre vêm em linha, nunca soltos."""
+    bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=r, depth=h, location=(x, y, z))
+    add(lista, mat)
 
-# ------------------------------------------------------- ARMA EM DUAS CAMADAS
-# Em cima, inclinado: bloco de tubos = "atira no ar".
-bpy.ops.mesh.primitive_cube_add(size=1, location=(0.5, 0, 1.78), rotation=(0, math.radians(-35), 0))
-bpy.context.object.scale = (0.5, 0.42, 0.24)
+# ============================================================== PLATAFORMA
+# Dois degraus octogonais, o de baixo mais largo. Escura: base clara puxa o olho
+# para o chão, e quem tem de ler é a arma.
+bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.80, depth=0.17, location=(0, 0, 0.085))
+piso = bpy.context.object
+add(base, mat_base)
+bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.62, depth=0.24, location=(0, 0, 0.29))
+degrau = bpy.context.object
+add(base, mat_base)
+
+# JUNTAS DO PISO: quatro sulcos rasos cruzando o degrau de cima. É o que faz o
+# concreto parecer montado em placas em vez de fundido num bloco só.
+for ang in (0, math.pi / 2):
+    cortar(degrau, (0, 0, 0.41), (1.6, 0.03, 0.05), (0, 0, ang))
+cortar(piso, (0, 0, 0.165), (2.0, 0.03, 0.04), (0, 0, math.radians(45)))
+
+# REBITES na borda do degrau, um por face do octógono.
+for k in range(8):
+    a = math.radians(22.5 + 45 * k)
+    rebite(base, math.cos(a) * 0.73, math.sin(a) * 0.73, 0.185, 0.038, 0.03, mat_escuro)
+
+# ESCOTILHA de acesso, atrás: diz que alguém entra ali para dar manutenção.
+bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.2, depth=0.04, location=(-0.44, 0.26, 0.42))
+add(base, mat_escuro)
+rebite(base, -0.44, 0.26, 0.45, 0.045, 0.03, mat_corpo)
+
+# CAIXA DE MUNIÇÃO encostada na plataforma, com tampa e alça. Peça assimétrica:
+# é ela que dá "lado" à base nos oito quadros, junto com a antena.
+bpy.ops.mesh.primitive_cube_add(size=1, location=(-0.66, -0.46, 0.28))
+caixa = bpy.context.object
+caixa.scale = (0.3, 0.44, 0.24)
+bpy.ops.object.modifier_add(type='BEVEL')
+caixa.modifiers["Bevel"].width = 0.03
+caixa.modifiers["Bevel"].segments = 1
+bpy.ops.object.modifier_apply(modifier="Bevel")
+add(base, mat_escuro)
+bpy.ops.mesh.primitive_cube_add(size=1, location=(-0.66, -0.46, 0.41))
+bpy.context.object.scale = (0.32, 0.46, 0.03)
+add(base, mat_corpo)
+
+# CHAPA DE ADVERTÊNCIA: laranja com função, numa faceta só, assimétrica.
+bpy.ops.mesh.primitive_cube_add(size=1, location=(0.5, 0.45, 0.28))
+bpy.context.object.scale = (0.05, 0.26, 0.14)
+add(base, mat_acento)
+
+# ANTENA: sinal de detecção e elemento fixo que dá identidade aos 8 quadros.
+bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=0.032, depth=1.45, location=(-0.5, -0.42, 1.05))
+add(base, mat_escuro)
+# treliça: dois anéis na haste, que é o que separa "antena" de "vareta"
+for z in (0.72, 1.08):
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.07, minor_radius=0.014,
+                                     location=(-0.5, -0.42, z), major_segments=8, minor_segments=5)
+    add(base, mat_corpo)
+bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.23, depth=0.028,
+                                    location=(-0.5, -0.42, 1.78), rotation=(math.radians(32), 0, 0))
+prato = bpy.context.object
+add(base, mat_base)
+cortar(prato, (-0.5, -0.42, 1.78), (0.07, 0.5, 0.5), (math.radians(32), 0, 0))
+bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=0.035, depth=0.12,
+                                    location=(-0.5, -0.38, 1.72), rotation=(math.radians(32), 0, 0))
+add(base, mat_luz_fraca)
+
+# CABOS: dois vindo da caixa para o pescoço. Cabo é o detalhe mais barato que
+# existe para dizer "isto é alimentado" — e quebra a linha reta da base.
+for dy in (-0.1, 0.06):
+    bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=0.038, depth=0.62,
+                                        location=(-0.44, -0.4 + dy, 0.6),
+                                        rotation=(0, math.radians(58), 0))
+    add(base, mat_escuro)
+
+# ================================================================= PESCOÇO
+# A cintura da ampulheta, e o rolamento que explica o giro.
+bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.31, depth=0.42, location=(0, 0, 0.62))
 add(topo, mat_escuro)
-for dy, dz in ((-0.13, 0.08), (0, 0.08), (0.13, 0.08), (-0.13, -0.08), (0, -0.08), (0.13, -0.08)):
+# rolamento: dois anéis de raio diferente, um deles emissivo
+bpy.ops.mesh.primitive_torus_add(major_radius=0.355, minor_radius=0.026, location=(0, 0, 0.72),
+                                 major_segments=16, minor_segments=8)
+add(topo, mat_luz)
+bpy.ops.mesh.primitive_torus_add(major_radius=0.35, minor_radius=0.03, location=(0, 0, 0.5),
+                                 major_segments=16, minor_segments=6)
+add(topo, mat_corpo)
+# PISTÕES: dois cilindros inclinados ligando o pescoço à torreta. É o detalhe
+# que faz a peça parecer que se move, mesmo parada.
+for lado in (-1, 1):
     bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.05, depth=0.5,
-                                        location=(0.74 + dz * 0.7, dy, 1.9 + dz),
+                                        location=(0.2, 0.3 * lado, 1.02),
+                                        rotation=(math.radians(20 * lado), math.radians(-28), 0))
+    add(topo, mat_escuro)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.068, depth=0.2,
+                                        location=(0.09, 0.26 * lado, 0.92),
+                                        rotation=(math.radians(20 * lado), math.radians(-28), 0))
+    add(topo, mat_corpo)
+
+# ================================================================= TORRETA
+bpy.ops.mesh.primitive_cube_add(size=1, location=(-0.05, 0, 1.3))
+c = bpy.context.object
+c.scale = (0.78, 0.66, 0.46)
+bpy.ops.object.modifier_add(type='BEVEL')
+c.modifiers["Bevel"].width = 0.09
+c.modifiers["Bevel"].segments = 1
+bpy.ops.object.modifier_apply(modifier="Bevel")
+c.data.materials.append(mat_corpo)
+topo.append(c)
+# canto traseiro-superior cortado: assimetria dá direção lida na silhueta
+cortar(c, (-0.76, 0, 1.64), (0.42, 0.7, 0.42), (0, math.radians(45), 0))
+# sulco horizontal, grande: corte pequeno some na redução para 85px de tela
+cortar(c, (-0.05, 0, 1.16), (0.8, 0.68, 0.05))
+# GRADE DE VENTILAÇÃO na lateral esquerda: quatro ranhuras, que em fila leem
+# como respiro de máquina. Uma sozinha seria sujeira.
+for k in range(4):
+    cortar(c, (-0.3 + k * 0.16, -0.31, 1.36), (0.07, 0.1, 0.19))
+# chapa aparafusada na lateral direita
+bpy.ops.mesh.primitive_cube_add(size=1, location=(-0.16, 0.31, 1.34))
+bpy.context.object.scale = (0.44, 0.03, 0.26)
+add(topo, mat_escuro)
+for k in range(3):
+    rebite(topo, -0.34 + k * 0.18, 0.33, 1.34, 0.028, 0.03, mat_corpo)
+# SENSOR no topo, com cúpula: o "olho" alto que aparece na silhueta
+bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.12, depth=0.1, location=(-0.24, 0, 1.56))
+add(topo, mat_escuro)
+bpy.ops.mesh.primitive_uv_sphere_add(segments=10, ring_count=6, radius=0.09, location=(-0.24, 0, 1.62))
+add(topo, mat_luz_fraca)
+# VISOR: a fenda emissiva na frente, o que identifica a frente nos 8 quadros
+bpy.ops.mesh.primitive_cube_add(size=1, location=(0.62, 0, 1.38))
+bpy.context.object.scale = (0.05, 0.36, 0.09)
+add(topo, mat_luz)
+# moldura do visor, para o brilho nascer de dentro de uma cavidade escura
+bpy.ops.mesh.primitive_cube_add(size=1, location=(0.6, 0, 1.38))
+bpy.context.object.scale = (0.04, 0.44, 0.15)
+add(topo, mat_escuro)
+
+# ==================================================== ARMA EM DUAS CAMADAS
+# Em cima, inclinado: bloco de tubos = "atira no ar".
+bpy.ops.mesh.primitive_cube_add(size=1, location=(0.48, 0, 1.76), rotation=(0, math.radians(-35), 0))
+bloco = bpy.context.object
+bloco.scale = (0.48, 0.44, 0.24)
+bpy.ops.object.modifier_add(type='BEVEL')
+bloco.modifiers["Bevel"].width = 0.035
+bloco.modifiers["Bevel"].segments = 1
+bpy.ops.object.modifier_apply(modifier="Bevel")
+bloco.data.materials.append(mat_escuro)
+topo.append(bloco)
+for dy, dz in ((-0.135, 0.085), (0, 0.085), (0.135, 0.085),
+               (-0.135, -0.085), (0, -0.085), (0.135, -0.085)):
+    # o tubo E a boca: sem a boca mais clara o bloco lê como caixa, não como
+    # lançador carregado
+    bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.048, depth=0.46,
+                                        location=(0.72 + dz * 0.7, dy, 1.88 + dz),
                                         rotation=(0, math.radians(55), 0))
     add(topo, mat_corpo)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.052, depth=0.05,
+                                        location=(0.85 + dz * 0.7, dy, 1.98 + dz),
+                                        rotation=(0, math.radians(55), 0))
+    add(topo, mat_escuro)
+# trilho de elevação do bloco, ligando ele ao corpo
+for lado in (-1, 1):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.3, 0.26 * lado, 1.62),
+                                    rotation=(0, math.radians(-35), 0))
+    bpy.context.object.scale = (0.3, 0.035, 0.1)
+    add(topo, mat_corpo)
+
 # Embaixo, horizontal: cano curto e grosso = "atira no chão".
-bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.105, depth=0.95,
-                                    location=(0.62, 0, 1.2), rotation=(0, math.pi / 2, 0))
+bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.095, depth=0.95,
+                                    location=(0.62, 0, 1.16), rotation=(0, math.pi / 2, 0))
 add(topo, mat_escuro)
-bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.13, depth=0.12,
-                                    location=(1.04, 0, 1.2), rotation=(0, math.pi / 2, 0))
+# CAMISA DE REFRIGERAÇÃO: três anéis no cano. É o detalhe que diz "arma de
+# repetição" — cano liso lê como tubo.
+for dx in (0.34, 0.5, 0.66):
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.11, minor_radius=0.022,
+                                     location=(dx, 0, 1.16), rotation=(0, math.pi / 2, 0),
+                                     major_segments=10, minor_segments=5)
+    add(topo, mat_corpo)
+# freio de boca, com os dois rasgos laterais
+bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.125, depth=0.16,
+                                    location=(1.02, 0, 1.16), rotation=(0, math.pi / 2, 0))
+freio = bpy.context.object
 add(topo, mat_corpo)
-bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.055, depth=0.04,
-                                    location=(1.1, 0, 1.2), rotation=(0, math.pi / 2, 0))
+for lado in (-1, 1):
+    cortar(freio, (1.02, 0.12 * lado, 1.16), (0.1, 0.1, 0.06))
+bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.05, depth=0.03,
+                                    location=(1.1, 0, 1.16), rotation=(0, math.pi / 2, 0))
 add(topo, mat_luz_fraca)
 
 def juntar(lista):
@@ -263,11 +385,11 @@ o_pre.rotation_euler = (math.radians(62), 0, math.radians(35))
 cena = bpy.context.scene
 cena.render.engine = 'BLENDER_EEVEE'
 cena.render.film_transparent = True
-cena.render.resolution_x = 384
-cena.render.resolution_y = 384
+cena.render.resolution_x = 760
+cena.render.resolution_y = 760
 cena.render.image_settings.file_format = 'PNG'
 cena.render.image_settings.color_mode = 'RGBA'
-cena.eevee.taa_render_samples = 64
+cena.eevee.taa_render_samples = 96
 # O padrão do Blender 4.0 é AgX, que tonemapeia e dessatura TODA cor escolhida —
 # é a causa número um do aspecto de plástico, e faz ajustar cor virar chute.
 cena.view_settings.view_transform = 'Standard'
