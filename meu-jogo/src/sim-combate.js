@@ -1081,6 +1081,7 @@
     this.onda.num = num;
     this.onda.estado = 'ataque';
     this.onda.anunciada = false;
+    this.onda.desde = this.t;
     var lista = this.montarOnda(num);
     var entradas = this.world.entradas;
     var rand = U.rng(this.setor.semente + num * 131);
@@ -1131,13 +1132,23 @@
     var vivos = 0;
     for (var k = 0; k < this.unidades.length; k++) if (this.unidades[k].lado === 'inimigo' && !this.unidades[k].morta) vivos++;
     o.vivos = vivos;
-    if (vivos === 0 && (!this.filaSpawn || !this.filaSpawn.length)) {
-      this.emitir('ondaVencida', { num: o.num });
-      if (o.num >= o.total) { this.verificarVitoria(true); return; }
-      o.estado = 'preparo';
-      o.tempo = R.intervaloOnda;
+    var limpo = vivos === 0 && (!this.filaSpawn || !this.filaSpawn.length);
+    /* O teto só conta depois que a fila esvaziou: onda grande demora a entrar
+       no mapa, e cronometrar quem ainda não nasceu puniria o tamanho da onda. */
+    var estourou = !limpo && (!this.filaSpawn || !this.filaSpawn.length) &&
+      o.desde != null && this.t - o.desde > R.tetoOnda;
+    if (!limpo && !estourou) return;
+    if (limpo) this.emitir('ondaVencida', { num: o.num });
+    if (o.num >= o.total) { this.verificarVitoria(true); return; }
+    o.estado = 'preparo';
+    o.tempo = R.intervaloOnda;
+    if (limpo) {
       this.jogador.m += 40 + o.num * 12;
       this.aviso('Setor limpo. Próximo ataque em ' + R.intervaloOnda + 's. (+' + (40 + o.num * 12) + ' minerais)', 'bom');
+    } else {
+      /* Sem prêmio: o setor não foi limpo. O aviso é o que o jogador precisa
+         ler — sobrou inimigo E vem mais. */
+      this.aviso('O setor não foi limpo: ' + vivos + ' invasor(es) continuam soltos. Próximo ataque em ' + R.intervaloOnda + 's.', 'atencao');
     }
   };
 

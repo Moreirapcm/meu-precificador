@@ -1,4 +1,16 @@
-/* Simulação sem interface: uma estratégia simples joga sozinha e mede o resultado. */
+/* Simulação sem interface: uma estratégia simples joga sozinha e mede o resultado.
+
+   PADRÃO DE REFERÊNCIA (15/09/2026), depois de o medidor passar a enxergar a
+   árvore de pesquisa: 2 vitórias e 10 derrotas, nenhum jogo em "jogando".
+   Manaus vence nas duas estratégias — é o setor de entrada, e vencer lá com
+   torre é aceitável. O Rio só vence com a linha completa. E em nenhum setor a
+   estratégia "só torres" chega mais longe que a linha completa, que é a
+   invariante do projeto: empilhar torre não sustenta a campanha.
+
+   Ao mexer aqui, lembre que este arquivo não é teste: é INSTRUMENTO. Já esteve
+   cego três vezes — não construía o Centro de Pesquisa, não comprava a
+   tecnologia II, não tinha barril nenhum — e cada vez aprovou ou reprovou uma
+   mudança pelo motivo errado. */
 global.window = global;
 ['util', 'data', 'world', 'path', 'geo', 'sim', 'sim-unidades', 'sim-combate']
   .forEach(function (m) { require('../src/' + m + '.js'); });
@@ -162,7 +174,22 @@ function completa(s) {
      A reserva é o preço da PRÓXIMA da fila, guardado antes de qualquer gasto
      discricionário. Não trava: a renda continua entrando, e o que ele deixa de
      construir é o excedente, não o essencial. */
-  var reserva = reservaDePesquisa(s, lab);
+  /* Sem laboratório a reserva era ZERO, e aí o laboratório nunca saía: o saldo
+     era consumido por torre e tropa antes de chegar aos 180 dele. Ciclo
+     fechado — sem lab não há reserva, sem reserva não há lab. Medido no Rio:
+     `pesq 0` e `tech 1` do primeiro ao último segundo, nas nove ondas.
+     Enquanto não existe, o que se guarda é o preço DELE. */
+  var custoLab = UF.DATA.ESTRUTURAS.pesquisa.custo.m;
+  /* ...mas SÓ COM A DEFESA DA ONDA JÁ DE PÉ. Guardando sempre, o simulado da
+     linha completa chegava às ondas com 1 a 5 torres contra as 10 a 12 do "só
+     torres", e terminava PIOR que ele — o que inverte o diagnóstico do projeto
+     e não é modelo de jogador nenhum. Ninguém deixa de erguer torre para juntar
+     uma pesquisa; pesquisa-se com o que sobra depois da linha montada.
+     Duas medições erradas antes desta: reservar desde a onda 1 estrangulava a
+     defesa inicial, e reservar a partir de quatro torres estrangulava o resto. */
+  var torresDesejadas = Math.min(12, 3 + onda * 1.5);
+  var defesaEmDia = nTorres >= torresDesejadas;
+  var reserva = !defesaEmDia ? 0 : (lab ? reservaDePesquisa(s, lab) : custoLab);
   var mLivre = m - reserva;
 
   if (onda >= 1 && !s.perimetroFeito && m > 260) { erguerPerimetro(s, 7); return; }
@@ -189,7 +216,6 @@ function completa(s) {
   }
 
   /* Defesa mínima antes de cada onda: uma torre a mais por onda, até oito. */
-  var torresDesejadas = Math.min(12, 3 + onda * 1.5);
   if (nTorres < torresDesejadas && emObra < 3 && mLivre > 140) {
     /* O BASTIÃO entrou na roda porque ele é o único prédio com aura, e o que o
        simulador nunca constrói o simulador nunca mede. */
@@ -209,7 +235,7 @@ function completa(s) {
      Medido: `pesquisas: (vazio)`, `max tech 1`, nas doze partidas.
      Toda medição de pesquisa feita com este arquivo era cega, inclusive a da
      linha de blindagem e a da alvenaria. */
-  if (!lab && m > 300 && onda >= 1) { construirPerto(s, 'pesquisa', 4, 9); return; }
+  if (!lab && m >= custoLab && onda >= 1) { construirPerto(s, 'pesquisa', 4, 9); return; }
   if (popLivre < 4 && mLivre > 150) { construirPerto(s, 'alojamento', 3, 8); return; }
   if (quartel && nSold < 4 + onda * 2 && mLivre > 140) {
     if (!quartel.rally && s.central) quartel.rally = { x: s.central.x + s.central.w + 2, y: s.central.y + 2 };

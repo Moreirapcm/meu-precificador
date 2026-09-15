@@ -904,5 +904,33 @@ teste('Precisão vale para tropa, Pontaria vale para torre, e uma não cobre a o
   ok(dTorre.custo.m > dTropa.custo.m, 'a pesquisa de torre não é mais cara que a de tropa');
 });
 
+
+/* Uma onda que não fecha travava a campanha para sempre. */
+teste('Onda com invasor imortal avança pelo teto de tempo, sem prêmio', function () {
+  var sim = partida();
+  sim.onda.estado = 'preparo';
+  sim.onda.tempo = 0;
+  sim.atualizarOnda(0.01);
+  igual(sim.onda.estado, 'ataque', 'a onda não disparou:');
+  var num = sim.onda.num;
+
+  /* um invasor que ninguém alcança: fila vazia, ele vivo, relógio correndo */
+  sim.filaSpawn = [];
+  var bicho = sim.criarUnidade('predador', 2.5, 2.5, 'inimigo');
+  bicho.hp = 99999; bicho.hpMax = 99999;
+
+  var mAntes = sim.jogador.m;
+  sim.atualizarOnda(0.01);
+  igual(sim.onda.estado, 'ataque', 'avançou antes do teto:');
+
+  /* passa do teto */
+  sim.t = sim.onda.desde + D.REGRAS.tetoOnda + 1;
+  sim.atualizarOnda(0.01);
+  igual(sim.onda.estado, 'preparo', 'a onda não avançou depois do teto:');
+  igual(sim.onda.num, num, 'o número da onda mudou sozinho:');
+  igual(sim.jogador.m, mAntes, 'pagou o prêmio de setor limpo sem ter limpado:');
+  ok(!bicho.morta, 'o invasor sumiu em vez de continuar solto');
+});
+
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
 process.exit(falhou ? 1 : 0);

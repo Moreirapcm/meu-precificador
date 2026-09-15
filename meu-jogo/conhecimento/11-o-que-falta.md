@@ -88,6 +88,25 @@ item. A tabela abaixo é só o que **sobrou**.
 
 ---
 
+## Empate eterno: a onda que nunca fechava (achado de 15/09/2026)
+
+Investigando por que o Rio perdia, o diário de uma partida mostrou o Marginal
+Tietê **parado na onda 2 de 11 depois de 45 minutos**, com a Central intacta.
+Causa: `atualizarOnda` só avançava com ZERO invasores vivos, e três Predadores
+mordiam a Central no mesmo ritmo em que o reparo automático a consertava.
+Empate perfeito, para sempre — e não era defeito do simulador: a mesma coisa
+travaria a campanha de um jogador de verdade.
+
+Consertado com `REGRAS.tetoOnda`: passados quatro minutos de ataque com a fila
+de spawn vazia, o setor segue. Os sobreviventes continuam soltos, não há prêmio
+de "setor limpo", e a próxima onda é anunciada. É o que They Are Billions e
+Kingdom Rush fazem — a onda vem no relógio, não na permissão do jogador.
+
+E a fragilidade do Rio tinha outra causa, esta no instrumento: o jogador
+simulado **nunca construía o Centro de Pesquisa** naquele setor (`pesq 0`,
+`tech 1` do primeiro ao último segundo). Com o laboratório garantido, o Rio
+passa a vencer com 14 pesquisas e tecnologia 3.
+
 ## O defeito medido, em detalhe
 
 É a linha 1 da tabela e merece ser dita fora dela, porque é a única coisa nesta

@@ -1140,6 +1140,16 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     primeiroAtaque: 90,
     avisoAtaque: 20,
     intervaloOnda: 62,
+    /* TETO DA ONDA. A onda só avançava com ZERO invasores vivos, e um único
+       bicho que não morre trava a campanha PARA SEMPRE — não só a medição.
+       Medido no Marginal Tietê: três Predadores mordendo a Central, o reparo
+       automático acompanhando o dano, e a partida parada na onda 2 de 11
+       depois de 45 minutos, com a Central intacta. Empate eterno.
+       Passados quatro minutos de ataque, o setor segue: os sobreviventes
+       continuam lá e a próxima onda é anunciada. É o que os jogos de defesa
+       fazem — em They Are Billions e Kingdom Rush a onda vem no relógio, não
+       na permissão do jogador. */
+    tetoOnda: 240,
     energiaMax: 100,
     energiaRegen: 2.4,
     custoBombardeio: 50,
@@ -4764,6 +4774,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.onda.num = num;
     this.onda.estado = 'ataque';
     this.onda.anunciada = false;
+    this.onda.desde = this.t;
     var lista = this.montarOnda(num);
     var entradas = this.world.entradas;
     var rand = U.rng(this.setor.semente + num * 131);
@@ -4814,13 +4825,23 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var vivos = 0;
     for (var k = 0; k < this.unidades.length; k++) if (this.unidades[k].lado === 'inimigo' && !this.unidades[k].morta) vivos++;
     o.vivos = vivos;
-    if (vivos === 0 && (!this.filaSpawn || !this.filaSpawn.length)) {
-      this.emitir('ondaVencida', { num: o.num });
-      if (o.num >= o.total) { this.verificarVitoria(true); return; }
-      o.estado = 'preparo';
-      o.tempo = R.intervaloOnda;
+    var limpo = vivos === 0 && (!this.filaSpawn || !this.filaSpawn.length);
+    /* O teto só conta depois que a fila esvaziou: onda grande demora a entrar
+       no mapa, e cronometrar quem ainda não nasceu puniria o tamanho da onda. */
+    var estourou = !limpo && (!this.filaSpawn || !this.filaSpawn.length) &&
+      o.desde != null && this.t - o.desde > R.tetoOnda;
+    if (!limpo && !estourou) return;
+    if (limpo) this.emitir('ondaVencida', { num: o.num });
+    if (o.num >= o.total) { this.verificarVitoria(true); return; }
+    o.estado = 'preparo';
+    o.tempo = R.intervaloOnda;
+    if (limpo) {
       this.jogador.m += 40 + o.num * 12;
       this.aviso('Setor limpo. Próximo ataque em ' + R.intervaloOnda + 's. (+' + (40 + o.num * 12) + ' minerais)', 'bom');
+    } else {
+      /* Sem prêmio: o setor não foi limpo. O aviso é o que o jogador precisa
+         ler — sobrou inimigo E vem mais. */
+      this.aviso('O setor não foi limpo: ' + vivos + ' invasor(es) continuam soltos. Próximo ataque em ' + R.intervaloOnda + 's.', 'atencao');
     }
   };
 

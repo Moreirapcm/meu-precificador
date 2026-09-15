@@ -503,6 +503,16 @@
     primeiroAtaque: 90,
     avisoAtaque: 20,
     intervaloOnda: 62,
+    /* TETO DA ONDA. A onda só avançava com ZERO invasores vivos, e um único
+       bicho que não morre trava a campanha PARA SEMPRE — não só a medição.
+       Medido no Marginal Tietê: três Predadores mordendo a Central, o reparo
+       automático acompanhando o dano, e a partida parada na onda 2 de 11
+       depois de 45 minutos, com a Central intacta. Empate eterno.
+       Passados quatro minutos de ataque, o setor segue: os sobreviventes
+       continuam lá e a próxima onda é anunciada. É o que os jogos de defesa
+       fazem — em They Are Billions e Kingdom Rush a onda vem no relógio, não
+       na permissão do jogador. */
+    tetoOnda: 240,
     energiaMax: 100,
     energiaRegen: 2.4,
     custoBombardeio: 50,
