@@ -932,5 +932,38 @@ teste('Onda com invasor imortal avança pelo teto de tempo, sem prêmio', functi
   ok(!bicho.morta, 'o invasor sumiu em vez de continuar solto');
 });
 
+
+/* Cada arma com a sua identidade: bala viaja, feixe acerta na hora. */
+teste('Feixe do Plasma acerta na hora; bala da Sentinela viaja', function () {
+  var sim = partida();
+  sim.jogador.m = 9000; sim.jogador.c = 400; sim.jogador.tech = 3;
+  var alvo = sim.criarUnidade('corredor', sim.central.x + 3.5, sim.central.y + 1.5, 'inimigo');
+
+  var plasma = { lado: 'aliado', x: sim.central.x, y: sim.central.y, w: 2, h: 2,
+    def: D.ESTRUTURAS.plasma, recarga: 0 };
+  var sent = { lado: 'aliado', x: sim.central.x, y: sim.central.y, w: 2, h: 2,
+    def: D.ESTRUTURAS.sentinela, recarga: 0 };
+
+  ok(D.ESTRUTURAS.plasma.arma.feixe, 'o plasma não é feixe');
+  ok(!D.ESTRUTURAS.sentinela.arma.feixe, 'a sentinela virou feixe');
+
+  /* FEIXE: sem projétil, e a vida do alvo cai no mesmo instante */
+  sim.projeteis.length = 0;
+  var hp0 = alvo.hp;
+  sim.atirar(plasma, alvo, plasma.def.arma, 0);
+  igual(sim.projeteis.length, 0, 'o feixe criou projétil:');
+  ok(alvo.hp < hp0, 'o feixe não causou dano na hora');
+
+  /* BALA: cria projétil e NÃO tira vida antes de chegar */
+  var hp1 = alvo.hp;
+  sim.atirar(sent, alvo, sent.def.arma, 0);
+  igual(sim.projeteis.length, 1, 'a bala não virou projétil:');
+  igual(alvo.hp, hp1, 'a bala tirou vida antes de chegar:');
+
+  /* e a cor separa as duas famílias */
+  igual(D.ESTRUTURAS.sentinela.arma.cor, '#ffc061', 'a sentinela não é âmbar:');
+  igual(D.ESTRUTURAS.plasma.arma.cor, '#d79bff', 'o plasma não é roxo:');
+});
+
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
 process.exit(falhou ? 1 : 0);

@@ -125,13 +125,13 @@
     torreMuralha: {
       nome: 'Torre de muralha', cat: 'defesa', w: 1, h: 1, hp: 620, blind: 1, guarnicao: 2, tempo: 6,
       custo: { m: 45 }, energia: 1, muro: true, papel: 'torre', visao: 7,
-      arma: { dano: 9, cad: 0.7, alc: 6, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
+      arma: { dano: 9, cad: 0.7, alc: 6, ar: true, solo: true, vel: 17, cor: '#ffc061' },
       desc: 'Encaixa na muralha e atira. Alcance curto: vale pela linha, não sozinha.'
     },
     bastiao: {
       nome: 'Bastião', cat: 'defesa', w: 2, h: 2, hp: 980, blind: 1, guarnicao: 5, tempo: 13,
       custo: { m: 130 }, energia: 3, muro: true, papel: 'torre', visao: 9, req: { tech: 2 },
-      arma: { dano: 21, cad: 0.8, alc: 8, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
+      arma: { dano: 21, cad: 0.8, alc: 8, ar: true, solo: true, vel: 17, cor: '#ffc061' },
       /* A mesma aura, fixa no terreno: é o que dá ao Bastião um papel que a
          Sentinela não tem além de atirar mais forte — ele é o ponto da linha
          onde vale a pena a tropa ficar. */
@@ -141,7 +141,7 @@
     sentinela: {
       nome: 'Sentinela', cat: 'defesa', w: 2, h: 2, hp: 560, blind: 1, guarnicao: 4, tempo: 8,
       custo: { m: 80 }, energia: 2, papel: 'torre', visao: 9,
-      arma: { dano: 14, cad: 0.55, alc: 7.5, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
+      arma: { dano: 14, cad: 0.55, alc: 7.5, ar: true, solo: true, vel: 17, cor: '#ffc061' },
       desc: 'Tiro rápido contra solo e ar. Boa cobertura geral, dano baixo por tiro.'
     },
     gelo: {
@@ -159,7 +159,7 @@
     plasma: {
       nome: 'Torre de Plasma', cat: 'defesa', w: 2, h: 2, hp: 680, blind: 1, guarnicao: 4, tempo: 14,
       custo: { m: 190, c: 40 }, energia: 4, papel: 'torre', visao: 9, req: { tech: 3 },
-      arma: { dano: 43, cad: 1.15, alc: 8.5, ar: true, solo: true, vel: 20, perfura: true, cor: '#d79bff' },
+      arma: { dano: 43, cad: 1.15, alc: 8.5, ar: true, solo: true, feixe: true, perfura: true, cor: '#d79bff' },
       desc: 'Ignora blindagem e atinge solo e ar. Exige tecnologia III e barris de petróleo.'
     }
   };

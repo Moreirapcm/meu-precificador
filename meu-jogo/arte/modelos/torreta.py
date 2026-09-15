@@ -9,9 +9,14 @@
 # exatamente o que a geração por IA não faz, porque ela muda a POSE em vez de
 # mover a câmera.
 #
-# A projeção é a NOSSA: 2:1, ou seja, elevação de atan(1/2) = 26,565 graus, com
-# câmera ortográfica. A luz vem da DIREITA, que é o lado medido nas 110 peças de
-# arte que já existem.
+# A projeção é a NOSSA: 2:1. A elevação da câmera é asin(1/2) = 30 graus, e NÃO
+# atan(1/2) = 26,565 — este segundo é o ângulo que a aresta do losango faz na
+# TELA, não o da câmera. Confundir os dois custa 11% de achatamento: medido,
+# 26,565 devolve um losango 2,22:1 e 30 devolve 1,99:1.
+#
+# A luz vem da DIREITA e da FRENTE. Medido também: com o azimute negativo que
+# este arquivo usava, a chave entrava por TRÁS — contraluz — e a peça inteira
+# ficava escura; só o sinal trocado levou a luminância média de 0,177 para 0,263.
 #
 # A FORMA segue o levantamento dos clássicos (Photon Cannon e Missile Turret do
 # StarCraft, Prism Tower e Flak Cannon do Red Alert 2, Supreme Commander):
@@ -61,7 +66,7 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 mat_corpo = material("corpo", cor_corpo)
 mat_escuro = material("escuro", "#1b2228", metal=0.85, rugos=0.3)
 mat_acento = material("acento", "#e07a2a", metal=0.3, rugos=0.4)
-mat_base = material("base", "#3a454d", metal=0.25, rugos=0.75)
+mat_base = material("base", "#2f3940", metal=0.25, rugos=0.8)
 mat_luz = material("luz", cor_det, metal=0.0, rugos=0.2, brilho=3.2)
 mat_luz_fraca = material("luzfraca", cor_det, metal=0.0, rugos=0.2, brilho=2.0)
 
@@ -163,7 +168,7 @@ def juntar(lista):
 obj_base = juntar(base)
 obj_topo = juntar(topo)
 
-elev = math.atan(0.5)
+elev = math.asin(0.5)
 dist = 9.0
 cam_data = bpy.data.cameras.new("cam")
 cam_data.type = 'ORTHO'
@@ -175,18 +180,18 @@ cam.rotation_euler = (math.pi / 2 - elev, 0, math.pi / 2)
 bpy.context.scene.camera = cam
 
 sol = bpy.data.lights.new("sol", type='SUN')
-sol.energy = 5.4
+sol.energy = 3.4
 sol.angle = 0.35
 o_sol = bpy.data.objects.new("sol", sol)
 bpy.context.collection.objects.link(o_sol)
-o_sol.rotation_euler = (math.radians(52), 0, math.radians(-125))
+o_sol.rotation_euler = (math.radians(50), 0, math.radians(125))
 
 preench = bpy.data.lights.new("preench", type='SUN')
-preench.energy = 0.75
+preench.energy = 0.8
 preench.color = (0.55, 0.68, 0.85)
 o_pre = bpy.data.objects.new("preench", preench)
 bpy.context.collection.objects.link(o_pre)
-o_pre.rotation_euler = (math.radians(60), 0, math.radians(70))
+o_pre.rotation_euler = (math.radians(62), 0, math.radians(35))
 
 cena = bpy.context.scene
 cena.render.engine = 'BLENDER_EEVEE'
@@ -196,6 +201,18 @@ cena.render.resolution_y = 384
 cena.render.image_settings.file_format = 'PNG'
 cena.render.image_settings.color_mode = 'RGBA'
 cena.eevee.taa_render_samples = 64
+# O padrão do Blender 4.0 é AgX, que tonemapeia e dessatura TODA cor escolhida —
+# é a causa número um do aspecto de plástico, e faz ajustar cor virar chute.
+cena.view_settings.view_transform = 'Standard'
+cena.view_settings.look = 'None'
+# Oclusão de ambiente: é o que assenta a torreta na plataforma. Sem ela as duas
+# peças flutuam uma sobre a outra.
+cena.eevee.use_gtao = True
+cena.eevee.gtao_distance = 0.4
+cena.eevee.gtao_factor = 1.0
+cena.eevee.shadow_cube_size = '2048'
+cena.eevee.shadow_cascade_size = '4096'
+cena.eevee.use_soft_shadows = True
 # Bloom leve: é o que dá núcleo estourado ao emissivo sem lavar a peça.
 if hasattr(cena.eevee, "use_bloom"):
     cena.eevee.use_bloom = True

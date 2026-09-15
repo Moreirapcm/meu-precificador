@@ -412,6 +412,27 @@
        GOLPE, que o desenho traduz em arco de garra. A diferença de regra é o
        tempo de voo que deixa de existir: um décimo de segundo numa cadência de
        seis décimos. Medido com `equilibrio.cjs` antes e depois. */
+    /* FEIXE: luz não tem tempo de voo. O dano é na hora, como o Photon Cannon
+       e a Prism Tower, e o que sai é um evento de raio com os dois pontos — o
+       desenho precisa dos dois porque o feixe é uma LINHA, não um ponto que
+       viaja. Vem antes do corpo a corpo porque um feixe de alcance curto ainda
+       é feixe. */
+    if (arma.feixe) {
+      this.aplicarDano(alvo, dano, {
+        perfura: !!arma.perfura,
+        metadeBlindagem: origem.lado !== 'inimigo' && !!this.jogador.pesquisas.penetracao,
+        lentidao: arma.lentidao || 0,
+        acido: !!(origem.def && origem.def.acido),
+        origemId: origem.id, lado: origem.lado
+      });
+      this.emitir('feixe', {
+        x: centroO.x, y: centroO.y, alvoX: centroA.x, alvoY: centroA.y,
+        cor: arma.cor || '#d79bff', ladoAlvo: alvo.lado,
+        alto: origem.w ? 22 + origem.w * 4 : 12
+      });
+      return;
+    }
+
     if ((arma.alc || 0) <= 1.6 && !area) {
       this.aplicarDano(alvo, dano, {
         perfura: !!arma.perfura,

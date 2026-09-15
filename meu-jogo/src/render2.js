@@ -98,7 +98,13 @@
       /* O quadro 2 é o cano para a direita da tela e o 0 é para baixo, que é
          como o modelo saiu do Blender. Daí o `2 -` e o sinal: em canvas o y
          cresce para baixo. */
-      var ang = Math.atan2(pa.y - pb.y, pa.x - pb.x);
+      /* O ×2 DESFAZ O ACHATAMENTO antes de escolher o quadro. As oito direções
+         são igualmente espaçadas no MUNDO (45°), mas na tela 2:1 elas caem em
+         90°, 26,57°, 0°, −26,57°… — medir o ângulo direto na tela escolhia um
+         quadro até 18,43° pior que o certo, quase o tamanho do erro que ter só
+         oito direções já traz. Com o ×2 a conta fica exata, e ele só vale
+         porque a câmera do render está a 30° de elevação. */
+      var ang = Math.atan2((pa.y - pb.y) * 2, pa.x - pb.x);
       var q = Math.round(2 - ang / QUADRANTE) % 8;
       b.dirTorre = (q + 8) % 8;
     }
@@ -1145,6 +1151,17 @@
         this.lancarCacos(cx, cy, 14, 4.2, '#9a9186');
         this.efeitoMundo('fumaca', cx, cy, { vida: 1.8, tam: 16 });
         this.sacudir(11);
+      } else if (e.tipo === 'feixe') {
+        this.efeitoMundo('raio', (e.x + e.alvoX) / 2, (e.y + e.alvoY) / 2, {
+          cor: e.cor, vida: 0.14, alto: e.alto || 12,
+          ax: e.x, ay: e.y, bx: e.alvoX, by: e.alvoY
+        });
+        this.efeitoMundo('clarao', e.x, e.y, { cor: e.cor, vida: 0.12, alto: e.alto || 12 });
+        if (e.ladoAlvo) {
+          this.lancarCacos(e.alvoX, e.alvoY, 4, 1.8,
+            e.ladoAlvo === 'inimigo' ? '#7eba2e' : '#7a1a18');
+          this.marcarChao(e.alvoX, e.alvoY, e.ladoAlvo, 0.3);
+        }
       } else if (e.tipo === 'golpe') {
         /* o arco nasce do agressor e aponta para o alvo; a simulação manda os
            dois pontos porque só ela sabe quem bateu em quem */
@@ -1221,6 +1238,24 @@
         ctx.fillStyle = e.cor || '#ffe7b0';
         ctx.beginPath();
         ctx.arc(p.x, p.y - (e.alto || 10) * z, 4 * z * t + 1, 0, 6.283); ctx.fill();
+      } else if (e.tipo === 'raio') {
+        /* Três traços sobrepostos: o largo é o brilho, o médio é o corpo e o
+           fino branco é o núcleo. É o que faz um feixe parecer quente em vez de
+           um risco colorido na tela. */
+        var pa = this.paraTela(e.ax, e.ay), pb = this.paraTela(e.bx, e.by);
+        var ah = (e.alto || 12) * z;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = t * 0.35;
+        ctx.strokeStyle = e.cor || '#d79bff';
+        ctx.lineWidth = 7 * z * t;
+        ctx.beginPath(); ctx.moveTo(pa.x, pa.y - ah); ctx.lineTo(pb.x, pb.y - 8 * z); ctx.stroke();
+        ctx.globalAlpha = t * 0.85;
+        ctx.lineWidth = 3 * z * t;
+        ctx.beginPath(); ctx.moveTo(pa.x, pa.y - ah); ctx.lineTo(pb.x, pb.y - 8 * z); ctx.stroke();
+        ctx.globalAlpha = t;
+        ctx.strokeStyle = '#fff4ff';
+        ctx.lineWidth = 1.2 * z * t;
+        ctx.beginPath(); ctx.moveTo(pa.x, pa.y - ah); ctx.lineTo(pb.x, pb.y - 8 * z); ctx.stroke();
       } else if (e.tipo === 'clarao') {
         /* bola de fogo curta: miolo branco, halo laranja e dois riscos */
         ctx.globalAlpha = t;

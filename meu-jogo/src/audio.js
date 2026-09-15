@@ -223,6 +223,15 @@
           this.tom(62, 0.12, 'sine', 0.13, 26);
         }
         break;
+      /* FEIXE: sem estalo de pólvora. Um zumbido curto que desce, que é o que
+         o ouvido reconhece como energia descarregando. */
+      case 'feixe':
+        if (this.pode('feixe', 70)) {
+          this.tom(880, 0.14, 'sawtooth', 0.08, 180);
+          this.tom(330, 0.1, 'sine', 0.07, 90);
+          this.ruido(0.05, 0.07, 3200, 900, 3);
+        }
+        break;
       case 'golpe':
         if (this.pode('golpe', 60)) {
           this.ruido(0.07, 0.12, 1400, 260, 2);
