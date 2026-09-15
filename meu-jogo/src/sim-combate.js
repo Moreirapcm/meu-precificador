@@ -474,7 +474,11 @@
         this.emitir('explosao', { x: ax, y: ay, raio: p.area });
       } else if (alvo && !alvo.morta) {
         this.aplicarDano(alvo, p.dano, p);
-        this.emitir('impacto', { x: ax, y: ay, cor: p.cor });
+        /* `ladoAlvo` vai junto porque o desenho precisa saber de QUEM é o
+           sangue. Sem isso o tiro à distância — que é quase todo o combate —
+           só soltava faísca cor de pólvora, e o campo de batalha ficava limpo
+           enquanto morria gente. */
+        this.emitir('impacto', { x: ax, y: ay, cor: p.cor, ladoAlvo: alvo.lado });
       } else {
         /* o alvo morreu no caminho: o tiro ainda assim bate no chão. Sem isto
            o projétil sumia no ar, sem faísca, e parecia um bug de desenho. */
@@ -1043,8 +1047,13 @@
   };
 
   /* ------------------------------------------------------------ ondas */
+  /* A CURVA DA ONDA. A primeira valia 22 — quatro bichos contra dez operários e
+     três torres, que na tela é um jogo de defesa sem defesa nenhuma. O começo
+     dobrou e o fim ficou onde estava: 40 de base, incremento menor e um termo
+     quadrático um pouco maior compensando. Onda 1 sobe 82%, onda 6 sobe 9%,
+     onda 13 sobe 4%. A pressão que faltava era a do começo, não a do fim. */
   S.orcamentoDaOnda = function (num) {
-    var base = 22 + 14 * (num - 1) + 1.6 * Math.pow(num - 1, 2);
+    var base = 40 + 12 * (num - 1) + 1.75 * Math.pow(num - 1, 2);
     return base * this.dif.orcamento * (this.setor.pressao || 1);
   };
 

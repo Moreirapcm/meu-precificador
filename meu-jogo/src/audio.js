@@ -211,10 +211,16 @@
       /* TIRO: estalo curto de alta frequência mais um corpo de ruído que cai.
          O bipe de antes não tinha o estalo, e sem estalo nenhum tiro soa como
          tiro — soa como videogame de 1980. */
+      /* TRÊS CAMADAS, e não duas: o estalo agudo diz "agora", o corpo médio é o
+         que se reconhece como arma de fogo, e o pancada grave é o que dá peso.
+         O tiro de antes era só estalo fino — na tela parecia pipoca, e o Pedro
+         disse na cara: "o canhão atira bala, tem que ter fogo e barulho". */
       case 'tiro':
-        if (this.pode('tiro', 45)) {
-          this.ruido(0.035, 0.13, 5200, 900, 1.4);
-          this.tom(320, 0.06, 'square', 0.05, 90);
+        if (this.pode('tiro', 40)) {
+          this.ruido(0.03, 0.16, 6500, 1800, 1.2);
+          this.ruido(0.11, 0.2, 1900, 320, 1.6);
+          this.tom(160, 0.09, 'square', 0.1, 55);
+          this.tom(62, 0.12, 'sine', 0.13, 26);
         }
         break;
       case 'golpe':

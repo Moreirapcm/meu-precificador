@@ -681,6 +681,8 @@
     }
 
     this.desenharGrade();
+    /* As manchas são chão: vêm antes de qualquer coisa que tenha corpo. */
+    this.desenharManchas(ctx, dt);
     /* A aura vai no CHÃO, antes de tudo que tem corpo: ela é terreno, não
        objeto — quem a lê é o jogador decidindo onde parar a tropa, e um anel
        por cima dos bonecos atrapalharia a leitura do combate. */

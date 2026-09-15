@@ -35,7 +35,7 @@
      tela, apoiado no canto sul. As artes são cortadas rentes (`-trim`), então a
      borda inferior da imagem É a frente da base — alinhar por ela põe o prédio
      de pé no lugar certo sem tabela de deslocamento peça a peça. */
-  R.spriteNaFundacao = function (ctx, img, x, y, w, h) {
+  R.spriteNaFundacao = function (ctx, img, x, y, w, h, espelhar) {
     var leste = this.paraTela(x + w, y);
     var oeste = this.paraTela(x, y + h);
     var sul = this.paraTela(x + w, y + h);
@@ -55,11 +55,48 @@
     ctx.translate(px + larg / 2, sul.y);
     this.sombraDeSprite(ctx, img, larg, alt, 0);
     ctx.restore();
-    this.imagemComSilhueta(ctx, img, px, py, larg, alt);
+    /* A TORRE OLHA PARA O ALVO. Ela ficava com os canos parados numa direção
+       fixa enquanto atirava para o outro lado — o Pedro viu isso na tela em
+       duas Sentinelas apontando para o nordeste com o bicho vindo do sul.
+       Girar de verdade exige a torreta em oito direções, que é arte nova. O que
+       dá para fazer com a arte que existe é o truque de sempre do 2D: espelhar.
+       Duas direções em vez de oito, mas a torre para de apontar para o lado
+       errado, que é o que o olho reclama. */
+    if (espelhar) {
+      ctx.save();
+      ctx.translate(px + larg, py);
+      ctx.scale(-1, 1);
+      this.imagemComSilhueta(ctx, img, 0, 0, larg, alt);
+      ctx.restore();
+    } else {
+      this.imagemComSilhueta(ctx, img, px, py, larg, alt);
+    }
     /* Altura do corpo acima do centro da célula, para os avisos flutuantes
        ficarem sobre o prédio e não dentro dele. Desconta a metade sul do
        losango, que é chão, não construção. */
     return { h: Math.max(0, alt - (sul.y - this.paraTela(x + w / 2, y + h / 2).y)) };
+  };
+
+  /* Para que lado a torre aponta.
+
+     TENTEI O CANHÃO PROCEDURAL POR CIMA DO SPRITE e desfiz, olhando a tela: a
+     arte já traz a torreta desenhada, então o cano novo vira um SEGUNDO cano,
+     apontando para outro lado que o do desenho. Fica pior que parado. A saída
+     de verdade é a torreta como sprite próprio em oito direções — arte nova,
+     capítulo 14 — e até lá o espelhamento dá os dois lados que importam. Em tela, e não em mundo: o que o olho compara
+     é o cano com a posição do bicho na TELA, e no isométrico as duas coisas não
+     coincidem. Sem alvo, mantém o último lado — torre que volta ao normal a
+     cada bicho morto piscaria a cada tiro. */
+  R.torreOlhandoAEsquerda = function (b) {
+    if (!b.torre || !b.construida) return false;
+    var alvo = b.alvo && this.sim.alvoPorId(b.alvo);
+    if (alvo && !alvo.morta) {
+      var c = this.sim.centroDe(alvo);
+      var pa = this.paraTela(c.x, c.y);
+      var pb = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
+      b.olhandoEsq = pa.x < pb.x;
+    }
+    return !!b.olhandoEsq;
   };
 
   R.desenharEstrutura = function (ctx, item) {
@@ -74,7 +111,7 @@
       ? UF.sprites.estrutura(b.tipo) : null;
     var g;
     if (img) {
-      g = this.spriteNaFundacao(ctx, img, b.x, b.y, b.w, b.h);
+      g = this.spriteNaFundacao(ctx, img, b.x, b.y, b.w, b.h, this.torreOlhandoAEsquerda(b));
       this.avisosEstrutura(ctx, b, g);
       if (b.fila && b.fila.length) {
         var cf2 = this.paraTela(b.x + b.w / 2, b.y + b.h / 2);
@@ -469,6 +506,46 @@
      quem olha o campo de batalha de cima sabe de quem foi a perda pela cor da
      mancha, sem ter de identificar o corpo. */
   var SANGUE = { inimigo: 'rgba(126,186,46,', aliado: 'rgba(122,26,24,' };
+
+  /* MANCHAS NO CHÃO — o rastro do combate. Elas ficam depois de o corpo ser
+     recolhido e são o que transforma "houve uma briga aqui" em algo que se lê
+     olhando o terreno. Teto de 120: acima disso o campo vira uma sopa e o custo
+     por quadro começa a aparecer. */
+  var TETO_MANCHAS = 120;
+  R.marcarChao = function (x, y, lado, forca) {
+    if (!this.manchas) this.manchas = [];
+    var m = {
+      x: x + (Math.random() - 0.5) * 0.5,
+      y: y + (Math.random() - 0.5) * 0.5,
+      lado: lado === 'inimigo' ? 'inimigo' : 'aliado',
+      r: (3 + 9 * forca) * (0.7 + Math.random() * 0.6),
+      vida: 14 + 26 * forca, max: 14 + 26 * forca
+    };
+    this.manchas.push(m);
+    if (this.manchas.length > TETO_MANCHAS) this.manchas.shift();
+  };
+
+  R.desenharManchas = function (ctx, dt) {
+    var lista = this.manchas;
+    if (!lista || !lista.length) return;
+    var z = this.cam.zoom;
+    for (var i = lista.length - 1; i >= 0; i--) {
+      var m = lista[i];
+      m.vida -= dt;
+      if (m.vida <= 0) { lista.splice(i, 1); continue; }
+      var p = this.paraTela(m.x, m.y);
+      /* some só no fim: mancha que desbota desde o primeiro segundo não chega
+         a ser vista como mancha */
+      var alfa = Math.min(1, m.vida / (m.max * 0.35)) * 0.42;
+      ctx.save();
+      ctx.globalAlpha = alfa;
+      ctx.fillStyle = SANGUE[m.lado] + '1)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, m.r * z, m.r * 0.45 * z, 0, 0, 6.283);
+      ctx.fill();
+      ctx.restore();
+    }
+  };
 
   R.desenharCadaver = function (ctx, item) {
     var c = item.dado, z = this.cam.zoom;
@@ -995,17 +1072,38 @@
         this.sacudir(Math.min(9, 3 + (e.raio || 1) * 2));
       } else if (e.tipo === 'impacto') {
         this.efeitoMundo('faisca', e.x, e.y, { cor: e.cor, vida: 0.22, alto: 10 });
-        if (!e.vazio) this.lancarCacos(e.x, e.y, 3, 1.6, e.cor || '#ffe7b0');
+        if (!e.vazio) {
+          this.lancarCacos(e.x, e.y, 3, 1.6, e.cor || '#ffe7b0');
+          /* SANGUE NO TIRO. O corpo a corpo já respingava e a morte já jorrava,
+             mas o tiro à distância — que é quase todo o combate — só soltava
+             faísca cor de pólvora. Dava um campo de batalha limpo com gente
+             morrendo nele. Em estrutura não: prédio solta caco, não sangue. */
+          if (e.ladoAlvo) {
+            this.lancarCacos(e.x, e.y, 5, 2.1,
+              e.ladoAlvo === 'inimigo' ? '#7eba2e' : '#7a1a18');
+            this.marcarChao(e.x, e.y, e.ladoAlvo, 0.35);
+          }
+        }
       } else if (e.tipo === 'tiro') {
         /* O clarão da boca do cano estava emitido pela simulação desde sempre e
            era jogado fora pelo desenho. É o efeito mais barato do jogo e o que
            mais diz "este aqui atirou". */
-        this.efeitoMundo('clarao', e.x, e.y, { cor: e.cor, vida: 0.09, alto: 12 });
+        /* FOGO NA BOCA DO CANO. O clarão durava 0,09 s num círculo de 6 px:
+           existia no código e não existia na tela. Agora dura o triplo, é
+           maior, e vem com uma baforada de fumaça atrás — que é o que faz a
+           arma parecer arma e não um ponto piscando. */
+        this.efeitoMundo('clarao', e.x, e.y, { cor: e.cor, vida: 0.15, alto: 12 });
+        this.efeitoMundo('fumaca', e.x, e.y, { vida: 0.5, tam: 4 });
       } else if (e.tipo === 'unidadeMorta') {
         this.efeitoMundo('fumaca', e.x, e.y, { vida: 0.9, tam: 6 });
         /* o jorro da morte: mais e mais forte que o respingo de um tiro */
-        this.lancarCacos(e.x, e.y, 9, 2.4,
+        this.lancarCacos(e.x, e.y, 16, 3.2,
           e.lado === 'inimigo' ? '#7eba2e' : '#7a1a18');
+        /* A mancha no chão não depende mais do cadáver. O corpo só aparece se
+           existir o sprite `-morto` da criatura, e metade dos invasores ainda
+           não tem: eles morriam sem deixar nada no chão. A mancha é do LUGAR
+           onde morreu, e fica depois de o corpo ser recolhido. */
+        this.marcarChao(e.x, e.y, e.lado, 1);
         this.deitarCadaver(e);
       } else if (e.tipo === 'estruturaDestruida') {
         var cx = e.x + e.w / 2, cy = e.y + e.h / 2;
@@ -1090,13 +1188,20 @@
         ctx.beginPath();
         ctx.arc(p.x, p.y - (e.alto || 10) * z, 4 * z * t + 1, 0, 6.283); ctx.fill();
       } else if (e.tipo === 'clarao') {
-        /* estrela curta: um círculo claro e dois riscos cruzados */
+        /* bola de fogo curta: miolo branco, halo laranja e dois riscos */
         ctx.globalAlpha = t;
-        var r = 6.5 * z * t;
+        var r = 11 * z * t;
+        var oy = p.y - (e.alto || 12) * z;
+        var gf = ctx.createRadialGradient(p.x, oy, 0, p.x, oy, r * 1.9);
+        gf.addColorStop(0, 'rgba(255,248,222,0.95)');
+        gf.addColorStop(0.45, 'rgba(255,176,60,0.75)');
+        gf.addColorStop(1, 'rgba(255,120,20,0)');
+        ctx.fillStyle = gf;
+        ctx.beginPath(); ctx.arc(p.x, oy, r * 1.9, 0, 6.283); ctx.fill();
         ctx.fillStyle = '#fff4cf';
-        ctx.beginPath(); ctx.arc(p.x, p.y - (e.alto || 12) * z, r, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, oy, r * 0.5, 0, 6.283); ctx.fill();
         ctx.strokeStyle = e.cor || '#ffe07a';
-        ctx.lineWidth = 1.6 * z;
+        ctx.lineWidth = 2.2 * z;
         ctx.beginPath();
         ctx.moveTo(p.x - r * 2.2, p.y - (e.alto || 12) * z);
         ctx.lineTo(p.x + r * 2.2, p.y - (e.alto || 12) * z);

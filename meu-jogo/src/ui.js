@@ -832,14 +832,22 @@
        diz o que vai acontecer, porque "Terreno intransponível" ensinava ao
        jogador exatamente a coisa errada — que ali não dá. */
     var aguarda = !ver.ok && !!ver.limpar;
+    /* A prévia prometia "o trator abre e a obra começa" mesmo sem trator
+       nenhum, e o toque respondia "produza um trator na Central". Prometer o
+       que o comando vai negar é pior que negar de cara. */
+    var temTrator = aguarda && !!this.sim.tratorLivreMaisProximo(x, y);
+    /* âmbar só quando a promessa é verdadeira; sem trator é recusa, e recusa
+       é vermelha */
     this.render.previa = {
-      tipo: this.modo.estrutura, x: x, y: y, valido: ver.ok, aguarda: aguarda
+      tipo: this.modo.estrutura, x: x, y: y, valido: ver.ok, aguarda: temTrator
     };
     this.mostrarModo(ver.ok
       ? def.nome + ' · ' + this.precoTexto(this.sim.custoDe(def))
       : (aguarda
-        ? 'Trator abre ' + ver.limpar.length + ' célula(s) e a obra começa · ' +
-          this.precoTexto(this.sim.custoDe(def))
+        ? (temTrator
+          ? 'Trator abre ' + ver.limpar.length + ' célula(s) e a obra começa · ' +
+            this.precoTexto(this.sim.custoDe(def))
+          : 'Entulho: produza um trator na Central para abrir aqui')
         : ver.motivo));
   };
 
