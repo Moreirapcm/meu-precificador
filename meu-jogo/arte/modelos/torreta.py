@@ -47,18 +47,85 @@ def rgb(h):
     h = h.lstrip("#")
     return tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4)) + (1.0,)
 
+def linear(c):
+    """sRGB -> linear. O Blender guarda cor em espaço LINEAR; passar o hex cru
+    devolve um pixel mais claro do que o hex pedido, e aí escolher cor vira
+    adivinhação. Com `view_transform = 'Standard'` a volta é exata."""
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+def rgb_lin(h):
+    r, g, b, a = rgb(h)
+    return (linear(r), linear(g), linear(b), a)
+
+def mistura(c, k, para):
+    """Escurece ou clareia `c` por `k`, puxando para a cor `para`. É o que faz a
+    sombra ser AZUL e a luz ser QUENTE em vez de cinza interpolado — a diferença
+    entre arte pintada e render."""
+    t = 0.0 if k >= 1 else (1 - k) * 0.55
+    saida = []
+    for i in range(3):
+        v = c[i] * k * (1 - t) + para[i] * t
+        saida.append(min(1.0, max(0.0, v)))
+    return tuple(saida) + (1.0,)
+
+SOMBRA_FRIA = (0.10, 0.16, 0.30)
+LUZ_QUENTE = (1.0, 0.94, 0.80)
+
 def material(nome, cor, metal=0.55, rugos=0.45, brilho=0.0):
+    """CEL SHADING, não PBR.
+
+    Medido pelo levantamento: a mesma peça em Principled dá 838 cores distintas
+    e em cel dá 373, com banda dura e limpa. Render pequeno com gradiente
+    contínuo lê como plástico; o que lê como arte pintada é degrau.
+
+    O caminho é `Shader to RGB` — que só existe no EEVEE — pegando a iluminação
+    de um Diffuse e passando por uma rampa com interpolação CONSTANT. O
+    `Toon BSDF` do Blender NÃO serve: o EEVEE o ignora por completo, e qualquer
+    ajuste nele dá diferença zero de pixel.
+
+    Emissivo continua Principled: quem é fonte de luz não tem sombra para
+    bandar."""
     m = bpy.data.materials.new(nome)
     m.use_nodes = True
-    p = m.node_tree.nodes["Principled BSDF"]
-    p.inputs["Base Color"].default_value = rgb(cor)
-    p.inputs["Metallic"].default_value = metal
-    p.inputs["Roughness"].default_value = rugos
     if brilho:
+        p = m.node_tree.nodes["Principled BSDF"]
+        p.inputs["Base Color"].default_value = rgb_lin(cor)
+        p.inputs["Metallic"].default_value = metal
+        p.inputs["Roughness"].default_value = rugos
         # No Blender 4.0 o socket virou "Emission Color" + "Emission Strength";
         # o "Emission" de antes não existe mais e falha silenciosamente.
-        p.inputs["Emission Color"].default_value = rgb(cor)
+        p.inputs["Emission Color"].default_value = rgb_lin(cor)
         p.inputs["Emission Strength"].default_value = brilho
+        return m
+
+    base = rgb_lin(cor)
+    rampa = [
+        (0.00, mistura(base, 0.22, SOMBRA_FRIA)),
+        (0.30, mistura(base, 0.48, SOMBRA_FRIA)),
+        (0.62, base),
+        (0.88, mistura(base, 1.55, LUZ_QUENTE))
+    ]
+    nt = m.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    dif = nt.nodes.new("ShaderNodeBsdfDiffuse")
+    dif.inputs["Color"].default_value = (1, 1, 1, 1)
+    dif.inputs["Roughness"].default_value = 0.0
+    s2r = nt.nodes.new("ShaderNodeShaderToRGB")     # RGB maiúsculo; só EEVEE
+    rn = nt.nodes.new("ShaderNodeValToRGB")
+    cr = rn.color_ramp
+    cr.interpolation = 'CONSTANT'
+    while len(cr.elements) > 1:
+        cr.elements.remove(cr.elements[-1])
+    cr.elements[0].position, cr.elements[0].color = rampa[0]
+    for pos, col in rampa[1:]:
+        cr.elements.new(pos).color = col
+    emi = nt.nodes.new("ShaderNodeEmission")
+    L = nt.links
+    L.new(dif.outputs["BSDF"], s2r.inputs["Shader"])
+    L.new(s2r.outputs["Color"], rn.inputs["Fac"])
+    L.new(rn.outputs["Color"], emi.inputs["Color"])
+    L.new(emi.outputs["Emission"], out.inputs["Surface"])
     return m
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -66,7 +133,7 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 mat_corpo = material("corpo", cor_corpo)
 mat_escuro = material("escuro", "#1b2228", metal=0.85, rugos=0.3)
 mat_acento = material("acento", "#e07a2a", metal=0.3, rugos=0.4)
-mat_base = material("base", "#2f3940", metal=0.25, rugos=0.8)
+mat_base = material("base", "#4a555e", metal=0.25, rugos=0.8)
 mat_luz = material("luz", cor_det, metal=0.0, rugos=0.2, brilho=3.2)
 mat_luz_fraca = material("luzfraca", cor_det, metal=0.0, rugos=0.2, brilho=2.0)
 
@@ -225,6 +292,12 @@ if hasattr(cena.eevee, "use_bloom"):
 # quadros. Recortar pelo conteúdo (`-trim`) faria a antena, que é assimétrica,
 # mudar a escala de quadro para quadro — e o jogo dimensiona o sprite pela
 # LARGURA da fundação, então a peça inteira cresceria e encolheria girando.
+# SEM POSTERIZE. A receita da pesquisa mandava seis degraus no compositor, e
+# medido isolado ela derruba de 1.500 para 90 cores. Aplicada DEPOIS do cel
+# shading, que já banda a iluminação em quatro níveis, ela colapsa: a peça
+# inteira vira silhueta preta com manchas azul-elétrico. Duas quantizações em
+# série não somam, se anulam — a banda tem de vir de um lugar só, e aqui vem da
+# rampa CONSTANT do material.
 os.makedirs(os.path.dirname(saida) or ".", exist_ok=True)
 for i in range(lados):
     obj_topo.rotation_euler = (0, 0, math.radians(360.0 * i / lados))
