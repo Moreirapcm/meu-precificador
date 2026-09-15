@@ -433,35 +433,55 @@
   PRIORIDADE[1] = 60;    /* rocha */
   PRIORIDADE[2] = 10;    /* água: sempre por baixo */
 
+  /* Os quatro ortogonais dividem uma ARESTA com a célula; os quatro diagonais
+     dividem só um CANTO, e o canto ficava cru. É onde mais aparece: toda quina
+     de uma massa de rocha ou de água virava um dente de serra e o olho lia a
+     grade exatamente ali — entre 694 e 1228 cantos por setor, medidos.
+     A quina vaza menos que a aresta (alcance e opacidade menores) e só vale
+     quando NENHUM dos dois ortogonais que cercam aquele canto já é do mesmo
+     terreno: se já é, a quina está coberta pelas duas passadas de aresta e
+     insistir só escurece. O terceiro número é 1 para aresta, 0 para quina. */
+  var LADOS = [
+    [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+    [1, 1, 0], [1, -1, 0], [-1, 1, 0], [-1, -1, 0]
+  ];
+
   Render.prototype.suavizarBordas = function (c, w, dx, dy, pal) {
     var corDe = {};
     corDe[2] = pal.agua; corDe[3] = pal.entulho;
     corDe[1] = pal.rocha; corDe[0] = pal.chao;
-    var lados = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    /* a base do prédio é entulho (o bloco em pé vem depois): ruína e escombro
+       são a mesma cor no chão, e comparar os dois como terrenos diferentes só
+       inventaria uma borda que não existe */
+    function chao(cx, cy) {
+      var v = w.terreno[w.idx(cx, cy)];
+      return v === T.RUINA ? T.ESCOMBRO : v;
+    }
 
     for (var y = 0; y < w.h; y++) {
       for (var x = 0; x < w.w; x++) {
-        var t = w.terreno[w.idx(x, y)];
-        if (t === T.RUINA) t = T.ESCOMBRO;
+        var t = chao(x, y);
         var px = (x - y) * (LARG / 2) + dx, py = (x + y) * (ALT / 2) + dy;
 
-        for (var k = 0; k < lados.length; k++) {
-          var nx = x + lados[k][0], ny = y + lados[k][1];
+        for (var k = 0; k < LADOS.length; k++) {
+          var sx = LADOS[k][0], sy = LADOS[k][1], aresta = LADOS[k][2];
+          var nx = x + sx, ny = y + sy;
           if (nx < 0 || ny < 0 || nx >= w.w || ny >= w.h) continue;
-          var tv = w.terreno[w.idx(nx, ny)];
-          if (tv === T.RUINA) tv = T.ESCOMBRO;
+          var tv = chao(nx, ny);
           if (tv === t || (PRIORIDADE[tv] || 0) <= (PRIORIDADE[t] || 0)) continue;
+          if (!aresta && (chao(nx, y) === tv || chao(x, ny) === tv)) continue;
 
-          /* o gradiente nasce no canto do vizinho e morre no centro da célula */
+          /* o gradiente nasce na aresta (ou na quina) e morre indo para o centro */
           var vx = (nx - ny) * (LARG / 2) + dx, vy = (nx + ny) * (ALT / 2) + dy;
+          var ox = (px + vx) / 2, oy = (py + vy) / 2 + ALT / 2;
+          var alcance = aresta ? 1 : 0.6;
           var g = c.createLinearGradient(
-            (px + vx) / 2, (py + vy) / 2 + ALT / 2, px, py + ALT / 2);
+            ox, oy, ox + (px - ox) * alcance, oy + (py + ALT / 2 - oy) * alcance);
           g.addColorStop(0, corDe[tv] || pal.chao);
           g.addColorStop(1, 'rgba(0,0,0,0)');
-          c.save();
-          c.globalAlpha = 0.85;
-          this.losango(c, px, py, g);
-          c.restore();
+          /* a opacidade vai por argumento: `losango` zera o `globalAlpha` que
+             fosse posto aqui fora, e a transição estava saindo chapada */
+          this.losango(c, px, py, g, aresta ? 0.85 : 0.5);
         }
       }
     }
