@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Publica as 8 direções de uma torre renderizada no Blender.
 #
-#   montar-direcoes-torre.sh <tipo> <cor-corpo> <cor-detalhe> [largura]
+#   montar-direcoes-torre.sh <tipo> <cor-corpo> <cor-detalhe> [largura] [perfil]
+#
+# O PERFIL escolhe a coroa: misto, obus, emissor ou feixe. Só a cor não basta —
+# seis torres com a mesma silhueta viram a mesma mancha no teste do preto.
 #
 # Existe por causa de um defeito real: a conversão PNG -> WebP foi feita à mão
 # uma vez, com um `-flatten` no meio, e o `-flatten` ACHATA O ALFA. O arquivo
@@ -21,10 +24,11 @@ tipo="${1:?uso: montar-direcoes-torre.sh <tipo> <cor-corpo> <cor-detalhe> [largu
 corpo="${2:?falta a cor do corpo, ex: #4a6a78}"
 detalhe="${3:?falta a cor do detalhe, ex: #7fd7ff}"
 larg="${4:-190}"
+perfil="${5:-misto}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-blender -b -P "$raiz/arte/modelos/torreta.py" -- "$corpo" "$detalhe" "$tmp/$tipo" 8 \
+blender -b -P "$raiz/arte/modelos/torreta.py" -- "$corpo" "$detalhe" "$tmp/$tipo" 8 "$perfil" \
   | grep -E "RENDER|Error" || true
 
 for i in 0 1 2 3 4 5 6 7; do

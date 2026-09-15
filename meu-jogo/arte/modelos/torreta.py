@@ -1,7 +1,20 @@
 # Torre de defesa em 8 direções, do jeito que os clássicos faziam: um modelo, a
 # câmera gira em volta, e cada ângulo vira um quadro.
 #
-#   blender -b -P torreta.py -- <cor-corpo> <cor-detalhe> <saída> [lados]
+#   blender -b -P torreta.py -- <cor-corpo> <cor-detalhe> <saída> [lados] [perfil]
+#
+# O PERFIL é a coroa da torre — a arma que ela leva em cima. Só trocar a cor
+# deixaria as seis torres com a MESMA silhueta, e o teste do preto sólido
+# reprova na hora: se duas viram a mesma mancha, o problema é de forma, não de
+# cor. É o que o They Are Billions faz — cada torre com um coroamento próprio,
+# que é o que aparece na silhueta.
+#
+#   misto    — bloco de mísseis inclinado + cano horizontal (terra-ar)
+#   pesado   — canos gêmeos grossos e escudo frontal (o ponto forte da muralha)
+#   leve     — um cano curto e nada mais (a torre de 1x1, que aparece pequena)
+#   obus     — cano longo e grosso inclinado, com defletor (só solo, área)
+#   emissor  — bocal largo com aletas, sem cano (só solo, lentidão)
+#   feixe    — lente emissiva num berço aberto, sem cano (energia)
 #
 # O StarCraft e o Age of Empires II não desenhavam direção por direção: eles
 # renderizavam modelos 3D e exportavam 8, 16 ou 32 ângulos do mesmo objeto. É a
@@ -42,6 +55,7 @@ cor_corpo = argv[0] if len(argv) > 0 else "#4a6a78"
 cor_det = argv[1] if len(argv) > 1 else "#7fd7ff"
 saida = argv[2] if len(argv) > 2 else "/tmp/torreta"
 lados = int(argv[3]) if len(argv) > 3 else 8
+perfil = argv[4] if len(argv) > 4 else "misto"
 
 def rgb(h):
     h = h.lstrip("#")
@@ -294,57 +308,178 @@ bpy.ops.mesh.primitive_cube_add(size=1, location=(0.6, 0, 1.38))
 bpy.context.object.scale = (0.04, 0.44, 0.15)
 add(topo, mat_escuro)
 
-# ==================================================== ARMA EM DUAS CAMADAS
-# Em cima, inclinado: bloco de tubos = "atira no ar".
-bpy.ops.mesh.primitive_cube_add(size=1, location=(0.48, 0, 1.76), rotation=(0, math.radians(-35), 0))
-bloco = bpy.context.object
-bloco.scale = (0.48, 0.44, 0.24)
-bpy.ops.object.modifier_add(type='BEVEL')
-bloco.modifiers["Bevel"].width = 0.035
-bloco.modifiers["Bevel"].segments = 1
-bpy.ops.object.modifier_apply(modifier="Bevel")
-bloco.data.materials.append(mat_escuro)
-topo.append(bloco)
-for dy, dz in ((-0.135, 0.085), (0, 0.085), (0.135, 0.085),
-               (-0.135, -0.085), (0, -0.085), (0.135, -0.085)):
-    # o tubo E a boca: sem a boca mais clara o bloco lê como caixa, não como
-    # lançador carregado
-    bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.048, depth=0.46,
-                                        location=(0.72 + dz * 0.7, dy, 1.88 + dz),
-                                        rotation=(0, math.radians(55), 0))
-    add(topo, mat_corpo)
-    bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.052, depth=0.05,
-                                        location=(0.85 + dz * 0.7, dy, 1.98 + dz),
-                                        rotation=(0, math.radians(55), 0))
+# ========================================================== COROA / ARMA
+if perfil == "misto":
+    # Duas camadas: bloco de tubos inclinado diz "ar", cano horizontal diz "solo".
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.48, 0, 1.76), rotation=(0, math.radians(-35), 0))
+    bloco = bpy.context.object
+    bloco.scale = (0.48, 0.44, 0.24)
+    bpy.ops.object.modifier_add(type='BEVEL')
+    bloco.modifiers["Bevel"].width = 0.035
+    bloco.modifiers["Bevel"].segments = 1
+    bpy.ops.object.modifier_apply(modifier="Bevel")
+    bloco.data.materials.append(mat_escuro)
+    topo.append(bloco)
+    for dy, dz in ((-0.135, 0.085), (0, 0.085), (0.135, 0.085),
+                   (-0.135, -0.085), (0, -0.085), (0.135, -0.085)):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.048, depth=0.46,
+                                            location=(0.72 + dz * 0.7, dy, 1.88 + dz),
+                                            rotation=(0, math.radians(55), 0))
+        add(topo, mat_corpo)
+        bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.052, depth=0.05,
+                                            location=(0.85 + dz * 0.7, dy, 1.98 + dz),
+                                            rotation=(0, math.radians(55), 0))
+        add(topo, mat_escuro)
+    for lado in (-1, 1):
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0.3, 0.26 * lado, 1.62),
+                                        rotation=(0, math.radians(-35), 0))
+        bpy.context.object.scale = (0.3, 0.035, 0.1)
+        add(topo, mat_corpo)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.095, depth=0.95,
+                                        location=(0.62, 0, 1.16), rotation=(0, math.pi / 2, 0))
     add(topo, mat_escuro)
-# trilho de elevação do bloco, ligando ele ao corpo
-for lado in (-1, 1):
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.3, 0.26 * lado, 1.62),
-                                    rotation=(0, math.radians(-35), 0))
-    bpy.context.object.scale = (0.3, 0.035, 0.1)
+    for dx in (0.34, 0.5, 0.66):
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.11, minor_radius=0.022,
+                                         location=(dx, 0, 1.16), rotation=(0, math.pi / 2, 0),
+                                         major_segments=10, minor_segments=5)
+        add(topo, mat_corpo)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.125, depth=0.16,
+                                        location=(1.02, 0, 1.16), rotation=(0, math.pi / 2, 0))
+    freio = bpy.context.object
+    add(topo, mat_corpo)
+    for lado in (-1, 1):
+        cortar(freio, (1.02, 0.12 * lado, 1.16), (0.1, 0.1, 0.06))
+    bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.05, depth=0.03,
+                                        location=(1.1, 0, 1.16), rotation=(0, math.pi / 2, 0))
+    add(topo, mat_luz_fraca)
+
+elif perfil == "pesado":
+    # CANOS GÊMEOS e escudo frontal. O Bastião é o ponto forte da linha, e o que
+    # diz isso num sprite pequeno é MASSA na frente: chapa larga cobrindo a
+    # torreta e dois canos grossos saindo dela. Sem o escudo ele viraria uma
+    # Sentinela mais azul, e duas torres com a mesma mancha é falha de silhueta.
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.5, 0, 1.42), rotation=(0, math.radians(-12), 0))
+    escudo = bpy.context.object
+    escudo.scale = (0.12, 0.8, 0.62)
+    bpy.ops.object.modifier_add(type='BEVEL')
+    escudo.modifiers["Bevel"].width = 0.05
+    escudo.modifiers["Bevel"].segments = 1
+    bpy.ops.object.modifier_apply(modifier="Bevel")
+    escudo.data.materials.append(mat_corpo)
+    topo.append(escudo)
+    for lado in (-1, 1):
+        cortar(escudo, (0.5, 0.22 * lado, 1.42), (0.4, 0.12, 0.16), (0, math.radians(-12), 0))
+    for lado in (-1, 1):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.1, depth=1.0,
+                                            location=(0.78, 0.22 * lado, 1.44),
+                                            rotation=(0, math.radians(78), 0))
+        add(topo, mat_escuro)
+        for t in (-0.2, 0.05):
+            bpy.ops.mesh.primitive_torus_add(major_radius=0.12, minor_radius=0.026,
+                                             location=(0.78 + t, 0.22 * lado, 1.44 + t * 0.2),
+                                             rotation=(0, math.radians(78), 0),
+                                             major_segments=10, minor_segments=5)
+            add(topo, mat_corpo)
+        bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.14, depth=0.12,
+                                            location=(1.2, 0.22 * lado, 1.53),
+                                            rotation=(0, math.radians(78), 0))
+        add(topo, mat_corpo)
+    # mira de ferro em cima do escudo, que é o que dá altura à silhueta
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.4, 0, 1.82))
+    bpy.context.object.scale = (0.14, 0.1, 0.22)
+    add(topo, mat_escuro)
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.4, 0, 1.94))
+    bpy.context.object.scale = (0.2, 0.3, 0.05)
     add(topo, mat_corpo)
 
-# Embaixo, horizontal: cano curto e grosso = "atira no chão".
-bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.095, depth=0.95,
-                                    location=(0.62, 0, 1.16), rotation=(0, math.pi / 2, 0))
-add(topo, mat_escuro)
-# CAMISA DE REFRIGERAÇÃO: três anéis no cano. É o detalhe que diz "arma de
-# repetição" — cano liso lê como tubo.
-for dx in (0.34, 0.5, 0.66):
-    bpy.ops.mesh.primitive_torus_add(major_radius=0.11, minor_radius=0.022,
-                                     location=(dx, 0, 1.16), rotation=(0, math.pi / 2, 0),
-                                     major_segments=10, minor_segments=5)
+elif perfil == "leve":
+    # UM cano curto e nada mais. A Torre de muralha é 1x1 e aparece com metade
+    # do tamanho das outras: qualquer detalhe a mais vira sujeira, e a leitura
+    # que sobra tem de ser "arma pequena encaixada no muro".
+    bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.11, depth=0.8,
+                                        location=(0.52, 0, 1.3), rotation=(0, math.radians(84), 0))
+    add(topo, mat_escuro)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.145, depth=0.12,
+                                        location=(0.86, 0, 1.34), rotation=(0, math.radians(84), 0))
     add(topo, mat_corpo)
-# freio de boca, com os dois rasgos laterais
-bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.125, depth=0.16,
-                                    location=(1.02, 0, 1.16), rotation=(0, math.pi / 2, 0))
-freio = bpy.context.object
-add(topo, mat_corpo)
-for lado in (-1, 1):
-    cortar(freio, (1.02, 0.12 * lado, 1.16), (0.1, 0.1, 0.06))
-bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.05, depth=0.03,
-                                    location=(1.1, 0, 1.16), rotation=(0, math.pi / 2, 0))
-add(topo, mat_luz_fraca)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=0.06, depth=0.03,
+                                        location=(0.93, 0, 1.35), rotation=(0, math.radians(84), 0))
+    add(topo, mat_luz_fraca)
+
+elif perfil == "obus":
+    # UM cano, longo e grosso, inclinado 18 graus. Obus lê pelo COMPRIMENTO: é o
+    # que diz "tiro indireto, cai lá longe" — e o alcance mínimo da peça no jogo
+    # tem essa mesma explicação. Sem nada apontado para o céu, porque ela não
+    # atira em voador.
+    bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.13, depth=1.55,
+                                        location=(0.62, 0, 1.44),
+                                        rotation=(0, math.radians(72), 0))
+    add(topo, mat_escuro)
+    for t in (0.2, 0.42, 0.64):
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.15, minor_radius=0.028,
+                                         location=(0.62 - 0.55 + t * 1.1, 0, 1.44 - 0.18 + t * 0.36),
+                                         rotation=(0, math.radians(72), 0),
+                                         major_segments=10, minor_segments=5)
+        add(topo, mat_corpo)
+    # defletor na boca: dois discos, que é a assinatura de obuseiro
+    bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.22, depth=0.06,
+                                        location=(1.26, 0, 1.65), rotation=(0, math.radians(72), 0))
+    add(topo, mat_corpo)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.16, depth=0.1,
+                                        location=(1.34, 0, 1.68), rotation=(0, math.radians(72), 0))
+    add(topo, mat_escuro)
+    # berço de recuo, ligando o cano ao corpo
+    for lado in (-1, 1):
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0.3, 0.24 * lado, 1.34))
+        bpy.context.object.scale = (0.4, 0.05, 0.14)
+        add(topo, mat_corpo)
+
+elif perfil == "emissor":
+    # BOCAL largo com aletas, sem cano. Uma boca cônica grande lê como "sopra
+    # alguma coisa" em vez de "dispara projétil" — é a diferença entre a torre
+    # de gelo e as outras num sprite pequeno.
+    bpy.ops.mesh.primitive_cone_add(vertices=12, radius1=0.12, radius2=0.34, depth=0.66,
+                                    location=(0.66, 0, 1.28), rotation=(0, math.radians(90), 0))
+    add(topo, mat_escuro)
+    for k in range(6):
+        a = math.radians(60 * k)
+        bpy.ops.mesh.primitive_cube_add(size=1,
+                                        location=(0.72, math.cos(a) * 0.26, 1.28 + math.sin(a) * 0.26),
+                                        rotation=(a, 0, 0))
+        bpy.context.object.scale = (0.4, 0.05, 0.1)
+        add(topo, mat_corpo)
+    # anel emissivo dentro da boca: a carga que vai sair
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.22, minor_radius=0.035,
+                                     location=(0.94, 0, 1.28), rotation=(0, math.radians(90), 0),
+                                     major_segments=12, minor_segments=6)
+    add(topo, mat_luz)
+    # tanques de carga nas costas, que é de onde vem o que ela sopra
+    for lado in (-1, 1):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.14, depth=0.5,
+                                            location=(-0.42, 0.3 * lado, 1.44))
+        add(topo, mat_corpo)
+
+elif perfil == "feixe":
+    # LENTE num berço aberto. Sem cano nenhum: o que dispara luz não tem tubo, e
+    # essa ausência é justamente o que separa a torre de energia das de bala num
+    # relance. É o vocabulário da Prism Tower e do Photon Cannon.
+    for lado in (-1, 1):
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0.42, 0.34 * lado, 1.62),
+                                        rotation=(0, math.radians(-18), 0))
+        bpy.context.object.scale = (0.62, 0.07, 0.36)
+        add(topo, mat_corpo)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=14, radius=0.3, depth=0.14,
+                                        location=(0.62, 0, 1.68), rotation=(0, math.radians(72), 0))
+    add(topo, mat_escuro)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=14, radius=0.22, depth=0.06,
+                                        location=(0.72, 0, 1.72), rotation=(0, math.radians(72), 0))
+    add(topo, mat_luz)
+    # bobinas nas costas, carregando a lente
+    for k, z in enumerate((1.3, 1.5)):
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.26, minor_radius=0.04,
+                                         location=(-0.2, 0, z), rotation=(0, math.radians(90), 0),
+                                         major_segments=12, minor_segments=6)
+        add(topo, mat_luz_fraca if k else mat_corpo)
 
 def juntar(lista):
     bpy.ops.object.select_all(action='DESELECT')
