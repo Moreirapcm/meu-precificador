@@ -772,5 +772,41 @@ teste('Veterania: abate dá posto, posto dá dano e cadência, e sobe no save', 
   igual(s2.xp, 15, 'a experiência não sobreviveu ao save:');
 });
 
+
+/* Item 11 do capítulo 11: aura de área. */
+teste('Aura: dá blindagem por PROXIMIDADE, e aura igual não soma com aura igual', function () {
+  var sim = partida();
+  var x = sim.central.x - 4.5, y = sim.central.y + 0.5;
+  var alvo = sim.criarUnidade('fuzileiro', x, y, 'aliado');
+  var med = sim.criarUnidade('medico', x + 1, y, 'aliado');
+  ok(med.def.aura, 'o médico não tem aura');
+
+  sim.atualizarAuras();
+  igual(alvo.auraBlind, 1, 'perto do médico não recebeu a aura:');
+
+  /* DOIS médicos não dão 2: auras iguais não somam, e é essa regra que faz a
+     aura comprar posicionamento em vez de comprar quantidade. */
+  sim.criarUnidade('medico', x - 1, y, 'aliado');
+  sim.atualizarAuras();
+  igual(alvo.auraBlind, 1, 'duas auras iguais somaram:');
+
+  /* longe, nada */
+  alvo.x = x + 20;
+  sim.atualizarAuras();
+  igual(alvo.auraBlind, 0, 'a aura alcançou longe demais:');
+
+  /* e o efeito chega ao dano */
+  alvo.x = x;
+  sim.atualizarAuras();
+  var hp0 = alvo.hp;
+  sim.aplicarDano(alvo, 20, { lado: 'inimigo' });
+  perto(hp0 - alvo.hp, 19, 0.01, 'a aura não entrou na conta do dano:');
+
+  /* invasor não recebe aura nossa */
+  var inv = sim.criarUnidade('corredor', x + 1, y, 'inimigo');
+  sim.atualizarAuras();
+  ok(!inv.auraBlind, 'a nossa aura cobriu o invasor');
+});
+
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
 process.exit(falhou ? 1 : 0);

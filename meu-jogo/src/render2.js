@@ -1320,6 +1320,45 @@
     }
   };
 
+  /* O anel da aura. Warcraft III desenha um círculo no chão em volta de quem
+     carrega a aura, e é a única forma de o jogador saber onde o bônus acaba —
+     sem o anel, "ficar perto" vira adivinhação.
+     A fonte da lista é a simulação (`fontesDeAura`), calculada uma vez por
+     quadro: repetir a varredura aqui seria a mesma conta duas vezes. */
+  R.desenharAuras = function (ctx) {
+    var fontes = this.sim.fontesDeAura;
+    if (!fontes || !fontes.length) return;
+    var z = this.cam.zoom;
+    for (var i = 0; i < fontes.length; i++) {
+      var f = fontes[i];
+      /* fora da névoa do jogador não se desenha nada — a aura é informação */
+      var cel = this.sim.world.idx(Math.floor(f.x), Math.floor(f.y));
+      if (this.sim.world.visivel && !this.sim.world.visivel[cel]) continue;
+      var c = this.paraTela(f.x, f.y);
+      /* save/restore por fonte, e não `setTransform`: a tela pode já estar com
+         uma transformação de escala (densidade de pixel) e zerá-la aqui
+         desalinharia tudo que vem depois. */
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.scale(1, ALT / LARG);
+      var r = f.aura.raio * LARG * 0.5 * z;
+      var g = ctx.createRadialGradient(0, 0, r * 0.55, 0, 0, r);
+      g.addColorStop(0, 'rgba(127,215,255,0)');
+      g.addColorStop(1, 'rgba(127,215,255,0.13)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.fill();
+      /* O traço é o que informa — o preenchimento é só para achar o anel de
+         relance. Grosso de propósito: a escala vertical de 1:2 do isométrico
+         corta a espessura pela metade em cima e embaixo, e com 1,4 o anel
+         sumia justamente nas duas bordas que o jogador olha. */
+      ctx.strokeStyle = 'rgba(150,225,255,0.55)';
+      ctx.lineWidth = 2.8 * z;
+      ctx.setLineDash([7 * z, 7 * z]);
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
   /* ------------------------------------------------- prévia de construção */
   R.desenharPrevia = function (ctx) {
     var z = this.cam.zoom, i;

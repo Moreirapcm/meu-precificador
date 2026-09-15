@@ -114,6 +114,47 @@
   };
 
 
+  /* ================================ AURAS ===============================
+     Item 11 do capítulo 11. Warcraft III: passiva, raio fixo, sem botão, e
+     auras IGUAIS não somam. O "não somam" é a regra que faz a aura comprar
+     posicionamento em vez de comprar quantidade: se somassem, a resposta
+     ótima seria empilhar cinco médicos, que não é decisão nenhuma. Por isso
+     aqui vale o MAIOR valor entre as fontes ao alcance, nunca a soma.
+
+     Uma passada por quadro, e não uma consulta dentro de `aplicarDano`: o dano
+     é chamado muitas vezes por quadro e a fonte de aura quase não se mexe. O
+     resultado fica em `u.auraBlind`, que `aplicarDano` só lê. */
+  S.atualizarAuras = function () {
+    var i, j, u;
+    /* As fontes são poucas — médicos e bastiões —, e juntá-las antes evita
+       varrer as duas listas inteiras uma vez por unidade. */
+    var fontes = [];
+    for (i = 0; i < this.unidades.length; i++) {
+      u = this.unidades[i];
+      if (!u.morta && u.lado === 'aliado' && u.def.aura) {
+        fontes.push({ x: u.x, y: u.y, aura: u.def.aura });
+      }
+    }
+    for (i = 0; i < this.listaEstruturas.length; i++) {
+      var b = this.listaEstruturas[i];
+      if (!b.morta && b.construida && b.def.aura) {
+        fontes.push({ x: b.x + b.w / 2, y: b.y + b.h / 2, aura: b.def.aura });
+      }
+    }
+    for (i = 0; i < this.unidades.length; i++) {
+      u = this.unidades[i];
+      if (u.lado !== 'aliado' || u.morta) continue;
+      var melhor = 0;
+      for (j = 0; j < fontes.length; j++) {
+        var f = fontes[j];
+        if (U.dist(u.x, u.y, f.x, f.y) > f.aura.raio) continue;
+        if (f.aura.blind > melhor) melhor = f.aura.blind;
+      }
+      u.auraBlind = melhor;
+    }
+    this.fontesDeAura = fontes;
+  };
+
   /* ============================== VETERANIA =============================
      Item 9 do capítulo 11. A experiência é o `valor` do que se abate, e sobe
      de posto em degraus de `POSTOS`. Só tropa nossa com arma ou com cura: o
@@ -491,6 +532,10 @@
       } else {
         if (this.jogador.pesquisas.blindagem1) blind += 1;
         if (this.jogador.pesquisas.blindagem2) blind += 1;
+        /* A aura SOMA à pesquisa: são coisas diferentes — uma é equipamento
+           que a tropa carrega, a outra é estar no lugar certo. O que não soma
+           é aura com aura. */
+        blind += alvo.auraBlind || 0;
       }
     }
     if (opts.metadeBlindagem) blind *= 0.5;
@@ -1255,6 +1300,7 @@
     }
 
     this.separarUnidades(dt);
+    this.atualizarAuras();
     this.atenderObrasPendentes();
     this.atualizarProjeteis(dt);
     this.atualizarHabilidades(dt);

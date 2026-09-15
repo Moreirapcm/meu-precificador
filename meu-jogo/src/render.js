@@ -681,6 +681,10 @@
     }
 
     this.desenharGrade();
+    /* A aura vai no CHÃO, antes de tudo que tem corpo: ela é terreno, não
+       objeto — quem a lê é o jogador decidindo onde parar a tropa, e um anel
+       por cima dos bonecos atrapalharia a leitura do combate. */
+    this.desenharAuras(ctx);
 
     var lista = this.montarListaDesenho();
     lista.sort(function (a, b) { return a.z - b.z; });

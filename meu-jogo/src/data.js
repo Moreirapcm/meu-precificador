@@ -132,7 +132,11 @@
       nome: 'Bastião', cat: 'defesa', w: 2, h: 2, hp: 980, blind: 1, guarnicao: 5, tempo: 13,
       custo: { m: 130 }, energia: 3, muro: true, papel: 'torre', visao: 9, req: { tech: 2 },
       arma: { dano: 21, cad: 0.8, alc: 8, ar: true, solo: true, vel: 17, cor: '#7fd7ff' },
-      desc: 'Ponto forte da muralha: a parede encaixa pelos quatro lados. Caro por célula.'
+      /* A mesma aura, fixa no terreno: é o que dá ao Bastião um papel que a
+         Sentinela não tem além de atirar mais forte — ele é o ponto da linha
+         onde vale a pena a tropa ficar. */
+      aura: { blind: 1, raio: 5.5, nome: 'Cobertura do bastião' },
+      desc: 'Ponto forte da muralha: a parede encaixa pelos quatro lados e dá +1 de blindagem à tropa em volta. Caro por célula.'
     },
     sentinela: {
       nome: 'Sentinela', cat: 'defesa', w: 2, h: 2, hp: 560, blind: 1, guarnicao: 4, tempo: 8,
@@ -215,7 +219,17 @@
     medico: {
       nome: 'Médico de campo', raio: 0.26, custo: { m: 90, c: 15 }, pop: 1, tempo: 14, hp: 120, vel: 2.8, visao: 7,
       cura: { taxa: 14, alc: 4, reserva: 320 }, req: { tech: 2 },
-      desc: 'Recupera soldados próximos com reserva limitada. Precisa de proteção.'
+      /* AURA. Warcraft III: a Devotion Aura dá armadura num raio fixo, é
+         passiva, não tem botão e auras iguais NÃO somam. O que ela compra é
+         posicionamento — a tropa espalhada perde o bônus e a tropa junta
+         ganha, sem nenhum clique no meio.
+
+         Mora no Médico porque ele já é a âncora natural da formação: quem
+         fica perto dele se cura, e agora também apanha menos. Concentrar as
+         duas coisas na mesma unidade é o que transforma "levar médico" em
+         "manter a bola junto do médico", que é a decisão. */
+      aura: { blind: 1, raio: 4.5, nome: 'Cobertura médica' },
+      desc: 'Recupera soldados próximos com reserva limitada e dá +1 de blindagem a quem fica perto. Precisa de proteção.'
     },
     lanceiro: {
       nome: 'Lanceiro pesado', raio: 0.32, custo: { m: 120, c: 20 }, pop: 2, tempo: 18, hp: 230, vel: 2.2, visao: 8, blind: 2,
