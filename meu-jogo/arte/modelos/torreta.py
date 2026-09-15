@@ -280,12 +280,14 @@ cena.eevee.gtao_factor = 1.0
 cena.eevee.shadow_cube_size = '2048'
 cena.eevee.shadow_cascade_size = '4096'
 cena.eevee.use_soft_shadows = True
-# Bloom leve: é o que dá núcleo estourado ao emissivo sem lavar a peça.
+# BLOOM DESLIGADO, e o motivo vale ficar escrito. Ele espalha alfa RESIDUAL
+# pela moldura inteira — alfa 3, 5, invisível sozinho. Só que o contorno do jogo
+# (`spriteContornado`) desenha a figura oito vezes deslocada antes de chapar de
+# preto: oito vezes cinco vira quarenta, e a torre apareceu na tela dentro de um
+# retângulo preto. O emissivo com força 3,2 já estoura sozinho; o halo é luxo
+# que custou um defeito visível.
 if hasattr(cena.eevee, "use_bloom"):
-    cena.eevee.use_bloom = True
-    cena.eevee.bloom_intensity = 0.04
-    cena.eevee.bloom_radius = 4.0
-    cena.eevee.bloom_threshold = 1.0
+    cena.eevee.use_bloom = False
 
 # MOLDURA FIXA, sem recorte depois: a largura da imagem vale sempre as mesmas
 # 3,0 unidades de mundo, então a base ocupa a mesma fração em todos os oito

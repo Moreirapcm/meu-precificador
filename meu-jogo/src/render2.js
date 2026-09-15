@@ -396,10 +396,11 @@
      O desenho é o clássico: a figura em preto deslocada para os oito lados,
      com a figura de verdade por cima. */
   R.spriteContornado = function (img, largPx, altPx) {
-    if (!this.cacheContorno) { this.cacheContorno = {}; this.cacheContornoN = 0; }
+    if (!this.cacheContorno) this.cacheContorno = {};
+    if (!this.idSprite) this.idSprite = 0;
     var a = Math.max(8, Math.round(altPx / 3) * 3);      /* degraus de 3 px */
     var l = Math.max(4, Math.round(largPx * a / altPx));
-    if (!img.uf_id) { img.uf_id = ++this.cacheContornoN; }
+    if (!img.uf_id) img.uf_id = ++this.idSprite;
     var chave = img.uf_id + ':' + a;
     var pronto = this.cacheContorno[chave];
     if (pronto) return pronto;
@@ -446,10 +447,19 @@
      Guardada por (imagem, altura) como o contorno, e pelo mesmo motivo: o zoom
      muda o tamanho e refazer a cada quadro custaria caro. */
   R.silhuetaChapada = function (img, largPx, altPx) {
-    if (!this.cacheSombra) { this.cacheSombra = {}; this.cacheSombraN = 0; }
+    if (!this.cacheSombra) this.cacheSombra = {};
+    if (!this.idSprite) this.idSprite = 0;
     var a = Math.max(6, Math.round(altPx));
     var l = Math.max(4, Math.round(largPx * a / altPx));
-    if (!img.uf_id) { img.uf_id = ++this.cacheContornoN; }
+    /* UM CONTADOR SÓ para os dois caches. Esta linha usava `cacheContornoN`,
+       que é inicializado dentro de `spriteContornado` — e `spriteContornado`
+       nem sempre roda: acima de 150 px de altura `imagemComSilhueta` desenha
+       cru e nunca passa por lá. Com o contador ainda `undefined`, `++undefined`
+       dá NaN, e como `!NaN` é verdadeiro o id NUNCA gruda: toda imagem da mesma
+       altura cai na chave "NaN:altura" e elas trocam de sombra entre si.
+       Dois contadores separados também não servem — gerariam ids iguais nos
+       dois caches. Um só, e inicializado nas duas portas. */
+    if (!img.uf_id) img.uf_id = ++this.idSprite;
     var chave = img.uf_id + ':' + a;
     var pronto = this.cacheSombra[chave];
     if (pronto) return pronto;
