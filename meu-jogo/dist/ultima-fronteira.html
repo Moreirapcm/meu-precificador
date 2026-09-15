@@ -1124,8 +1124,8 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     custoEscudo: 35,
     reembolso: 0.6,
     reservaReparo: 120,
-    postoDano: 0.05,        /* +5% de dano por posto */
-    postoCadencia: 0.05,    /* -5% no tempo de recarga por posto */
+    postoDano: 0.08,        /* +8% de dano por posto */
+    postoCadencia: 0.08,    /* -8% no tempo de recarga por posto */
     postoCura: 0.015        /* fração da vida por segundo, a partir do posto 2 */
   };
 
@@ -1144,11 +1144,14 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
      muitas ondas seguidas, e o mesmo número que é justo num jogo onde a
      unidade morre rápido vira desequilíbrio aqui.
 
-     5% por posto é NÚMERO MEDIDO, não escolhido. Com 8% o `equilibrio.cjs`
-     virou a vitória do Rio em derrota: com soldado mais forte a onda morria
-     longe da base, o jogador simulado parava de erguer torre (3 contra 8) e
-     chegava à última onda sem defesa estática. O padrão das doze partidas é o
-     portão, e ele voltou a bater com 5%. */
+     8% por posto é NÚMERO MEDIDO, e a história dele vale ficar registrada.
+     Na primeira medição 8% virou a vitória do Rio em derrota e o número baixou
+     para 5%. Depois descobriu-se que o `equilibrio.cjs` estava cego — o
+     jogador simulado nunca construía Centro de Pesquisa e terminava as doze
+     partidas em tecnologia 1. Com o medidor consertado, 8% passa no portão
+     (3 vitórias, 9 derrotas, mesmas ondas) e ainda melhora o Rio: 18m31 contra
+     19m35, 32 perdas contra 35. A rejeição tinha sido do instrumento, não do
+     número. */
   var POSTOS = [
     { nome: '', xp: 0 },
     { nome: 'Veterano', xp: 15 },
