@@ -808,5 +808,41 @@ teste('Aura: dá blindagem por PROXIMIDADE, e aura igual não soma com aura igua
   ok(!inv.auraBlind, 'a nossa aura cobriu o invasor');
 });
 
+
+/* Item 12 do capítulo 11: varredura por energia tática. */
+teste('Varredura: cobra energia, revela sem ninguém lá e expira sozinha', function () {
+  var sim = partida();
+  var w = sim.world;
+  /* apaga a névoa que a partida já revelou, para medir só a varredura */
+  for (var i = 0; i < w.n; i++) { w.explorado[i] = 0; w.visivel[i] = 0; }
+
+  /* um canto longe de qualquer unidade nossa */
+  var px = w.w - 6, py = w.h - 6;
+  var idx = w.idx(px, py);
+  sim.jogador.energia = D.REGRAS.custoVarredura + 5;
+
+  igual(w.visivel[idx], 0, 'a célula já estava visível antes:');
+  var res = sim.varrer(px, py);
+  ok(res.ok, 'a varredura foi recusada: ' + res.motivo);
+  igual(sim.jogador.energia, 5, 'não cobrou a energia certa:');
+  ok(w.visivel[idx], 'a varredura não revelou na hora');
+
+  /* e continua revelando depois de a visão ser recalculada do zero */
+  sim.atualizarVisao();
+  ok(w.visivel[idx], 'a varredura apagou no recálculo da névoa');
+
+  /* sem energia, recusa */
+  sim.jogador.energia = 0;
+  ok(!sim.varrer(px, py).ok, 'varreu sem energia');
+
+  /* expira e a área volta a ficar escura */
+  sim.varreduras[0].ate = sim.t - 1;
+  sim.atualizarHabilidades(0);
+  igual(sim.varreduras.length, 0, 'a varredura não expirou:');
+  sim.atualizarVisao();
+  igual(w.visivel[idx], 0, 'continuou enxergando depois de expirar:');
+  ok(w.explorado[idx], 'o terreno varrido não ficou como explorado');
+});
+
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
 process.exit(falhou ? 1 : 0);

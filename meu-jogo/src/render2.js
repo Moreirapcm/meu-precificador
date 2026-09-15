@@ -1359,6 +1359,35 @@
     }
   };
 
+  /* O olho emprestado tem de APARECER, e tem de aparecer acabando: o valor da
+     varredura é saber quanto tempo ainda se enxerga ali. O anel encolhe com o
+     tempo restante, que diz isso sem escrever número nenhum. */
+  R.desenharVarreduras = function (ctx) {
+    var lista = this.sim.varreduras;
+    if (!lista || !lista.length) return;
+    var z = this.cam.zoom, R2 = D.REGRAS;
+    for (var i = 0; i < lista.length; i++) {
+      var v = lista[i];
+      var resta = Math.max(0, (v.ate - this.sim.t) / (R2.varreduraDuracao || 14));
+      var c = this.paraTela(v.x, v.y);
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.scale(1, ALT / LARG);
+      var r = v.raio * LARG * 0.5 * z;
+      ctx.strokeStyle = 'rgba(160,220,255,0.45)';
+      ctx.lineWidth = 2.4 * z;
+      ctx.setLineDash([9 * z, 7 * z]);
+      ctx.lineDashOffset = -this.quadro * 0.6 * z;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.stroke();
+      /* o anel de dentro é o relógio */
+      ctx.strokeStyle = 'rgba(160,220,255,0.75)';
+      ctx.lineWidth = 3 * z;
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(0, 0, r, -1.5708, -1.5708 + 6.283 * resta); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
   /* ------------------------------------------------- prévia de construção */
   R.desenharPrevia = function (ctx) {
     var z = this.cam.zoom, i;

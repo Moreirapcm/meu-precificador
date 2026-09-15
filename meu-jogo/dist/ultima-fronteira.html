@@ -1122,6 +1122,15 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     energiaRegen: 2.4,
     custoBombardeio: 50,
     custoEscudo: 35,
+    /* VARREDURA. O Scanner Sweep do StarCraft custa 50 de energia e revela
+       20×20 por 15 segundos. As duas metades dele já existiam soltas aqui —
+       o Radar, que é a visão fixa, e a energia tática, que paga bombardeio e
+       escudo — e faltava a peça que vê ONDE se quer, na hora em que se quer.
+       Mais barata que o bombardeio de propósito: olhar tem de custar menos que
+       bater, senão ninguém olha. */
+    custoVarredura: 30,
+    varreduraRaio: 9,
+    varreduraDuracao: 14,
     reembolso: 0.6,
     reservaReparo: 120,
     postoDano: 0.08,        /* +8% de dano por posto */
@@ -2228,6 +2237,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.alvoPrioritario = 0;
     this.escudo = null;
     this.bombardeios = [];
+    this.varreduras = [];            /* olhos emprestados: revelam sem unidade lá */
     this.avisos = [];
     this.estatisticas = { abates: 0, perdas: 0, entregue: 0, gastoReparo: 0, operariosPerdidos: 0 };
     this.reparoAuto = { ativo: false, reserva: R.reservaReparo, max: 2 };
@@ -3716,6 +3726,13 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (u.lado !== 'aliado' || u.morta) continue;
       w.revelar(u.x, u.y, u.def.visao || 6);
     }
+    /* A varredura entra aqui, depois de tudo: `limparVisao` zera `visivel` a
+       cada passada, então revelar uma vez no disparo não bastaria — a área
+       apagaria no quadro seguinte. Enquanto ela dura, é um olho a mais. */
+    for (i = 0; i < this.varreduras.length; i++) {
+      var v = this.varreduras[i];
+      w.revelar(v.x, v.y, v.raio);
+    }
   };
 
   /* -------------------------------------------------------------- combate */
@@ -4776,6 +4793,24 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     return { ok: true };
   };
 
+  /* VARREDURA. Revela um pedaço do mapa por alguns segundos, sem mandar
+     ninguém lá. É o Scanner Sweep, e o que ele compra é ANTECIPAÇÃO: ver a
+     onda se formando na zona de invasão a tempo de mover a linha, em vez de
+     descobrir por onde ela vem quando ela já está na muralha.
+     Sem detector porque não temos invasor invisível — a outra metade do poder
+     do StarCraft não tem o que detectar aqui. */
+  S.varrer = function (x, y) {
+    if (this.jogador.energia < R.custoVarredura) return { ok: false, motivo: 'Energia tática insuficiente' };
+    this.jogador.energia -= R.custoVarredura;
+    var v = { x: x, y: y, raio: R.varreduraRaio, ate: this.t + R.varreduraDuracao };
+    this.varreduras.push(v);
+    /* revela JÁ, e não no próximo `atualizarVisao`: o jogador tocou para ver
+       agora, e um quadro de espera lê como comando que não pegou. */
+    this.world.revelar(x, y, v.raio);
+    this.emitir('varreduraAtiva', { x: x, y: y, raio: v.raio });
+    return { ok: true };
+  };
+
   S.ativarEscudo = function (x, y) {
     if (this.jogador.energia < R.custoEscudo) return { ok: false, motivo: 'Energia tática insuficiente' };
     this.jogador.energia -= R.custoEscudo;
@@ -4795,6 +4830,9 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       this.bombardeios.splice(i, 1);
     }
     if (this.escudo && this.t > this.escudo.ate) this.escudo = null;
+    for (var iv = this.varreduras.length - 1; iv >= 0; iv--) {
+      if (this.t > this.varreduras[iv].ate) this.varreduras.splice(iv, 1);
+    }
   };
 
   /* ------------------------------------------------------- fim de partida */
@@ -5058,6 +5096,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         alvoPrioritario: sim.alvoPrioritario,
         escudo: sim.escudo ? JSON.parse(JSON.stringify(sim.escudo)) : null,
         bombardeios: JSON.parse(JSON.stringify(sim.bombardeios)),
+        varreduras: JSON.parse(JSON.stringify(sim.varreduras || [])),
         centralId: sim.central ? sim.central.id : 0,
         estruturas: sim.listaEstruturas.map(limparEntidade),
         unidades: sim.unidades.map(limparEntidade),
@@ -5110,6 +5149,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       sim.alvoPrioritario = dados.alvoPrioritario || 0;
       sim.escudo = dados.escudo;
       sim.bombardeios = dados.bombardeios || [];
+      sim.varreduras = dados.varreduras || [];
       sim.avisouEntrega = dados.avisouEntrega;
       sim.filaSpawn = (dados.filaSpawn || []).map(function (s) {
         return { tipo: s.tipo, em: s.em, entrada: s.entrada };
@@ -6523,6 +6563,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.desenharEfeitos(ctx, dt);
     this.desenharNevoa(ctx);
     this.desenharAreasDePerigo(ctx);
+    this.desenharVarreduras(ctx);
     this.desenharObrasAgendadas(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
@@ -8248,6 +8289,35 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }
   };
 
+  /* O olho emprestado tem de APARECER, e tem de aparecer acabando: o valor da
+     varredura é saber quanto tempo ainda se enxerga ali. O anel encolhe com o
+     tempo restante, que diz isso sem escrever número nenhum. */
+  R.desenharVarreduras = function (ctx) {
+    var lista = this.sim.varreduras;
+    if (!lista || !lista.length) return;
+    var z = this.cam.zoom, R2 = D.REGRAS;
+    for (var i = 0; i < lista.length; i++) {
+      var v = lista[i];
+      var resta = Math.max(0, (v.ate - this.sim.t) / (R2.varreduraDuracao || 14));
+      var c = this.paraTela(v.x, v.y);
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.scale(1, ALT / LARG);
+      var r = v.raio * LARG * 0.5 * z;
+      ctx.strokeStyle = 'rgba(160,220,255,0.45)';
+      ctx.lineWidth = 2.4 * z;
+      ctx.setLineDash([9 * z, 7 * z]);
+      ctx.lineDashOffset = -this.quadro * 0.6 * z;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.stroke();
+      /* o anel de dentro é o relógio */
+      ctx.strokeStyle = 'rgba(160,220,255,0.75)';
+      ctx.lineWidth = 3 * z;
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(0, 0, r, -1.5708, -1.5708 + 6.283 * resta); ctx.stroke();
+      ctx.restore();
+    }
+  };
+
   /* ------------------------------------------------- prévia de construção */
   R.desenharPrevia = function (ctx) {
     var z = this.cam.zoom, i;
@@ -8761,7 +8831,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.jogo = jogo;
     this.sim = null;
     this.render = null;
-    this.modo = null;              /* null | {tipo:'construir'|'muro'|'ordem'|'bombardeio'|'escudo'|'rally'} */
+    this.modo = null;              /* null | {tipo:'construir'|'muro'|'ordem'|'bombardeio'|'escudo'|'varredura'|'rally'} */
     this.gavetaAtual = 'construir';
     this.gavetaAberta = false;
     this.selecionado = 0;
@@ -9020,6 +9090,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (k === 'e') { self.jogo.alternarVelocidade(); return; }
       if (k === 'q') { self.iniciarHabilidade('bombardeio'); return; }
       if (k === 'w') { self.iniciarHabilidade('escudo'); return; }
+      if (k === 'v') { self.iniciarHabilidade('varredura'); return; }
       if (k === 's') { self.pararSelecionados(); return; }
       if (k === 'h') { self.voltarParaBase(); return; }
       if (k === 'x') { self.desocuparSelecionada(); return; }
@@ -9067,6 +9138,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (t === 'construir') { this.confirmarConstrucao(cx, cy); return; }
       if (t === 'bombardeio') { this.confirmarHabilidade('bombardeio', m); return; }
       if (t === 'escudo') { this.confirmarHabilidade('escudo', m); return; }
+      if (t === 'varredura') { this.confirmarHabilidade('varredura', m); return; }
       if (t === 'rally') { this.confirmarRally(cx, cy); return; }
       if (t === 'ordem') { this.ordemNoTerreno(p); return; }
     }
@@ -9680,15 +9752,26 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   };
 
   /* ========================================== habilidades =============== */
+  /* Três habilidades, e a tabela é o que impede a quarta de virar mais um
+     `if` em cadeia: cada uma tem o seu preço, a sua frase e o seu método. */
+  var HABILIDADES = {
+    bombardeio: { custo: 'custoBombardeio', frase: 'Toque na área do bombardeio', metodo: 'bombardear' },
+    escudo: { custo: 'custoEscudo', frase: 'Toque no centro do escudo', metodo: 'ativarEscudo' },
+    varredura: { custo: 'custoVarredura', frase: 'Toque onde quer enxergar', metodo: 'varrer' }
+  };
+
   UI.prototype.iniciarHabilidade = function (qual) {
-    var custo = qual === 'bombardeio' ? D.REGRAS.custoBombardeio : D.REGRAS.custoEscudo;
+    var h = HABILIDADES[qual];
+    if (!h) return;
+    var custo = D.REGRAS[h.custo];
     if (this.sim.jogador.energia < custo) { this.mostrarAviso('Energia tática insuficiente (' + custo + ' necessários).', 'atencao'); UF.audio.evento('negado'); return; }
     this.modo = { tipo: qual };
-    this.mostrarModo(qual === 'bombardeio' ? 'Toque na área do bombardeio' : 'Toque no centro do escudo');
+    this.mostrarModo(h.frase);
   };
 
   UI.prototype.confirmarHabilidade = function (qual, m) {
-    var res = qual === 'bombardeio' ? this.sim.bombardear(m.x, m.y) : this.sim.ativarEscudo(m.x, m.y);
+    var h = HABILIDADES[qual];
+    var res = h ? this.sim[h.metodo](m.x, m.y) : { ok: false, motivo: 'Habilidade desconhecida' };
     if (!res.ok) { this.mostrarAviso(res.motivo, 'atencao'); UF.audio.evento('negado'); }
     else UF.audio.evento('clique');
     this.cancelarModo();
@@ -9933,7 +10016,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   };
   var CASAS_GLOBAL = {
     operario: 0, distribuir: 1, recolher: 2,
-    linha: 3, bombardeio: 4, construir: 5
+    linha: 3, bombardeio: 4, construir: 5, varredura: 6
   };
 
   /* Um símbolo por estrutura. Não é enfeite: no painel a figura é o que o olho
@@ -10166,6 +10249,12 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       function () { self.iniciarHabilidade('bombardeio'); },
       { desativado: sim.jogador.energia < D.REGRAS.custoBombardeio, tecla: 'q' });
     casas[CASAS_GLOBAL.construir] = this.botaoConstruir();
+    /* Casa 6, e não no lugar do Bombardear: casa de comando NÃO muda de lugar.
+       Empurrar Construir para o lado por causa de um botão novo é exatamente o
+       que a grade fixa existe para impedir. */
+    casas[CASAS_GLOBAL.varredura] = botao('Varredura', '◉', D.REGRAS.custoVarredura + ' ◉',
+      function () { self.iniciarHabilidade('varredura'); },
+      { desativado: sim.jogador.energia < D.REGRAS.custoVarredura, tecla: 'v' });
     montarCasas(cx, casas);
   };
 
@@ -10861,6 +10950,11 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       'Reduz 70% do dano dentro de um raio de 7 células por 8 segundos.',
       sim.jogador.energia < D.REGRAS.custoEscudo ? 'Energia tática insuficiente' : null,
       function () { self.iniciarHabilidade('escudo'); self.fecharGaveta(); }));
+    grade.appendChild(carta('Varredura', D.REGRAS.custoVarredura + ' ◉',
+      'Enxerga um raio de ' + D.REGRAS.varreduraRaio + ' células por ' +
+      D.REGRAS.varreduraDuracao + ' segundos, sem mandar ninguém lá. Serve para ver a onda se formando.',
+      sim.jogador.energia < D.REGRAS.custoVarredura ? 'Energia tática insuficiente' : null,
+      function () { self.iniciarHabilidade('varredura'); self.fecharGaveta(); }));
     grade.appendChild(carta(sim.alvoPrioritario ? 'Remover alvo marcado' : 'Fogo concentrado',
       'toque no inimigo', 'Torres e soldados priorizam o alvo marcado quando conseguem atingi-lo.', null,
       function () { sim.alvoPrioritario = 0; self.atualizarTudo(); }));

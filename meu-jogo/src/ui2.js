@@ -132,7 +132,7 @@
   };
   var CASAS_GLOBAL = {
     operario: 0, distribuir: 1, recolher: 2,
-    linha: 3, bombardeio: 4, construir: 5
+    linha: 3, bombardeio: 4, construir: 5, varredura: 6
   };
 
   /* Um símbolo por estrutura. Não é enfeite: no painel a figura é o que o olho
@@ -365,6 +365,12 @@
       function () { self.iniciarHabilidade('bombardeio'); },
       { desativado: sim.jogador.energia < D.REGRAS.custoBombardeio, tecla: 'q' });
     casas[CASAS_GLOBAL.construir] = this.botaoConstruir();
+    /* Casa 6, e não no lugar do Bombardear: casa de comando NÃO muda de lugar.
+       Empurrar Construir para o lado por causa de um botão novo é exatamente o
+       que a grade fixa existe para impedir. */
+    casas[CASAS_GLOBAL.varredura] = botao('Varredura', '◉', D.REGRAS.custoVarredura + ' ◉',
+      function () { self.iniciarHabilidade('varredura'); },
+      { desativado: sim.jogador.energia < D.REGRAS.custoVarredura, tecla: 'v' });
     montarCasas(cx, casas);
   };
 
@@ -1060,6 +1066,11 @@
       'Reduz 70% do dano dentro de um raio de 7 células por 8 segundos.',
       sim.jogador.energia < D.REGRAS.custoEscudo ? 'Energia tática insuficiente' : null,
       function () { self.iniciarHabilidade('escudo'); self.fecharGaveta(); }));
+    grade.appendChild(carta('Varredura', D.REGRAS.custoVarredura + ' ◉',
+      'Enxerga um raio de ' + D.REGRAS.varreduraRaio + ' células por ' +
+      D.REGRAS.varreduraDuracao + ' segundos, sem mandar ninguém lá. Serve para ver a onda se formando.',
+      sim.jogador.energia < D.REGRAS.custoVarredura ? 'Energia tática insuficiente' : null,
+      function () { self.iniciarHabilidade('varredura'); self.fecharGaveta(); }));
     grade.appendChild(carta(sim.alvoPrioritario ? 'Remover alvo marcado' : 'Fogo concentrado',
       'toque no inimigo', 'Torres e soldados priorizam o alvo marcado quando conseguem atingi-lo.', null,
       function () { sim.alvoPrioritario = 0; self.atualizarTudo(); }));

@@ -73,6 +73,7 @@
         alvoPrioritario: sim.alvoPrioritario,
         escudo: sim.escudo ? JSON.parse(JSON.stringify(sim.escudo)) : null,
         bombardeios: JSON.parse(JSON.stringify(sim.bombardeios)),
+        varreduras: JSON.parse(JSON.stringify(sim.varreduras || [])),
         centralId: sim.central ? sim.central.id : 0,
         estruturas: sim.listaEstruturas.map(limparEntidade),
         unidades: sim.unidades.map(limparEntidade),
@@ -125,6 +126,7 @@
       sim.alvoPrioritario = dados.alvoPrioritario || 0;
       sim.escudo = dados.escudo;
       sim.bombardeios = dados.bombardeios || [];
+      sim.varreduras = dados.varreduras || [];
       sim.avisouEntrega = dados.avisouEntrega;
       sim.filaSpawn = (dados.filaSpawn || []).map(function (s) {
         return { tipo: s.tipo, em: s.em, entrada: s.entrada };

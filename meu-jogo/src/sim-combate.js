@@ -65,6 +65,13 @@
       if (u.lado !== 'aliado' || u.morta) continue;
       w.revelar(u.x, u.y, u.def.visao || 6);
     }
+    /* A varredura entra aqui, depois de tudo: `limparVisao` zera `visivel` a
+       cada passada, então revelar uma vez no disparo não bastaria — a área
+       apagaria no quadro seguinte. Enquanto ela dura, é um olho a mais. */
+    for (i = 0; i < this.varreduras.length; i++) {
+      var v = this.varreduras[i];
+      w.revelar(v.x, v.y, v.raio);
+    }
   };
 
   /* -------------------------------------------------------------- combate */
@@ -1125,6 +1132,24 @@
     return { ok: true };
   };
 
+  /* VARREDURA. Revela um pedaço do mapa por alguns segundos, sem mandar
+     ninguém lá. É o Scanner Sweep, e o que ele compra é ANTECIPAÇÃO: ver a
+     onda se formando na zona de invasão a tempo de mover a linha, em vez de
+     descobrir por onde ela vem quando ela já está na muralha.
+     Sem detector porque não temos invasor invisível — a outra metade do poder
+     do StarCraft não tem o que detectar aqui. */
+  S.varrer = function (x, y) {
+    if (this.jogador.energia < R.custoVarredura) return { ok: false, motivo: 'Energia tática insuficiente' };
+    this.jogador.energia -= R.custoVarredura;
+    var v = { x: x, y: y, raio: R.varreduraRaio, ate: this.t + R.varreduraDuracao };
+    this.varreduras.push(v);
+    /* revela JÁ, e não no próximo `atualizarVisao`: o jogador tocou para ver
+       agora, e um quadro de espera lê como comando que não pegou. */
+    this.world.revelar(x, y, v.raio);
+    this.emitir('varreduraAtiva', { x: x, y: y, raio: v.raio });
+    return { ok: true };
+  };
+
   S.ativarEscudo = function (x, y) {
     if (this.jogador.energia < R.custoEscudo) return { ok: false, motivo: 'Energia tática insuficiente' };
     this.jogador.energia -= R.custoEscudo;
@@ -1144,6 +1169,9 @@
       this.bombardeios.splice(i, 1);
     }
     if (this.escudo && this.t > this.escudo.ate) this.escudo = null;
+    for (var iv = this.varreduras.length - 1; iv >= 0; iv--) {
+      if (this.t > this.varreduras[iv].ate) this.varreduras.splice(iv, 1);
+    }
   };
 
   /* ------------------------------------------------------- fim de partida */

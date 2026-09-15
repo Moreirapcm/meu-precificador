@@ -30,6 +30,7 @@
     this.alvoPrioritario = 0;
     this.escudo = null;
     this.bombardeios = [];
+    this.varreduras = [];            /* olhos emprestados: revelam sem unidade lá */
     this.avisos = [];
     this.estatisticas = { abates: 0, perdas: 0, entregue: 0, gastoReparo: 0, operariosPerdidos: 0 };
     this.reparoAuto = { ativo: false, reserva: R.reservaReparo, max: 2 };

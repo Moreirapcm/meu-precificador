@@ -12,7 +12,7 @@
     this.jogo = jogo;
     this.sim = null;
     this.render = null;
-    this.modo = null;              /* null | {tipo:'construir'|'muro'|'ordem'|'bombardeio'|'escudo'|'rally'} */
+    this.modo = null;              /* null | {tipo:'construir'|'muro'|'ordem'|'bombardeio'|'escudo'|'varredura'|'rally'} */
     this.gavetaAtual = 'construir';
     this.gavetaAberta = false;
     this.selecionado = 0;
@@ -271,6 +271,7 @@
       if (k === 'e') { self.jogo.alternarVelocidade(); return; }
       if (k === 'q') { self.iniciarHabilidade('bombardeio'); return; }
       if (k === 'w') { self.iniciarHabilidade('escudo'); return; }
+      if (k === 'v') { self.iniciarHabilidade('varredura'); return; }
       if (k === 's') { self.pararSelecionados(); return; }
       if (k === 'h') { self.voltarParaBase(); return; }
       if (k === 'x') { self.desocuparSelecionada(); return; }
@@ -318,6 +319,7 @@
       if (t === 'construir') { this.confirmarConstrucao(cx, cy); return; }
       if (t === 'bombardeio') { this.confirmarHabilidade('bombardeio', m); return; }
       if (t === 'escudo') { this.confirmarHabilidade('escudo', m); return; }
+      if (t === 'varredura') { this.confirmarHabilidade('varredura', m); return; }
       if (t === 'rally') { this.confirmarRally(cx, cy); return; }
       if (t === 'ordem') { this.ordemNoTerreno(p); return; }
     }
@@ -931,15 +933,26 @@
   };
 
   /* ========================================== habilidades =============== */
+  /* Três habilidades, e a tabela é o que impede a quarta de virar mais um
+     `if` em cadeia: cada uma tem o seu preço, a sua frase e o seu método. */
+  var HABILIDADES = {
+    bombardeio: { custo: 'custoBombardeio', frase: 'Toque na área do bombardeio', metodo: 'bombardear' },
+    escudo: { custo: 'custoEscudo', frase: 'Toque no centro do escudo', metodo: 'ativarEscudo' },
+    varredura: { custo: 'custoVarredura', frase: 'Toque onde quer enxergar', metodo: 'varrer' }
+  };
+
   UI.prototype.iniciarHabilidade = function (qual) {
-    var custo = qual === 'bombardeio' ? D.REGRAS.custoBombardeio : D.REGRAS.custoEscudo;
+    var h = HABILIDADES[qual];
+    if (!h) return;
+    var custo = D.REGRAS[h.custo];
     if (this.sim.jogador.energia < custo) { this.mostrarAviso('Energia tática insuficiente (' + custo + ' necessários).', 'atencao'); UF.audio.evento('negado'); return; }
     this.modo = { tipo: qual };
-    this.mostrarModo(qual === 'bombardeio' ? 'Toque na área do bombardeio' : 'Toque no centro do escudo');
+    this.mostrarModo(h.frase);
   };
 
   UI.prototype.confirmarHabilidade = function (qual, m) {
-    var res = qual === 'bombardeio' ? this.sim.bombardear(m.x, m.y) : this.sim.ativarEscudo(m.x, m.y);
+    var h = HABILIDADES[qual];
+    var res = h ? this.sim[h.metodo](m.x, m.y) : { ok: false, motivo: 'Habilidade desconhecida' };
     if (!res.ok) { this.mostrarAviso(res.motivo, 'atencao'); UF.audio.evento('negado'); }
     else UF.audio.evento('clique');
     this.cancelarModo();

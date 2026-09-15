@@ -476,6 +476,15 @@
     energiaRegen: 2.4,
     custoBombardeio: 50,
     custoEscudo: 35,
+    /* VARREDURA. O Scanner Sweep do StarCraft custa 50 de energia e revela
+       20×20 por 15 segundos. As duas metades dele já existiam soltas aqui —
+       o Radar, que é a visão fixa, e a energia tática, que paga bombardeio e
+       escudo — e faltava a peça que vê ONDE se quer, na hora em que se quer.
+       Mais barata que o bombardeio de propósito: olhar tem de custar menos que
+       bater, senão ninguém olha. */
+    custoVarredura: 30,
+    varreduraRaio: 9,
+    varreduraDuracao: 14,
     reembolso: 0.6,
     reservaReparo: 120,
     postoDano: 0.08,        /* +8% de dano por posto */
