@@ -1037,6 +1037,7 @@
     }
 
     this.separarUnidades(dt);
+    this.atenderObrasPendentes();
     this.atualizarProjeteis(dt);
     this.atualizarHabilidades(dt);
     this.atualizarPesquisa(dt);

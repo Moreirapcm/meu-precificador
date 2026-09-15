@@ -85,6 +85,13 @@
         terrenoMudado: (sim.world.terrenoMudado || []).map(function (c) {
           return { x: c.x, y: c.y, t: c.t };
         }),
+        /* A obra agendada não custou nada ainda, mas é uma ORDEM do jogador:
+           perder no save só ela é o mesmo tipo de estrago do terreno mudado —
+           ele volta ao jogo achando que mandou construir e não mandou. O prazo
+           é regravado a partir do relógio novo, que recomeça no `t` salvo. */
+        obrasPendentes: (sim.obrasPendentes || []).map(function (o) {
+          return { tipo: o.tipo, x: o.x, y: o.y, ate: o.ate };
+        }),
         avisouEntrega: !!sim.avisouEntrega
       };
     },
@@ -141,6 +148,9 @@
         sim.unidades.push(u);
       });
       sim.projeteis = dados.projeteis || [];
+      sim.obrasPendentes = (dados.obrasPendentes || []).filter(function (o) {
+        return !!D.ESTRUTURAS[o.tipo];
+      });
       sim.recalcularPop();
       sim.atualizarVisao();
       return sim;

@@ -20,6 +20,7 @@
     this.listaEstruturas = [];
     this.unidades = [];
     this.projeteis = [];
+    this.obrasPendentes = [];        /* planta posta sobre ruína, esperando o trator */
     this.eventos = [];
     this.fase = 'colocacao';          /* colocacao -> jogando -> vitoria | derrota */
     this.pausado = false;
@@ -200,14 +201,26 @@
     if (!def) return { ok: false, motivo: 'Estrutura desconhecida' };
     var falta = this.requisitoFaltante(def);
     if (falta) return { ok: false, motivo: falta };
-    var w = this.world;
+    var w = this.world, precisaLimpar = null;
     for (var dy = 0; dy < def.h; dy++) {
       for (var dx = 0; dx < def.w; dx++) {
         var cx = x + dx, cy = y + dy;
         if (!w.dentro(cx, cy)) return { ok: false, motivo: 'Fora do setor' };
         var i = w.idx(cx, cy);
-        if (w.solido(cx, cy)) return { ok: false, motivo: 'Terreno intransponível' };
-        if (w.terreno[i] === D.TERRENO.CRATERA) return { ok: false, motivo: 'Cratera: terreno irregular' };
+        /* Ruína e entulho são os dois terrenos que o TRABALHO resolve: o trator
+           derruba, limpa e sobra chão. Rocha e água não saem nunca. Por isso
+           eles não são recusa, são pendência — anota a célula e segue
+           conferindo o resto, que quem chamou decide o que fazer com a lista.
+           `CRATERA` vale 3, o mesmo que `ESCOMBRO` (`data.js`, TERRENO): a
+           recusa "Cratera: terreno irregular" que estava aqui era, na prática,
+           a recusa do entulho — o jogador via o nome errado do que o barrava. */
+        var tc = w.terreno[i];
+        if ((tc === D.TERRENO.RUINA || tc === D.TERRENO.ESCOMBRO) &&
+            w.occ[i] === 0 && w.recurso[i] === 0) {
+          (precisaLimpar = precisaLimpar || []).push({ x: cx, y: cy });
+        } else if (w.solido(cx, cy)) {
+          return { ok: false, motivo: 'Terreno intransponível' };
+        }
         if (w.occ[i] !== 0) return { ok: false, motivo: 'Já existe uma estrutura aqui' };
         if (def.sobre) {
           var jaz = w.jazidaPorId(w.recurso[i]);
@@ -235,6 +248,12 @@
     var custo = this.custoDe(def);
     if (tipo !== 'central' && !this.temRecurso(custo)) {
       return { ok: false, motivo: 'Recursos insuficientes', custo: custo };
+    }
+    /* Falta de dinheiro vem ANTES da ruína de propósito: "não dá para pagar" é
+       o que o jogador precisa ler, e mandar o trator para uma obra que ele não
+       poderia encomendar seria trabalho jogado fora. */
+    if (precisaLimpar) {
+      return { ok: false, motivo: 'Entulho no caminho', limpar: precisaLimpar, custo: custo };
     }
     return { ok: true, custo: custo };
   };
@@ -302,6 +321,7 @@
   /* Comando do jogador: encomenda a construção e designa um operário. */
   Sim.prototype.construir = function (tipo, x, y) {
     var ver = this.podeColocar(tipo, x, y);
+    if (!ver.ok && ver.limpar) return this.agendarObra(tipo, x, y, ver);
     if (!ver.ok) return ver;
     this.cobrar(ver.custo);
     var b = this.criarEstrutura(tipo, x, y, false);

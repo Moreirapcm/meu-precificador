@@ -2125,6 +2125,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.listaEstruturas = [];
     this.unidades = [];
     this.projeteis = [];
+    this.obrasPendentes = [];        /* planta posta sobre ruína, esperando o trator */
     this.eventos = [];
     this.fase = 'colocacao';          /* colocacao -> jogando -> vitoria | derrota */
     this.pausado = false;
@@ -2305,14 +2306,26 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (!def) return { ok: false, motivo: 'Estrutura desconhecida' };
     var falta = this.requisitoFaltante(def);
     if (falta) return { ok: false, motivo: falta };
-    var w = this.world;
+    var w = this.world, precisaLimpar = null;
     for (var dy = 0; dy < def.h; dy++) {
       for (var dx = 0; dx < def.w; dx++) {
         var cx = x + dx, cy = y + dy;
         if (!w.dentro(cx, cy)) return { ok: false, motivo: 'Fora do setor' };
         var i = w.idx(cx, cy);
-        if (w.solido(cx, cy)) return { ok: false, motivo: 'Terreno intransponível' };
-        if (w.terreno[i] === D.TERRENO.CRATERA) return { ok: false, motivo: 'Cratera: terreno irregular' };
+        /* Ruína e entulho são os dois terrenos que o TRABALHO resolve: o trator
+           derruba, limpa e sobra chão. Rocha e água não saem nunca. Por isso
+           eles não são recusa, são pendência — anota a célula e segue
+           conferindo o resto, que quem chamou decide o que fazer com a lista.
+           `CRATERA` vale 3, o mesmo que `ESCOMBRO` (`data.js`, TERRENO): a
+           recusa "Cratera: terreno irregular" que estava aqui era, na prática,
+           a recusa do entulho — o jogador via o nome errado do que o barrava. */
+        var tc = w.terreno[i];
+        if ((tc === D.TERRENO.RUINA || tc === D.TERRENO.ESCOMBRO) &&
+            w.occ[i] === 0 && w.recurso[i] === 0) {
+          (precisaLimpar = precisaLimpar || []).push({ x: cx, y: cy });
+        } else if (w.solido(cx, cy)) {
+          return { ok: false, motivo: 'Terreno intransponível' };
+        }
         if (w.occ[i] !== 0) return { ok: false, motivo: 'Já existe uma estrutura aqui' };
         if (def.sobre) {
           var jaz = w.jazidaPorId(w.recurso[i]);
@@ -2340,6 +2353,12 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var custo = this.custoDe(def);
     if (tipo !== 'central' && !this.temRecurso(custo)) {
       return { ok: false, motivo: 'Recursos insuficientes', custo: custo };
+    }
+    /* Falta de dinheiro vem ANTES da ruína de propósito: "não dá para pagar" é
+       o que o jogador precisa ler, e mandar o trator para uma obra que ele não
+       poderia encomendar seria trabalho jogado fora. */
+    if (precisaLimpar) {
+      return { ok: false, motivo: 'Entulho no caminho', limpar: precisaLimpar, custo: custo };
     }
     return { ok: true, custo: custo };
   };
@@ -2407,6 +2426,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   /* Comando do jogador: encomenda a construção e designa um operário. */
   Sim.prototype.construir = function (tipo, x, y) {
     var ver = this.podeColocar(tipo, x, y);
+    if (!ver.ok && ver.limpar) return this.agendarObra(tipo, x, y, ver);
     if (!ver.ok) return ver;
     this.cobrar(ver.custo);
     var b = this.criarEstrutura(tipo, x, y, false);
@@ -2629,6 +2649,121 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       var op = this.operarioLivreMaisProximo(b.x, b.y);
       if (!op) break;
       this.darTarefa(op, { tipo: 'construir', alvo: b.id });
+    }
+  };
+
+
+  /* ============================ OBRA POR CIMA DA RUÍNA ==================
+     O trator é nosso e é novo, e criou uma fricção que os clássicos não têm:
+     o jogador escolhe o lugar, leva a negativa do terreno, tem de achar a
+     máquina, arrastar a área, esperar e voltar para pôr o prédio no mesmo
+     ponto. Quatro passos para uma decisão só.
+
+     O gênero resolve isso há décadas e sempre do mesmo jeito: a planta entra e
+     o obstáculo sai junto. No Age of Empires II a fundação derruba a árvore
+     isolada; no Spring a regra está escrita — o estorvo "should be resolved
+     automatically by the constructing unit".
+
+     Aqui a obra fica AGENDADA: nada é cobrado, o trator mais próximo recebe a
+     área exata da planta e, assim que o chão abre, a construção nasce sozinha.
+
+     Cobrar só no fim é decisão, não descuido. Minério preso em terreno que
+     talvez não abra é pior que o incômodo que estamos tirando, e o preço que
+     vale é o do instante em que a obra começa — com pesquisa de desconto no
+     meio do caminho, cobrar antes seria cobrar errado.
+
+     Sem trator, a obra NÃO é agendada: a recusa diz o que falta. Esconder a
+     máquina seria trocar uma fricção por um mistério. */
+  S.tratorLivreMaisProximo = function (x, y) {
+    var melhor = null, melhorD = Infinity;
+    for (var i = 0; i < this.unidades.length; i++) {
+      var u = this.unidades[i];
+      if (u.morta || !u.def.limpeza) continue;
+      var t = u.tarefa && u.tarefa.tipo;
+      /* limpando já é o trabalho certo: interromper um trator que está no meio
+         de uma quadra por uma planta nova é pior serviço, mas ainda é serviço.
+         Ocioso na frente, depois quem limpa, depois o resto. */
+      var prioridade = (!t || t === 'ocioso') ? 0 : (t === 'limpar' ? 1 : 2);
+      var d = U.dist(u.x, u.y, x, y) + prioridade * 12;
+      if (d < melhorD) { melhorD = d; melhor = u; }
+    }
+    return melhor;
+  };
+
+  S.agendarObra = function (tipo, x, y, ver) {
+    var def = ESTR[tipo];
+    /* Mesma planta no mesmo lugar duas vezes = desistir. É o cancelamento mais
+       barato que existe: o gesto de encomendar já está na mão do jogador, e não
+       há nada cobrado para devolver. */
+    for (var i = 0; i < this.obrasPendentes.length; i++) {
+      var o = this.obrasPendentes[i];
+      if (o.tipo === tipo && o.x === x && o.y === y) {
+        this.obrasPendentes.splice(i, 1);
+        this.aviso(def.nome + ': obra agendada cancelada.', 'info');
+        return { ok: true, cancelada: true };
+      }
+    }
+    var trator = this.tratorLivreMaisProximo(x, y);
+    if (!trator) {
+      return { ok: false, motivo: 'Entulho no caminho: produza um trator na Central' };
+    }
+    var area = { x0: x, y0: y, x1: x + def.w - 1, y1: y + def.h - 1 };
+    var raio = Math.max(3, Math.ceil(Math.max(def.w, def.h) / 2) + 2);
+    this.darTarefa(trator, { tipo: 'limpar', raio: raio, area: area, alvo: null }, true);
+    /* O prazo é proporcional ao serviço, não um número redondo: cada célula de
+       ruína são dois degraus de limpeza, e uma planta 4×4 de ruína leva minutos.
+       Sem prazo nenhum, a planta que o trator não alcança fica na tela para
+       sempre; com prazo fixo, a obra grande morre antes de poder nascer. */
+    var prazo = 20 + ver.limpar.length * (def.w * def.h > 4 ? 14 : 20);
+    this.obrasPendentes.push({
+      tipo: tipo, x: x, y: y, ate: this.t + prazo, trator: trator.id
+    });
+    this.aviso(def.nome + ': trator abrindo o terreno, a obra começa sozinha.', 'info');
+    return { ok: true, agendada: true };
+  };
+
+  /* Uma vez por quadro, e a lista está vazia quase sempre. */
+  S.atenderObrasPendentes = function () {
+    var lista = this.obrasPendentes;
+    if (!lista || !lista.length) return;
+    for (var i = lista.length - 1; i >= 0; i--) {
+      var o = lista[i];
+      var ver = this.podeColocar(o.tipo, o.x, o.y);
+      if (ver.ok) {
+        lista.splice(i, 1);
+        this.construir(o.tipo, o.x, o.y);
+        continue;
+      }
+      /* Ainda há ruína: é o caso normal, o trator está trabalhando. Mas ele
+         pode ter morrido, ter recebido outra ordem do jogador, ou ter parado
+         por não alcançar mais nada — e aí a planta esperaria o prazo inteiro
+         sem ninguém trabalhando nela. Reconvoca, no máximo a cada quatro
+         segundos, e o prazo continua sendo o fim da linha. */
+      if (ver.limpar && this.t < o.ate) {
+        var t = this.unidades.filter(function (u) { return u.id === o.trator && !u.morta; })[0];
+        if ((!t || !t.tarefa || t.tarefa.tipo !== 'limpar') && this.t >= (o.proxTentativa || 0)) {
+          o.proxTentativa = this.t + 4;
+          var outro = this.tratorLivreMaisProximo(o.x, o.y);
+          if (outro) {
+            var d = ESTR[o.tipo];
+            this.darTarefa(outro, {
+              tipo: 'limpar',
+              raio: Math.max(3, Math.ceil(Math.max(d.w, d.h) / 2) + 2),
+              area: { x0: o.x, y0: o.y, x1: o.x + d.w - 1, y1: o.y + d.h - 1 },
+              alvo: null
+            }, true);
+            o.trator = outro.id;
+          }
+        }
+        continue;
+      }
+      /* Recurso que faltou agora pode sobrar daqui a pouco — não desiste por
+         isso enquanto o prazo corre. */
+      if (!ver.limpar && ver.custo && this.t < o.ate &&
+          ver.motivo === 'Recursos insuficientes') continue;
+      lista.splice(i, 1);
+      this.aviso(ESTR[o.tipo].nome + ': obra agendada cancelada — ' +
+        (this.t >= o.ate ? 'o terreno não abriu a tempo' : ver.motivo) + '.', 'atencao');
     }
   };
 
@@ -4439,6 +4574,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }
 
     this.separarUnidades(dt);
+    this.atenderObrasPendentes();
     this.atualizarProjeteis(dt);
     this.atualizarHabilidades(dt);
     this.atualizarPesquisa(dt);
@@ -4556,6 +4692,13 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         terrenoMudado: (sim.world.terrenoMudado || []).map(function (c) {
           return { x: c.x, y: c.y, t: c.t };
         }),
+        /* A obra agendada não custou nada ainda, mas é uma ORDEM do jogador:
+           perder no save só ela é o mesmo tipo de estrago do terreno mudado —
+           ele volta ao jogo achando que mandou construir e não mandou. O prazo
+           é regravado a partir do relógio novo, que recomeça no `t` salvo. */
+        obrasPendentes: (sim.obrasPendentes || []).map(function (o) {
+          return { tipo: o.tipo, x: o.x, y: o.y, ate: o.ate };
+        }),
         avisouEntrega: !!sim.avisouEntrega
       };
     },
@@ -4612,6 +4755,9 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         sim.unidades.push(u);
       });
       sim.projeteis = dados.projeteis || [];
+      sim.obrasPendentes = (dados.obrasPendentes || []).filter(function (o) {
+        return !!D.ESTRUTURAS[o.tipo];
+      });
       sim.recalcularPop();
       sim.atualizarVisao();
       return sim;
@@ -5978,6 +6124,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     this.desenharEfeitos(ctx, dt);
     this.desenharNevoa(ctx);
     this.desenharAreasDePerigo(ctx);
+    this.desenharObrasAgendadas(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
     this.desenharAreaLimpeza(ctx);
@@ -7598,6 +7745,40 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     }
   };
 
+  /* A planta agendada tem de ficar VISÍVEL enquanto espera o trator. Sem ela na
+     tela, o jogador manda a obra, vê a ruína continuar de pé e conclui que o
+     comando não pegou — e encomenda de novo, que no nosso caso CANCELA. O
+     contorno âmbar tracejado é a promessa escrita no chão. */
+  R.desenharObrasAgendadas = function (ctx) {
+    var lista = this.sim.obrasPendentes;
+    if (!lista || !lista.length) return;
+    var z = this.cam.zoom;
+    for (var i = 0; i < lista.length; i++) {
+      var o = lista[i], def = D.ESTRUTURAS[o.tipo];
+      if (!def) continue;
+      for (var dy = 0; dy < def.h; dy++) {
+        for (var dx = 0; dx < def.w; dx++) {
+          this.marcarCelula(ctx, o.x + dx, o.y + dy, 'rgba(216,161,58,0.22)');
+        }
+      }
+      var p0 = this.paraTela(o.x, o.y);
+      var pD = this.paraTela(o.x + def.w, o.y);
+      var pB = this.paraTela(o.x + def.w, o.y + def.h);
+      var pE = this.paraTela(o.x, o.y + def.h);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(232,180,80,0.9)';
+      ctx.lineWidth = 1.6 * z;
+      ctx.setLineDash([7 * z, 5 * z]);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y); ctx.lineTo(pD.x, pD.y);
+      ctx.lineTo(pB.x, pB.y); ctx.lineTo(pE.x, pE.y);
+      ctx.closePath(); ctx.stroke();
+      ctx.restore();
+      var centro = this.paraTela(o.x + def.w / 2, o.y + def.h / 2);
+      this.icone(ctx, centro.x, centro.y, '#e8b450', '⌛');
+    }
+  };
+
   /* ------------------------------------------------- prévia de construção */
   R.desenharPrevia = function (ctx) {
     var z = this.cam.zoom, i;
@@ -7611,15 +7792,25 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     if (!this.previa) return;
     var pv = this.previa, def = D.ESTRUTURAS[pv.tipo];
     var ok = pv.valido;
+    /* Três estados, não dois: vai (verde), não vai (vermelho) e VAI DEPOIS
+       (âmbar) — a planta sobre ruína, que o trator abre antes da obra. Pintar
+       a espera de vermelho dizia ao jogador que ali não dá, que é o contrário
+       do que acontece. */
+    var espera = !ok && pv.aguarda;
+    var marca = ok ? 'rgba(120,230,140,0.4)' : (espera ? 'rgba(216,161,58,0.42)' : 'rgba(255,90,90,0.38)');
     for (var dy = 0; dy < def.h; dy++) {
       for (var dx = 0; dx < def.w; dx++) {
-        this.marcarCelula(ctx, pv.x + dx, pv.y + dy, ok ? 'rgba(120,230,140,0.4)' : 'rgba(255,90,90,0.38)');
+        this.marcarCelula(ctx, pv.x + dx, pv.y + dy, marca);
       }
     }
     var v = VISUAL[pv.tipo] || VISUAL.muro;
     ctx.globalAlpha = 0.5;
-    this.caixa(ctx, pv.x + 0.06, pv.y + 0.06, def.w - 0.12, def.h - 0.12, v.alt,
-      { topo: ok ? sombrear(v.cor, 1.2) : '#a64c4c', esq: ok ? sombrear(v.cor, 0.6) : '#6e3030', dir: ok ? sombrear(v.cor, 0.85) : '#8a3c3c' });
+    var faces = ok
+      ? { topo: sombrear(v.cor, 1.2), esq: sombrear(v.cor, 0.6), dir: sombrear(v.cor, 0.85) }
+      : (espera
+        ? { topo: '#d8a13a', esq: '#7a5a1e', dir: '#a3782b' }
+        : { topo: '#a64c4c', esq: '#6e3030', dir: '#8a3c3c' });
+    this.caixa(ctx, pv.x + 0.06, pv.y + 0.06, def.w - 0.12, def.h - 0.12, v.alt, faces);
     ctx.globalAlpha = 1;
     /* alcance da torre em prévia */
     if (def.arma) {
@@ -8855,10 +9046,19 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var m = this.render.paraMundo(p.x, p.y);
     var x = Math.floor(m.x - (def.w - 1) / 2), y = Math.floor(m.y - (def.h - 1) / 2);
     var ver = this.sim.podeColocar(this.modo.estrutura, x, y);
-    this.render.previa = { tipo: this.modo.estrutura, x: x, y: y, valido: ver.ok };
+    /* Ruína não é recusa: é espera. A prévia fica âmbar em vez de vermelha e
+       diz o que vai acontecer, porque "Terreno intransponível" ensinava ao
+       jogador exatamente a coisa errada — que ali não dá. */
+    var aguarda = !ver.ok && !!ver.limpar;
+    this.render.previa = {
+      tipo: this.modo.estrutura, x: x, y: y, valido: ver.ok, aguarda: aguarda
+    };
     this.mostrarModo(ver.ok
       ? def.nome + ' · ' + this.precoTexto(this.sim.custoDe(def))
-      : ver.motivo);
+      : (aguarda
+        ? 'Trator abre ' + ver.limpar.length + ' célula(s) e a obra começa · ' +
+          this.precoTexto(this.sim.custoDe(def))
+        : ver.motivo));
   };
 
   UI.prototype.confirmarConstrucao = function () {

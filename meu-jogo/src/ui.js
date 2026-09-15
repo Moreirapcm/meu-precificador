@@ -766,10 +766,19 @@
     var m = this.render.paraMundo(p.x, p.y);
     var x = Math.floor(m.x - (def.w - 1) / 2), y = Math.floor(m.y - (def.h - 1) / 2);
     var ver = this.sim.podeColocar(this.modo.estrutura, x, y);
-    this.render.previa = { tipo: this.modo.estrutura, x: x, y: y, valido: ver.ok };
+    /* Ruína não é recusa: é espera. A prévia fica âmbar em vez de vermelha e
+       diz o que vai acontecer, porque "Terreno intransponível" ensinava ao
+       jogador exatamente a coisa errada — que ali não dá. */
+    var aguarda = !ver.ok && !!ver.limpar;
+    this.render.previa = {
+      tipo: this.modo.estrutura, x: x, y: y, valido: ver.ok, aguarda: aguarda
+    };
     this.mostrarModo(ver.ok
       ? def.nome + ' · ' + this.precoTexto(this.sim.custoDe(def))
-      : ver.motivo);
+      : (aguarda
+        ? 'Trator abre ' + ver.limpar.length + ' célula(s) e a obra começa · ' +
+          this.precoTexto(this.sim.custoDe(def))
+        : ver.motivo));
   };
 
   UI.prototype.confirmarConstrucao = function () {

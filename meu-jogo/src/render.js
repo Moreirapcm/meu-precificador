@@ -701,6 +701,7 @@
     this.desenharEfeitos(ctx, dt);
     this.desenharNevoa(ctx);
     this.desenharAreasDePerigo(ctx);
+    this.desenharObrasAgendadas(ctx);
     this.desenharPrevia(ctx);
     this.desenharSelecao(ctx);
     this.desenharAreaLimpeza(ctx);

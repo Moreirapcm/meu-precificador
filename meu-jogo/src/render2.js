@@ -1255,6 +1255,40 @@
     }
   };
 
+  /* A planta agendada tem de ficar VISÍVEL enquanto espera o trator. Sem ela na
+     tela, o jogador manda a obra, vê a ruína continuar de pé e conclui que o
+     comando não pegou — e encomenda de novo, que no nosso caso CANCELA. O
+     contorno âmbar tracejado é a promessa escrita no chão. */
+  R.desenharObrasAgendadas = function (ctx) {
+    var lista = this.sim.obrasPendentes;
+    if (!lista || !lista.length) return;
+    var z = this.cam.zoom;
+    for (var i = 0; i < lista.length; i++) {
+      var o = lista[i], def = D.ESTRUTURAS[o.tipo];
+      if (!def) continue;
+      for (var dy = 0; dy < def.h; dy++) {
+        for (var dx = 0; dx < def.w; dx++) {
+          this.marcarCelula(ctx, o.x + dx, o.y + dy, 'rgba(216,161,58,0.22)');
+        }
+      }
+      var p0 = this.paraTela(o.x, o.y);
+      var pD = this.paraTela(o.x + def.w, o.y);
+      var pB = this.paraTela(o.x + def.w, o.y + def.h);
+      var pE = this.paraTela(o.x, o.y + def.h);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(232,180,80,0.9)';
+      ctx.lineWidth = 1.6 * z;
+      ctx.setLineDash([7 * z, 5 * z]);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y); ctx.lineTo(pD.x, pD.y);
+      ctx.lineTo(pB.x, pB.y); ctx.lineTo(pE.x, pE.y);
+      ctx.closePath(); ctx.stroke();
+      ctx.restore();
+      var centro = this.paraTela(o.x + def.w / 2, o.y + def.h / 2);
+      this.icone(ctx, centro.x, centro.y, '#e8b450', '⌛');
+    }
+  };
+
   /* ------------------------------------------------- prévia de construção */
   R.desenharPrevia = function (ctx) {
     var z = this.cam.zoom, i;
@@ -1268,15 +1302,25 @@
     if (!this.previa) return;
     var pv = this.previa, def = D.ESTRUTURAS[pv.tipo];
     var ok = pv.valido;
+    /* Três estados, não dois: vai (verde), não vai (vermelho) e VAI DEPOIS
+       (âmbar) — a planta sobre ruína, que o trator abre antes da obra. Pintar
+       a espera de vermelho dizia ao jogador que ali não dá, que é o contrário
+       do que acontece. */
+    var espera = !ok && pv.aguarda;
+    var marca = ok ? 'rgba(120,230,140,0.4)' : (espera ? 'rgba(216,161,58,0.42)' : 'rgba(255,90,90,0.38)');
     for (var dy = 0; dy < def.h; dy++) {
       for (var dx = 0; dx < def.w; dx++) {
-        this.marcarCelula(ctx, pv.x + dx, pv.y + dy, ok ? 'rgba(120,230,140,0.4)' : 'rgba(255,90,90,0.38)');
+        this.marcarCelula(ctx, pv.x + dx, pv.y + dy, marca);
       }
     }
     var v = VISUAL[pv.tipo] || VISUAL.muro;
     ctx.globalAlpha = 0.5;
-    this.caixa(ctx, pv.x + 0.06, pv.y + 0.06, def.w - 0.12, def.h - 0.12, v.alt,
-      { topo: ok ? sombrear(v.cor, 1.2) : '#a64c4c', esq: ok ? sombrear(v.cor, 0.6) : '#6e3030', dir: ok ? sombrear(v.cor, 0.85) : '#8a3c3c' });
+    var faces = ok
+      ? { topo: sombrear(v.cor, 1.2), esq: sombrear(v.cor, 0.6), dir: sombrear(v.cor, 0.85) }
+      : (espera
+        ? { topo: '#d8a13a', esq: '#7a5a1e', dir: '#a3782b' }
+        : { topo: '#a64c4c', esq: '#6e3030', dir: '#8a3c3c' });
+    this.caixa(ctx, pv.x + 0.06, pv.y + 0.06, def.w - 0.12, def.h - 0.12, v.alt, faces);
     ctx.globalAlpha = 1;
     /* alcance da torre em prévia */
     if (def.arma) {

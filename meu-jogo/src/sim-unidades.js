@@ -81,6 +81,121 @@
     }
   };
 
+
+  /* ============================ OBRA POR CIMA DA RUÍNA ==================
+     O trator é nosso e é novo, e criou uma fricção que os clássicos não têm:
+     o jogador escolhe o lugar, leva a negativa do terreno, tem de achar a
+     máquina, arrastar a área, esperar e voltar para pôr o prédio no mesmo
+     ponto. Quatro passos para uma decisão só.
+
+     O gênero resolve isso há décadas e sempre do mesmo jeito: a planta entra e
+     o obstáculo sai junto. No Age of Empires II a fundação derruba a árvore
+     isolada; no Spring a regra está escrita — o estorvo "should be resolved
+     automatically by the constructing unit".
+
+     Aqui a obra fica AGENDADA: nada é cobrado, o trator mais próximo recebe a
+     área exata da planta e, assim que o chão abre, a construção nasce sozinha.
+
+     Cobrar só no fim é decisão, não descuido. Minério preso em terreno que
+     talvez não abra é pior que o incômodo que estamos tirando, e o preço que
+     vale é o do instante em que a obra começa — com pesquisa de desconto no
+     meio do caminho, cobrar antes seria cobrar errado.
+
+     Sem trator, a obra NÃO é agendada: a recusa diz o que falta. Esconder a
+     máquina seria trocar uma fricção por um mistério. */
+  S.tratorLivreMaisProximo = function (x, y) {
+    var melhor = null, melhorD = Infinity;
+    for (var i = 0; i < this.unidades.length; i++) {
+      var u = this.unidades[i];
+      if (u.morta || !u.def.limpeza) continue;
+      var t = u.tarefa && u.tarefa.tipo;
+      /* limpando já é o trabalho certo: interromper um trator que está no meio
+         de uma quadra por uma planta nova é pior serviço, mas ainda é serviço.
+         Ocioso na frente, depois quem limpa, depois o resto. */
+      var prioridade = (!t || t === 'ocioso') ? 0 : (t === 'limpar' ? 1 : 2);
+      var d = U.dist(u.x, u.y, x, y) + prioridade * 12;
+      if (d < melhorD) { melhorD = d; melhor = u; }
+    }
+    return melhor;
+  };
+
+  S.agendarObra = function (tipo, x, y, ver) {
+    var def = ESTR[tipo];
+    /* Mesma planta no mesmo lugar duas vezes = desistir. É o cancelamento mais
+       barato que existe: o gesto de encomendar já está na mão do jogador, e não
+       há nada cobrado para devolver. */
+    for (var i = 0; i < this.obrasPendentes.length; i++) {
+      var o = this.obrasPendentes[i];
+      if (o.tipo === tipo && o.x === x && o.y === y) {
+        this.obrasPendentes.splice(i, 1);
+        this.aviso(def.nome + ': obra agendada cancelada.', 'info');
+        return { ok: true, cancelada: true };
+      }
+    }
+    var trator = this.tratorLivreMaisProximo(x, y);
+    if (!trator) {
+      return { ok: false, motivo: 'Entulho no caminho: produza um trator na Central' };
+    }
+    var area = { x0: x, y0: y, x1: x + def.w - 1, y1: y + def.h - 1 };
+    var raio = Math.max(3, Math.ceil(Math.max(def.w, def.h) / 2) + 2);
+    this.darTarefa(trator, { tipo: 'limpar', raio: raio, area: area, alvo: null }, true);
+    /* O prazo é proporcional ao serviço, não um número redondo: cada célula de
+       ruína são dois degraus de limpeza, e uma planta 4×4 de ruína leva minutos.
+       Sem prazo nenhum, a planta que o trator não alcança fica na tela para
+       sempre; com prazo fixo, a obra grande morre antes de poder nascer. */
+    var prazo = 20 + ver.limpar.length * (def.w * def.h > 4 ? 14 : 20);
+    this.obrasPendentes.push({
+      tipo: tipo, x: x, y: y, ate: this.t + prazo, trator: trator.id
+    });
+    this.aviso(def.nome + ': trator abrindo o terreno, a obra começa sozinha.', 'info');
+    return { ok: true, agendada: true };
+  };
+
+  /* Uma vez por quadro, e a lista está vazia quase sempre. */
+  S.atenderObrasPendentes = function () {
+    var lista = this.obrasPendentes;
+    if (!lista || !lista.length) return;
+    for (var i = lista.length - 1; i >= 0; i--) {
+      var o = lista[i];
+      var ver = this.podeColocar(o.tipo, o.x, o.y);
+      if (ver.ok) {
+        lista.splice(i, 1);
+        this.construir(o.tipo, o.x, o.y);
+        continue;
+      }
+      /* Ainda há ruína: é o caso normal, o trator está trabalhando. Mas ele
+         pode ter morrido, ter recebido outra ordem do jogador, ou ter parado
+         por não alcançar mais nada — e aí a planta esperaria o prazo inteiro
+         sem ninguém trabalhando nela. Reconvoca, no máximo a cada quatro
+         segundos, e o prazo continua sendo o fim da linha. */
+      if (ver.limpar && this.t < o.ate) {
+        var t = this.unidades.filter(function (u) { return u.id === o.trator && !u.morta; })[0];
+        if ((!t || !t.tarefa || t.tarefa.tipo !== 'limpar') && this.t >= (o.proxTentativa || 0)) {
+          o.proxTentativa = this.t + 4;
+          var outro = this.tratorLivreMaisProximo(o.x, o.y);
+          if (outro) {
+            var d = ESTR[o.tipo];
+            this.darTarefa(outro, {
+              tipo: 'limpar',
+              raio: Math.max(3, Math.ceil(Math.max(d.w, d.h) / 2) + 2),
+              area: { x0: o.x, y0: o.y, x1: o.x + d.w - 1, y1: o.y + d.h - 1 },
+              alvo: null
+            }, true);
+            o.trator = outro.id;
+          }
+        }
+        continue;
+      }
+      /* Recurso que faltou agora pode sobrar daqui a pouco — não desiste por
+         isso enquanto o prazo corre. */
+      if (!ver.limpar && ver.custo && this.t < o.ate &&
+          ver.motivo === 'Recursos insuficientes') continue;
+      lista.splice(i, 1);
+      this.aviso(ESTR[o.tipo].nome + ': obra agendada cancelada — ' +
+        (this.t >= o.ate ? 'o terreno não abriu a tempo' : ver.motivo) + '.', 'atencao');
+    }
+  };
+
   S.jazidaLivreMaisProxima = function (x, y, tipo) {
     var w = this.world, melhor = null, melhorD = Infinity;
     for (var i = 0; i < w.jazidas.length; i++) {

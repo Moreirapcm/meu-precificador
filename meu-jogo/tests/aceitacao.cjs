@@ -51,7 +51,7 @@ function construirPerto(sim, tipo, r0, r1) {
       var y = Math.round(c.y + c.h / 2 + Math.sin(ang) * r - def.h / 2);
       sim.world.revelar(x + def.w / 2, y + def.h / 2, 3);
       var res = sim.construir(tipo, x, y);
-      if (res.ok) return sim.estruturas[res.id];
+      if (res.ok && res.id) return sim.estruturas[res.id];
     }
   }
   return null;
@@ -65,6 +65,31 @@ function avancar(sim, segundos) {
 }
 
 function revelarE(sim, x, y) { sim.world.revelar(x, y, 3); }
+
+/* Planta uma ruína numa célula livre perto da Central e devolve a coordenada.
+   Plantar é mais firme que procurar: o terreno é gerado por semente e uma
+   ruína com vizinho livre nem sempre cai onde o teste precisa. */
+function celulaComRuinaPerto(sim) {
+  var w = sim.world, c = sim.central;
+  for (var r = 4; r <= 12; r++) {
+    for (var a = 0; a < 48; a++) {
+      var ang = a / 48 * Math.PI * 2;
+      var x = Math.round(c.x + Math.cos(ang) * r), y = Math.round(c.y + Math.sin(ang) * r);
+      if (!w.dentro(x, y) || !w.construivel(x, y)) continue;
+      /* precisa de vizinho livre dos quatro lados para o trator ter posto */
+      var livres = 0;
+      if (w.livre(x - 1, y)) livres++;
+      if (w.livre(x + 1, y)) livres++;
+      if (w.livre(x, y - 1)) livres++;
+      if (w.livre(x, y + 1)) livres++;
+      if (livres < 2) continue;
+      w.terreno[w.idx(x, y)] = D.TERRENO.RUINA;
+      w.versaoRota++;
+      return { x: x, y: y };
+    }
+  }
+  throw new Error('não achei célula livre para plantar a ruína');
+}
 
 console.log('\nPLANO DE TESTES DE ACEITAÇÃO — Última Fronteira\n');
 
@@ -542,6 +567,59 @@ teste('Recursos nunca ficam negativos sob gastos agressivos', function () {
   ok(sim.jogador.m >= 0, 'minerais negativos: ' + sim.jogador.m);
   ok(sim.jogador.c >= 0, 'petróleo negativo: ' + sim.jogador.c);
   ok(sim.jogador.popReservada >= 0, 'população reservada negativa');
+});
+
+
+/* Item 6 do capítulo 11: a planta posta sobre ruína manda limpar sozinha.
+   O trator é nosso e novo, e a fricção que ele criou — negar, achar a máquina,
+   arrastar a área, voltar e repor o prédio — é o que este teste tranca. */
+teste('Obra sobre ruína: sem trator recusa dizendo o que falta', function () {
+  var sim = partida();
+  var p = celulaComRuinaPerto(sim);
+  var res = sim.construir('muro', p.x, p.y);
+  ok(!res.ok, 'aceitou construir sobre ruína sem trator');
+  ok(/trator/i.test(res.motivo), 'a recusa não ensina o trator: ' + res.motivo);
+  igual(sim.obrasPendentes.length, 0, 'agendou obra sem trator:');
+});
+
+teste('Obra sobre ruína: com trator agenda, limpa e constrói sozinha', function () {
+  var sim = partida();
+  sim.jogador.m = 4000;
+  /* Sem jazida não entra minério: assim a única coisa que pode mexer no saldo
+     é a cobrança da obra, e o teste mede o que quer medir. */
+  sim.world.jazidas.forEach(function (j) { j.estoque = 0; });
+  var p = celulaComRuinaPerto(sim);
+  var t = sim.criarUnidade('trator', p.x + 2.5, p.y + 0.5, 'aliado');
+  sim.unidades.push(t);
+  var mAntes = sim.jogador.m;
+
+  var res = sim.construir('muro', p.x, p.y);
+  ok(res.ok && res.agendada, 'não agendou a obra sobre ruína');
+  igual(sim.obrasPendentes.length, 1, 'obra pendente não foi registrada:');
+  igual(sim.jogador.m, mAntes, 'cobrou antes de a obra existir:');
+  ok(t.tarefa && t.tarefa.tipo === 'limpar', 'o trator não recebeu a limpeza');
+
+  avancar(sim, 90);
+  igual(sim.obrasPendentes.length, 0, 'a obra pendente não foi atendida:');
+  igual(sim.world.terreno[sim.world.idx(p.x, p.y)], D.TERRENO.ASFALTO, 'terreno não abriu:');
+  var achou = sim.listaEstruturas.filter(function (b) {
+    return b.tipo === 'muro' && b.x === p.x && b.y === p.y && !b.morta;
+  })[0];
+  ok(achou, 'a obra não nasceu depois de o terreno abrir');
+  ok(sim.jogador.m < mAntes, 'não cobrou a obra que nasceu');
+});
+
+teste('Obra sobre ruína: encomendar de novo no mesmo ponto cancela', function () {
+  var sim = partida();
+  sim.jogador.m = 4000;
+  var p = celulaComRuinaPerto(sim);
+  var t = sim.criarUnidade('trator', p.x + 2.5, p.y + 0.5, 'aliado');
+  sim.unidades.push(t);
+  sim.construir('muro', p.x, p.y);
+  igual(sim.obrasPendentes.length, 1, 'não agendou:');
+  var res = sim.construir('muro', p.x, p.y);
+  ok(res.ok && res.cancelada, 'a segunda encomenda não cancelou');
+  igual(sim.obrasPendentes.length, 0, 'a obra continuou pendente:');
 });
 
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
