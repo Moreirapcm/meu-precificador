@@ -1019,6 +1019,18 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     { id: 'alvenaria', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Alvenaria reforçada', custo: { m: 200 }, tempo: 34, req: ['muroReforcado'],
       efeito: '+1 de blindagem e +10% de integridade em TODA estrutura, inclusive as já construídas.' },
 
+    /* TIRO RASANTE é o Murder Holes do Age of Empires II: 200 de comida e 100
+       de PEDRA para tirar o alcance mínimo de torres e castelos. Lá o preço em
+       pedra é o freio — pedra é o recurso escasso e é o mesmo que paga a
+       muralha. Aqui o barril de petróleo faz esse papel.
+
+       O problema que ela resolve é concreto e irritante: a Artilharia tem
+       `alcMin` 2,2 e o Tanque 2, então os dois emudecem quando o Predador
+       encosta — e o Predador é justamente quem encosta. A torre fica olhando
+       o bicho comer a muralha a um metro dela. */
+    { id: 'tiroRasante', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Tiro rasante', custo: { m: 180, c: 40 }, tempo: 34, req: ['muroReforcado'], tech: 2,
+      efeito: 'Acaba com o alcance mínimo: Artilharia e Tanque passam a atirar em quem encosta.' },
+
     { id: 'antiacido', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Resistência a ácido', custo: { m: 260, c: 40 }, tempo: 45, req: ['reparoEficiente'], tech: 3,
       efeito: 'Reduz pela metade o dano de Cuspidores e Asas corrosivas.' },
 
@@ -3736,6 +3748,18 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   };
 
   /* -------------------------------------------------------------- combate */
+  /* O alcance mínimo de QUEM ATIRA. Uma função e não `arma.alcMin` solto em
+     quatro lugares: com a pesquisa, o número deixou de ser propriedade só da
+     arma e passou a depender também de quem a empunha — e um dos quatro
+     lugares esquecido seria uma torre que ainda recua de um bicho colado. */
+  S.alcanceMinimo = function (atirador, arma) {
+    var m = (arma && arma.alcMin) || 0;
+    if (!m) return 0;
+    var nosso = atirador && atirador.lado !== 'inimigo';
+    if (nosso && this.jogador.pesquisas.tiroRasante) return 0;
+    return m;
+  };
+
   S.podeAtingir = function (arma, alvo) {
     if (!arma) return false;
     var voa = alvo.voa || (alvo.def && alvo.def.voa);
@@ -3765,7 +3789,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (u.morta || u.lado !== ladoAlvo) continue;
       if (!this.podeAtingir(arma, u)) continue;
       var d = this.distanciaEntre(atirador, u);
-      if (d > alcance || d < (arma.alcMin || 0)) continue;
+      if (d > alcance || d < this.alcanceMinimo(atirador, arma)) continue;
       if (d < melhorD) { melhorD = d; melhor = u; }
     }
     if (incluirEstruturas && arma.solo !== false) {
@@ -3773,7 +3797,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         var b = this.listaEstruturas[i];
         if (b.morta || ladoAlvo !== 'aliado') continue;
         var db = this.distanciaEntre(atirador, b);
-        if (db > alcance || db < (arma.alcMin || 0)) continue;
+        if (db > alcance || db < this.alcanceMinimo(atirador, arma)) continue;
         /* Prefere unidades: só ataca estrutura se nada vivo estiver mais perto. */
         if (db + 1.5 < melhorD) { melhorD = db + 1.5; melhor = b; }
       }
@@ -3987,7 +4011,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       if (!this.podeAtingir(arma, alvo)) continue;
       /* +1 de alcance pela altura, que é o bônus do Bunker do StarCraft. */
       var d = this.distanciaEntre(u, alvo);
-      if (d > arma.alc + 1 || d < (arma.alcMin || 0)) continue;
+      if (d > arma.alc + 1 || d < this.alcanceMinimo(u, arma)) continue;
       this.atirar(u, alvo, arma, dt);
     }
   };
@@ -4474,7 +4498,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         var longe = tarefa.centro ? U.dist(u.x, u.y, tarefa.centro.x, tarefa.centro.y) : 0;
         if (longe < limite) this.irAte(u, alvo, dt, 1);
         else { u.rota = null; this.irAte(u, tarefa.centro, dt); }
-      } else if (d < (arma.alcMin || 0)) {
+      } else if (d < this.alcanceMinimo(u, arma)) {
         u.rota = null;                                        /* alcance mínimo: recua um passo */
         var c = this.centroDe(alvo);
         var fx = u.x - c.x, fy = u.y - c.y, fd = Math.hypot(fx, fy) || 1;

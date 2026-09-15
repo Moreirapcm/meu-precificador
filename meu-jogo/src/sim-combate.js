@@ -75,6 +75,18 @@
   };
 
   /* -------------------------------------------------------------- combate */
+  /* O alcance mínimo de QUEM ATIRA. Uma função e não `arma.alcMin` solto em
+     quatro lugares: com a pesquisa, o número deixou de ser propriedade só da
+     arma e passou a depender também de quem a empunha — e um dos quatro
+     lugares esquecido seria uma torre que ainda recua de um bicho colado. */
+  S.alcanceMinimo = function (atirador, arma) {
+    var m = (arma && arma.alcMin) || 0;
+    if (!m) return 0;
+    var nosso = atirador && atirador.lado !== 'inimigo';
+    if (nosso && this.jogador.pesquisas.tiroRasante) return 0;
+    return m;
+  };
+
   S.podeAtingir = function (arma, alvo) {
     if (!arma) return false;
     var voa = alvo.voa || (alvo.def && alvo.def.voa);
@@ -104,7 +116,7 @@
       if (u.morta || u.lado !== ladoAlvo) continue;
       if (!this.podeAtingir(arma, u)) continue;
       var d = this.distanciaEntre(atirador, u);
-      if (d > alcance || d < (arma.alcMin || 0)) continue;
+      if (d > alcance || d < this.alcanceMinimo(atirador, arma)) continue;
       if (d < melhorD) { melhorD = d; melhor = u; }
     }
     if (incluirEstruturas && arma.solo !== false) {
@@ -112,7 +124,7 @@
         var b = this.listaEstruturas[i];
         if (b.morta || ladoAlvo !== 'aliado') continue;
         var db = this.distanciaEntre(atirador, b);
-        if (db > alcance || db < (arma.alcMin || 0)) continue;
+        if (db > alcance || db < this.alcanceMinimo(atirador, arma)) continue;
         /* Prefere unidades: só ataca estrutura se nada vivo estiver mais perto. */
         if (db + 1.5 < melhorD) { melhorD = db + 1.5; melhor = b; }
       }
@@ -326,7 +338,7 @@
       if (!this.podeAtingir(arma, alvo)) continue;
       /* +1 de alcance pela altura, que é o bônus do Bunker do StarCraft. */
       var d = this.distanciaEntre(u, alvo);
-      if (d > arma.alc + 1 || d < (arma.alcMin || 0)) continue;
+      if (d > arma.alc + 1 || d < this.alcanceMinimo(u, arma)) continue;
       this.atirar(u, alvo, arma, dt);
     }
   };
@@ -813,7 +825,7 @@
         var longe = tarefa.centro ? U.dist(u.x, u.y, tarefa.centro.x, tarefa.centro.y) : 0;
         if (longe < limite) this.irAte(u, alvo, dt, 1);
         else { u.rota = null; this.irAte(u, tarefa.centro, dt); }
-      } else if (d < (arma.alcMin || 0)) {
+      } else if (d < this.alcanceMinimo(u, arma)) {
         u.rota = null;                                        /* alcance mínimo: recua um passo */
         var c = this.centroDe(alvo);
         var fx = u.x - c.x, fy = u.y - c.y, fd = Math.hypot(fx, fy) || 1;

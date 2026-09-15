@@ -373,6 +373,18 @@
     { id: 'alvenaria', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Alvenaria reforçada', custo: { m: 200 }, tempo: 34, req: ['muroReforcado'],
       efeito: '+1 de blindagem e +10% de integridade em TODA estrutura, inclusive as já construídas.' },
 
+    /* TIRO RASANTE é o Murder Holes do Age of Empires II: 200 de comida e 100
+       de PEDRA para tirar o alcance mínimo de torres e castelos. Lá o preço em
+       pedra é o freio — pedra é o recurso escasso e é o mesmo que paga a
+       muralha. Aqui o barril de petróleo faz esse papel.
+
+       O problema que ela resolve é concreto e irritante: a Artilharia tem
+       `alcMin` 2,2 e o Tanque 2, então os dois emudecem quando o Predador
+       encosta — e o Predador é justamente quem encosta. A torre fica olhando
+       o bicho comer a muralha a um metro dela. */
+    { id: 'tiroRasante', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Tiro rasante', custo: { m: 180, c: 40 }, tempo: 34, req: ['muroReforcado'], tech: 2,
+      efeito: 'Acaba com o alcance mínimo: Artilharia e Tanque passam a atirar em quem encosta.' },
+
     { id: 'antiacido', ramo: 'fortificacao', casa: 'torreMuralha', nome: 'Resistência a ácido', custo: { m: 260, c: 40 }, tempo: 45, req: ['reparoEficiente'], tech: 3,
       efeito: 'Reduz pela metade o dano de Cuspidores e Asas corrosivas.' },
 

@@ -844,5 +844,27 @@ teste('Varredura: cobra energia, revela sem ninguém lá e expira sozinha', func
   ok(w.explorado[idx], 'o terreno varrido não ficou como explorado');
 });
 
+
+/* Item 13 do capítulo 11: fim do alcance mínimo. */
+teste('Tiro rasante tira o alcance mínimo da nossa arma, e só da nossa', function () {
+  var sim = partida();
+  var art = D.ESTRUTURAS.artilharia;
+  ok(art.arma.alcMin > 0, 'a artilharia perdeu o alcance mínimo dos dados');
+
+  var torre = { lado: 'aliado', x: 10, y: 10, w: 2, h: 2, def: art };
+  var inimigo = { lado: 'inimigo', x: 10, y: 10, def: D.INVASORES.predador, arma: D.INVASORES.predador.arma };
+
+  perto(sim.alcanceMinimo(torre, art.arma), art.arma.alcMin, 0.001, 'antes da pesquisa:');
+  perto(sim.alcanceMinimo(inimigo, art.arma), art.arma.alcMin, 0.001, 'invasor antes da pesquisa:');
+
+  sim.jogador.pesquisas.tiroRasante = true;
+  igual(sim.alcanceMinimo(torre, art.arma), 0, 'a pesquisa não tirou o alcance mínimo:');
+  /* a pesquisa é NOSSA: o invasor com arma de alcance mínimo continua com ele */
+  perto(sim.alcanceMinimo(inimigo, art.arma), art.arma.alcMin, 0.001, 'a pesquisa vazou para o invasor:');
+
+  /* e arma sem alcance mínimo continua em zero, com ou sem pesquisa */
+  igual(sim.alcanceMinimo(torre, D.UNIDADES.fuzileiro.arma), 0, 'inventou alcance mínimo:');
+});
+
 console.log('\n' + passou + ' passaram, ' + falhou + ' falharam.\n');
 process.exit(falhou ? 1 : 0);

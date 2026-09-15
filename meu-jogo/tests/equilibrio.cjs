@@ -95,7 +95,8 @@ function erguerPerimetro(s, raio) {
    encostava nos 250 e ele terminava as doze partidas em tecnologia 1 — que é
    metade do jogo por medir. */
 var ORDEM_PESQUISA = ['tech2', 'precisao', 'blindagem1', 'carga', 'muroReforcado',
-  'alvenaria', 'formacao', 'penetracao', 'blindagem2', 'coleta', 'tech3', 'reparoEficiente'];
+  'alvenaria', 'formacao', 'penetracao', 'tiroRasante', 'blindagem2', 'coleta',
+  'tech3', 'reparoEficiente'];
 
 /* Quanto guardar para a próxima pesquisa da fila que ainda dá para comprar.
    Zero enquanto não houver laboratório ou enquanto já houver uma em curso. */
@@ -147,6 +148,27 @@ function completa(s) {
 
   if (onda >= 1 && !s.perimetroFeito && m > 260) { erguerPerimetro(s, 7); return; }
 
+  /* BOMBA DE PETRÓLEO, e ela vem ANTES das torres. Sem ela o simulado nunca
+     tinha um barril, e barril é requisito de metade das coisas caras — médico,
+     blindagem composta, tiro rasante, artilharia avançada, reator, tecnologia
+     III. Media-se um jogador que só podia comprar metade da árvore.
+
+     Embaixo da roda de torres ela nunca disparava: medido, ZERO tentativas em
+     10.591 quadros com tecnologia 2 disponível. A torre leva tudo o que passa
+     de 140 a cada chamada, então o saldo nunca encostava nos 200 exigidos.
+     É uma construção só por partida e é infraestrutura: vem primeiro. */
+  if (s.jogador.tech >= 2 && !s.temEstrutura('extrator') && mLivre > 160 && emObra < 3) {
+    var jazP = s.world.jazidas.filter(function (j) {
+      return j.tipo === 'petroleo' && !j.extrator && j.estoque > 0;
+    });
+    for (var ip = 0; ip < jazP.length; ip++) {
+      /* revela para poder construir: o jogador de verdade explora, e o
+         simulado não tem laço de exploração nenhum */
+      s.world.revelar(jazP[ip].x + 1, jazP[ip].y + 1, 3);
+      if (s.construir('extrator', jazP[ip].x, jazP[ip].y).ok) return;
+    }
+  }
+
   /* Defesa mínima antes de cada onda: uma torre a mais por onda, até oito. */
   var torresDesejadas = Math.min(12, 3 + onda * 1.5);
   if (nTorres < torresDesejadas && emObra < 3 && mLivre > 140) {
@@ -158,19 +180,6 @@ function completa(s) {
     if (construirPerto(s, modelo, 5, 11)) return;
   }
 
-  /* BOMBA DE PETRÓLEO. Sem ela o simulado nunca tinha um barril, e barril é
-     requisito de metade das coisas caras — médico, blindagem composta,
-     artilharia avançada, reator. Media-se um jogador que só podia comprar
-     metade da árvore, e chamava-se isso de equilíbrio. */
-  if (s.jogador.tech >= 2 && !s.temEstrutura('extrator') && m > 200 && emObra < 3) {
-    var jazP = s.world.jazidas.filter(function (j) {
-      return j.tipo === 'petroleo' && !j.extrator && j.estoque > 0;
-    });
-    for (var ip = 0; ip < jazP.length; ip++) {
-      s.world.revelar(jazP[ip].x + 1, jazP[ip].y + 1, 3);
-      if (s.construir('extrator', jazP[ip].x, jazP[ip].y).ok) return;
-    }
-  }
   if (s.deficitEnergia && s.deficitEnergia.livre < 4 && emObra < 2 && m > 130) { construirPerto(s, 'gerador', 3, 9); return; }
   if (nOper < 8 && mLivre > 90) { s.produzirOperario(); return; }
   if (!quartel && m > 220 && onda >= 1) { construirPerto(s, 'quartel', 4, 9); return; }
