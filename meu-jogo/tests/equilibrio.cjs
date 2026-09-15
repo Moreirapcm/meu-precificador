@@ -85,6 +85,41 @@ function erguerPerimetro(s, raio) {
   }
 }
 
+/* A FILA DE PESQUISA do jogador simulado. Toda melhoria nova precisa entrar
+   aqui: o que o simulado não compra, a medição não enxerga — foi o que
+   aconteceu com a linha de blindagem de tropa na primeira rodada.
+
+   `tech2` vem PRIMEIRO, e é o que destrava o resto: sem ela não há médico, nem
+   bomba de petróleo, nem artilharia, nem bastião, nem blindagem composta. Com
+   ela em terceiro lugar o simulado comprava as baratas primeiro, o saldo nunca
+   encostava nos 250 e ele terminava as doze partidas em tecnologia 1 — que é
+   metade do jogo por medir. */
+var ORDEM_PESQUISA = ['tech2', 'precisao', 'blindagem1', 'carga', 'muroReforcado',
+  'alvenaria', 'formacao', 'penetracao', 'blindagem2', 'coleta', 'tech3', 'reparoEficiente'];
+
+/* Quanto guardar para a próxima pesquisa da fila que ainda dá para comprar.
+   Zero enquanto não houver laboratório ou enquanto já houver uma em curso. */
+function reservaDePesquisa(s, lab) {
+  if (!lab || s.jogador.pesquisaAtual) return 0;
+  for (var i = 0; i < ORDEM_PESQUISA.length; i++) {
+    var id = ORDEM_PESQUISA[i];
+    if (s.jogador.pesquisas[id]) continue;
+    var def = null, lista = UF.DATA.PESQUISAS;
+    for (var j = 0; j < lista.length; j++) if (lista[j].id === id) def = lista[j];
+    if (!def) continue;
+    /* requisito não cumprido: não adianta guardar para o que não se pode
+       comprar ainda — a fila anda para a próxima. */
+    if (def.req) {
+      var falta = false;
+      for (var r = 0; r < def.req.length; r++) if (!s.jogador.pesquisas[def.req[r]]) falta = true;
+      if (falta) continue;
+    }
+    if (def.tech && s.jogador.tech < def.tech) continue;
+    return def.custo.m || 0;
+  }
+  return 0;
+}
+
 /* Estratégia B: economia, torres, tropas, pesquisa e reparo — a "linha completa". */
 function completa(s) {
   var m = s.jogador.m;
@@ -97,25 +132,69 @@ function completa(s) {
   var lab = s.temEstrutura('pesquisa');
   var popLivre = s.popLivre();
 
+  /* RESERVA DE PESQUISA. Sem ela o simulado gastava tudo assim que cruzava o
+     limiar de torre ou de tropa, o saldo nunca subia de 150, e a árvore inteira
+     acima disso — blindagem 170, tecnologia II 250, alvenaria 200 — ficava
+     fora de alcance PARA SEMPRE. Medido: nas doze partidas ele concluía só
+     `carga`, `precisao` e `muroReforcado`, e nunca passava de tecnologia 1.
+     Uma medição que não enxerga a pesquisa não mede pesquisa nenhuma.
+
+     A reserva é o preço da PRÓXIMA da fila, guardado antes de qualquer gasto
+     discricionário. Não trava: a renda continua entrando, e o que ele deixa de
+     construir é o excedente, não o essencial. */
+  var reserva = reservaDePesquisa(s, lab);
+  var mLivre = m - reserva;
+
   if (onda >= 1 && !s.perimetroFeito && m > 260) { erguerPerimetro(s, 7); return; }
 
   /* Defesa mínima antes de cada onda: uma torre a mais por onda, até oito. */
   var torresDesejadas = Math.min(12, 3 + onda * 1.5);
-  if (nTorres < torresDesejadas && emObra < 3 && m > 140) {
+  if (nTorres < torresDesejadas && emObra < 3 && mLivre > 140) {
+    /* O BASTIÃO entrou na roda porque ele é o único prédio com aura, e o que o
+       simulador nunca constrói o simulador nunca mede. */
     var modelo = s.jogador.tech >= 3 && nTorres % 4 === 3 ? 'plasma'
-      : s.jogador.tech >= 2 && nTorres % 3 === 2 ? 'artilharia' : 'sentinela';
+      : s.jogador.tech >= 2 && nTorres % 3 === 2 ? 'artilharia'
+      : s.jogador.tech >= 2 && nTorres % 5 === 4 ? 'bastiao' : 'sentinela';
     if (construirPerto(s, modelo, 5, 11)) return;
   }
+
+  /* BOMBA DE PETRÓLEO. Sem ela o simulado nunca tinha um barril, e barril é
+     requisito de metade das coisas caras — médico, blindagem composta,
+     artilharia avançada, reator. Media-se um jogador que só podia comprar
+     metade da árvore, e chamava-se isso de equilíbrio. */
+  if (s.jogador.tech >= 2 && !s.temEstrutura('extrator') && m > 200 && emObra < 3) {
+    var jazP = s.world.jazidas.filter(function (j) {
+      return j.tipo === 'petroleo' && !j.extrator && j.estoque > 0;
+    });
+    for (var ip = 0; ip < jazP.length; ip++) {
+      s.world.revelar(jazP[ip].x + 1, jazP[ip].y + 1, 3);
+      if (s.construir('extrator', jazP[ip].x, jazP[ip].y).ok) return;
+    }
+  }
   if (s.deficitEnergia && s.deficitEnergia.livre < 4 && emObra < 2 && m > 130) { construirPerto(s, 'gerador', 3, 9); return; }
-  if (nOper < 8 && m > 90) { s.produzirOperario(); return; }
+  if (nOper < 8 && mLivre > 90) { s.produzirOperario(); return; }
   if (!quartel && m > 220 && onda >= 1) { construirPerto(s, 'quartel', 4, 9); return; }
-  if (popLivre < 4 && m > 150) { construirPerto(s, 'alojamento', 3, 8); return; }
-  if (quartel && nSold < 4 + onda * 2 && m > 140) {
+  /* O CENTRO DE PESQUISA subiu de prioridade, e não é ajuste de gosto: com ele
+     lá embaixo, exigindo 320 de minério DEPOIS de torre, operário, alojamento e
+     tropa, o simulado nunca chegava a 320 sobrando — e por isso nunca construía
+     o laboratório, nunca pesquisava NADA e nunca passava de tecnologia 1.
+     Medido: `pesquisas: (vazio)`, `max tech 1`, nas doze partidas.
+     Toda medição de pesquisa feita com este arquivo era cega, inclusive a da
+     linha de blindagem e a da alvenaria. */
+  if (!lab && m > 300 && onda >= 1) { construirPerto(s, 'pesquisa', 4, 9); return; }
+  if (popLivre < 4 && mLivre > 150) { construirPerto(s, 'alojamento', 3, 8); return; }
+  if (quartel && nSold < 4 + onda * 2 && mLivre > 140) {
     if (!quartel.rally && s.central) quartel.rally = { x: s.central.x + s.central.w + 2, y: s.central.y + 2 };
-    s.encomendar(quartel.id, s.jogador.tech >= 2 && nSold % 4 === 3 ? 'medico' : 'fuzileiro');
+    /* O médico custa 15 barris. Pedir sem ter barril não era só "não sai
+       médico": `encomendar` falhava e o `return` vinha do mesmo jeito, então o
+       simulado ficava preso nesta linha, tentando e falhando a cada quadro,
+       sem construir, sem pesquisar e sem reparar — enquanto `nSold % 4` não
+       mudasse, e ele só mudaria se saísse tropa. Toda medição com tropa e
+       tech 2 carregava esse travamento. */
+    var querMedico = s.jogador.tech >= 2 && nSold % 4 === 3 && s.jogador.c >= 15;
+    s.encomendar(quartel.id, querMedico ? 'medico' : 'fuzileiro');
     return;
   }
-  if (!lab && m > 320) { construirPerto(s, 'pesquisa', 4, 9); return; }
   if (lab && !s.jogador.pesquisaAtual) {
     /* A ordem inclui a linha de BLINDAGEM logo depois de `precisao`: sem ela na
        lista, o simulador nunca compra a pesquisa nova e a medição de
@@ -125,12 +204,10 @@ function completa(s) {
        sem estar na lista, o simulador nunca compra a pesquisa nova e a medição
        de equilíbrio dá diferença zero — foi o que aconteceu com a linha de
        blindagem de tropa na primeira rodada. */
-    var ordem = ['precisao', 'blindagem1', 'tech2', 'carga', 'muroReforcado', 'alvenaria',
-      'formacao', 'penetracao', 'blindagem2', 'coleta', 'tech3', 'reparoEficiente'];
-    for (var i = 0; i < ordem.length; i++) if (s.pesquisar(ordem[i]).ok) return;
+    for (var i = 0; i < ORDEM_PESQUISA.length; i++) if (s.pesquisar(ORDEM_PESQUISA[i]).ok) return;
   }
   if (!s.reparoAuto.ativo && s.listaEstruturas.some(function (b) { return !b.morta && b.hp < b.hpMax * 0.75; })) { s.repararLinha(); return; }
-  if (nOper < 12 && m > 400) { s.produzirOperario(); return; }
+  if (nOper < 12 && mLivre > 400) { s.produzirOperario(); return; }
 }
 
 var estrategias = { 'só torres': soTorres, 'linha completa': completa };
