@@ -41,7 +41,10 @@ publicado em
 [cnordenb/dev_Age-of-Kings-1.0](https://github.com/cnordenb/dev_Age-of-Kings-1.0/blob/main/resources/_common/dat/empires2_x2_p1.dat)
 e li com o parser [`genieutils-py`](https://pypi.org/project/genieutils-py/).
 São **12 731 gráficos** e **1 592 unidades**. Os números abaixo saíram desse
-arquivo; a leitura é reprodutível com quinze linhas de Python.
+arquivo; a leitura é reprodutível com quinze linhas de Python. Onde o texto citar
+`VER 8.4`, o número veio do dump de uma versão mais nova do mesmo arquivo,
+publicado em [HSZemi/aoe2dat](https://github.com/HSZemi/aoe2dat) — os totais
+diferem um pouco entre as duas, e por isso a versão está sempre dita.
 
 Notação: `quadros × ângulos @ segundos por quadro`. "Quadros" é **por ângulo** —
 o total desenhado é o produto.
@@ -190,7 +193,26 @@ generated later by flipping the sprite on the y axis"
 ([openage](https://github.com/SFTtech/openage/blob/master/doc/media/slp-files.md)).
 O campo é `angle_count` — "number of heading angles stored, **some of the frames
 must be mirrored**". Medido na Definitive Edition: **16** ângulos guardados na
-unidade refeita, **32** no Trabuco, **8** e **5** na arte herdada.
+unidade refeita, **32** no Trabuco, **72** na flecha, **8** e **5** na arte
+herdada.
+
+A regra do espelho está escrita, e é mais precisa que "3 de 8":
+
+> "Number of angles stored in slp… **If there are more than 1 angle,
+> AngleCount/2 − 1 frames will be mirrored. That means angles starting from
+> south going clockwise to north are stored and the others will be mirrored.**"
+> — [genie-rs `sprite.rs`](https://github.com/SiegeEngineers/genie-rs/blob/master/crates/genie-dat/src/sprite.rs),
+> [genieutils `Graphic.h`](https://github.com/Tapsa/genieutils/blob/master/include/genie/dat/Graphic.h)
+
+Com 8 ângulos: 8/2 − 1 = **3 espelhados, 5 desenhados**. E o campo
+`mirroring_mode` é derivado, com fórmula publicada no Advanced Genie Editor —
+`mirror = (angle_count >> 1) + (angle_count >> 2)`
+([AGE `Graphics.cpp`](https://github.com/Tapsa/AGE/blob/master/AGE_Frame/Graphics.cpp)),
+que dá 6 para 8 ângulos, 12 para 16, 24 para 32 e 54 para 72. Confere com o
+medido: `16 → 6` em 2 693 gráficos, `8 → 6` em 1 051, `16 → 12` em 887,
+`32 → 24` em 27, `72 → 54` em 14. Os ângulos guardados são **sul, sudoeste,
+oeste, noroeste, norte**; leste, sudeste e nordeste saem espelhados — ou seja, o
+Genie desenha o lado que aponta para longe da câmera e espelha o de cá.
 
 **StarCraft.** Trinta e dois rumos de sprite, **17 desenhados e 15 espelhados**.
 Não é folclore — é a aritmética do motor, literal
@@ -242,15 +264,33 @@ da fase. O código do OpenBW confirma que o `move` passa por
 `get_modified_unit_speed` — a melhoria de velocidade multiplica o avanço **sem
 mudar a taxa de quadros**, então unidade melhorada anda com passada mais larga.
 
-**Age of Empires II: a taxa é um número em segundos, e o andar é atado à
-velocidade da unidade.** `frame_rate` é "how long a frame is displayed"
-(openage). Medido na DE: a caminhada da Milícia é 0,028 s por quadro (≈36 qps), a
-do Cavaleiro 0,037 (≈27 qps), a do Mangonel 0,012 (≈86 qps). E o gráfico de
-caminhada carrega `speed_multiplier = 1,0` em **todas** as unidades medidas — o
-campo que "multiplies the speed of the unit this graphic is applied to". Quem
-prova que ele é usado de verdade é a **Ovelha**: o gráfico de correr é o mesmo de
-andar, 30 quadros, com `speed_multiplier = 1,9`. A animação de correr **é** a de
-andar, com o multiplicador mudando o passo.
+**Age of Empires II: a taxa é um número fixo em segundos, e quem manda em quem é
+o contrário do que parece — o GRÁFICO muda a velocidade da unidade.**
+`frame_rate` é "how long a frame is displayed" (openage) e o `.dat` guarda mesmo
+segundos por quadro: o código de serialização do genieutils calcula
+`FrameDuration = AnimationDuration / FrameCount` antes de gravar
+([`Graphic.cpp`](https://github.com/Tapsa/genieutils/blob/master/src/dat/Graphic.cpp)) —
+o "Anim Duration" que o editor mostra é o derivado, não o dado.
+
+Medido na DE: a caminhada da Milícia é 0,028 s por quadro (≈36 qps), a do
+Cavaleiro 0,037 (≈27 qps), a do Mangonel 0,012 (≈86 qps). A taxa mais comum no
+`.dat` inteiro é **0,05 s = 20 quadros por segundo**; nos gráficos herdados do
+AoC é 0,07 a 0,1 s (10 a 14 qps).
+
+E essa taxa **não** é recalculada pela velocidade efetiva da unidade: não há
+fonte que diga que o motor reescala o `frame_rate` da caminhada depois de uma
+melhoria de velocidade. O que existe é o caminho inverso, no campo
+`speed_adjust` / `SpeedMultiplier`: "multiplies the speed of the unit this
+graphic is applied to" (openage) / "If this is over 0, the speed of the unit will
+be replaced with this" (genieutils). Medido: só **39 gráficos** da DE têm esse
+campo fora de 0 e 1, e são todos corrida de bicho — cervo e gazela 1,9, cavalo
+1,9, lobo 1,5, javali 1,2. A **Ovelha** é o exemplo limpo: o gráfico de correr é
+o mesmo de andar, 30 quadros, com multiplicador 1,9. A animação de correr **é** a
+de andar; quem muda é a velocidade do bicho, não a do desenho.
+
+E a duração do ciclo é escolha de artista, não conta: Cavaleiro (velocidade
+1,35) anda em 1,1 s, Milícia (0,9) em 0,84 s, Aldeão (0,8) em 0,88 s — sem
+correlação nenhuma.
 
 ---
 
@@ -285,6 +325,24 @@ gira não precisa de ciclo; todo o orçamento foi para a morte. O Trabuco tem
 `parado` e `andar` com **1 quadro × 32 ângulos**, e 60 no ataque. Mangonel,
 Aríete e Escorpião: parado com 1 quadro.
 
+Na arte herdada do Age of Kings o piso é ainda mais baixo, e em coisas que não
+são enfeite (medido nas 238 entradas com nomenclatura antiga `_FN/_WN/_AN/_DN/_SN`
+e 8 ângulos):
+
+| objeto | animação | quadros por direção |
+|---|---|---|
+| Berserk (`BRSRK_FN`), Khan (`HKHAN_FN`) | **parado** | **1** |
+| **Rei (`KINGX_AN`)**, herói `HSANC_AN` | **atacar** | **2** |
+| Aldeão construtor (`VMBLD_S1`) | apodrecer | **2** |
+| Virote de balista (`BOLTF_NN`) | voo | **3** |
+| Cervo (`DEERX_TN`), íbex | andar | **5** |
+| **todos os cadáveres `_SN`** | apodrecer | **5** |
+
+Um **ataque de dois quadros** e um **parado de um quadro** passaram no jogo que
+vendeu vinte milhões de cópias. O histograma da geração antiga confirma o "10
+keyframes" da documentação — 10 quadros em 77 entradas, 5 em 51, 1 em 26, 15 em
+23 — e mostra que o número é uma média, não uma regra.
+
 A regra que os dois jogos escrevem junto: **quadro desenhado é para a AÇÃO e
 para a MORTE. Para existir, um quadro basta.**
 
@@ -309,15 +367,42 @@ nenhum: troca o índice de rumo, que já existe. Só o último ramo gasta dois b
 novos. Hydralisk: igual. **O Dragoon é a única exceção real** — laço permanente
 de 8 blocos com `wait 2`, porque as pernas dele nunca param.
 
-**Age of Empires II.** Aí o parado é animado de verdade: 30 a 60 quadros por
-ângulo. Mas a *variação* de parado — o `2nd Standing Graphic` — existe em
-**122 unidades de 1 592**, quase todas heróis e a linha do Cavaleiro (que tem
-`Knight (IdleC)` e `Knight (IdleA)`, 45 quadros cada). E quando o motor precisa
-de pausa entre repetições, ela é longa: dos gráficos com `replay_delay` diferente
-de zero, **83 esperam 50 segundos e 61 esperam 60 segundos**.
+**Age of Empires II.** Na Definitive Edition o parado é animado de verdade: 30 a
+60 quadros por ângulo. Mas na geração anterior convivem os dois mundos — medido
+na arte herdada, o Berserk e o Khan têm **1 quadro** de parado, enquanto o
+Tigre tem 5, o Rei 6 e o Javali 10.
 
-Ou seja: *fidget* a cada 3 segundos com 10% de chance (StarCraft) ou a cada 50 a
-60 segundos (Age of Empires). Nunca é um segundo laço rodando o tempo todo.
+O que segura o laço é o `replay_delay` — "seconds to wait before current_frame=0
+again" (openage), "Waiting time in seconds before animation restarts again"
+(AGE). Medido: nos gráficos herdados, **praticamente todo `_FN` (parado) tem
+`replay_delay` entre 0,5 e 3 segundos**, e andar, atacar e morrer têm zero. Na
+DE inteira, dos gráficos com espera diferente de zero, **395 esperam 1 segundo,
+83 esperam 50 e 61 esperam 60**.
+
+E o motor sorteia. `sequence_type` é um campo de bits, com os nomes literais do
+Advanced Genie Editor
+([`Graphics.cpp`](https://github.com/Tapsa/AGE/blob/master/AGE_Frame/Graphics.cpp)):
+
+```
+0x1  Animated      0x2  Directional
+0x4  Sprite randomized      0x8  Loop once
+```
+
+Medido, o padrão é limpo: **parado = 7** (animado + direcional + **sorteado**),
+**andar e atacar = 3**, **morrer e apodrecer = 11** (animado + direcional +
+**toca uma vez**). O bit de sorteio no parado é o que faz a unidade escolher
+entre as variações de ocioso em vez de tocar sempre a mesma.
+
+A *variação* de parado é um par de gráficos no próprio `.dat` — `StandingGraphic`
+é `std::pair<int16_t,int16_t>`
+([genieutils `Unit.h`](https://github.com/Tapsa/genieutils/blob/master/include/genie/dat/Unit.h)) —
+e é **exceção**: medido, **122 unidades de 1 592** (`VER 7.7`) usam o segundo
+campo, quase todas cavalaria, heróis e bichos. O Cavaleiro tem `Knight (IdleC)` e
+`Knight (IdleA)`, 45 quadros cada; o Cervo tem `idleA` e `idleB`.
+
+Ou seja: *fidget* a cada 3 segundos com 10% de chance (StarCraft) ou a cada 1 a
+60 segundos com sorteio (Age of Empires). Nunca é um segundo laço rodando o tempo
+todo.
 
 ---
 
@@ -339,14 +424,34 @@ O cadáver é outro sprite: `lowsprul 236` cria, por baixo de tudo, o sprite 236
 `playfram 0 / wait 50 / playfram 1 / wait 50 / playfram 2 / wait 50 / end`.
 **Três quadros, uma direção, 150 ticks = 6,3 segundos**, e some.
 
-**Age of Empires II: 30 a 60 quadros de morrer, e trinta segundos de cadáver.**
+**Age of Empires II: 30 a 60 quadros de morrer, e o cadáver dura cinco minutos.**
 O morrer é 30×16 na infantaria, 45×16 no Cavaleiro e no Monge, 60 no cerco,
-**120 no navio afundando**. O cadáver é uma unidade `_D` própria, com 30 quadros
-a **um segundo cada**.
+**120 no navio afundando** e **150 na destruição da Maravilha**. O cadáver é uma
+unidade `_D` própria, com 30 quadros a **um segundo cada**.
 
-A diferença entre os dois é de orçamento, não de gosto: o StarCraft matou a
+E aqui vale corrigir o número redondo: trinta segundos é a **animação** de
+apodrecer, não o tempo do corpo no chão. O jogo toca os quadros um a um e depois
+**congela o último até completar cinco minutos** desde a morte — descrição do
+autor do mod *Visible Corpses*:
+
+> "Game displays the decay animation frames one-by-one until it reaches the last
+> frame and then **displays it until 5 minutes have passed from the start of the
+> animation**, after which unit graphics disappear."
+> — [fórum oficial](https://forums.ageofempires.com/t/mod-visible-corpses/66831/90)
+
+Há até um recurso de jogador para isso, índice 12, `CORPSE_DECAY_TIME`
+([openage `lookup_dicts.py`](https://github.com/SFTtech/openage/blob/master/openage/convert/value_object/read/media/datfile/lookup_dicts.py)).
+
+Na geração anterior o número de quadros era outro e o tempo, o mesmo: medido,
+os cadáveres `_SN` do Age of Kings têm **5 quadros a 6,0 segundos cada = 30
+segundos**. O do aldeão tem 5 quadros a **15 s = 75 s**, e o do Onagro 10 quadros
+a **40 s = 400 segundos**. Trinta quadros a um segundo, ou cinco quadros a seis
+segundos: a mesma meia hora de tela, com seis vezes menos desenho.
+
+A diferença entre os dois jogos é de orçamento, não de gosto: o StarCraft matou a
 unidade em oito quadros e pôs o corpo num arquivo de três; o Age of Empires
-gastou trinta quadros em dezesseis ângulos nas duas coisas.
+gastou trinta quadros em dezesseis ângulos nas duas coisas. **E o Age of Kings de
+1999 conseguiu o mesmo efeito com cinco.**
 
 ---
 
@@ -366,6 +471,24 @@ Comparando o documentado do SLP com o medido no `.dat` da DE:
 Fontes: [openage `slp-files.md`](https://github.com/SFTtech/openage/blob/master/doc/media/slp-files.md)
 e [`smx-files.md`](https://github.com/SFTtech/openage/blob/master/doc/media/smx-files.md)
 para os formatos; o resto medido no `empires2_x2_p1.dat`.
+
+O tamanho total, medido num dump de uma versão mais nova do mesmo arquivo
+(`VER 8.4`, [HSZemi/aoe2dat](https://github.com/HSZemi/aoe2dat)): **15 794
+gráficos**, e a soma de `frame_count × angle_count` de todos eles dá **2 259 242
+quadros**, dos quais **1 603 496 são de unidade**. Um único conjunto de doze
+arquivos SMX do Camelo Imperial passa de **23 000 quadros**
+([fórum oficial](https://forums.ageofempires.com/t/creating-giant-units-mods-with-slx-studio-and-age/207070/5)).
+Corroboração externa dos números por unidade, do mesmo fórum: *"the Cavalier
+walking animation is **60 frames per angle**, while the Frankish Paladin is only
+**30 per angle**"*
+([tópico](https://forums.ageofempires.com/t/replacing-cavalier-skin/258979/2)), e
+um relatório de defeito que fecha a conta: *"it says it have 60 frames per angle
+(**it should in total have 960 frames**)"* — 960 = 60 × **16 ângulos**
+([tópico](https://forums.ageofempires.com/t/tariq-ibn-ziyad-death-animation-is-missing-frames/249285/1)).
+
+Número oficial publicado pela Microsoft ou pela Forgotten Empires sobre contagem
+de quadros da DE: **não existe**. O material de divulgação fala em "All new art
+in stunning 4K Ultra HD graphics" e nada mais.
 
 **StarCraft: Remastered — não acrescentou um quadro sequer.** Isto é verificável
 e é o achado mais útil dos dois:
@@ -463,9 +586,12 @@ Mudanças de código que acompanham (nenhuma custa arte):
   sequência.
 - `sprites.js:47` — as chaves de `-atirar-` passam de `1` para `2` quando as
   tiras novas entrarem.
-- *Fidget* em `anima.js`: um giro curto a cada 50–60 s, que é o `replay_delay` do
-  Age of Empires, ou 10% de chance a cada 3 s, que é o `randcondjmp 25` do
-  Marine. **Custo zero de arte** — o Marine faz isso girando no lugar.
+- *Fidget* em `anima.js`: um giro curto sorteado, 10% de chance a cada 3 s — o
+  `randcondjmp 25` do Marine — ou a espera longa do `replay_delay` do Age of
+  Empires. **Custo zero de arte**: o Marine faz isso girando no lugar, e o bit
+  `0x4 Sprite randomized` do Genie existe justamente para não tocar sempre a
+  mesma coisa. Se um dia entrar variação desenhada, ela é exceção nos dois
+  jogos — 122 unidades de 1 592 no Age of Empires, um punhado no StarCraft.
 
 ### O que NÃO vale a pena desenhar
 
@@ -486,10 +612,10 @@ Mudanças de código que acompanham (nenhuma custa arte):
 - **Quadro para o canhão do tanque e da torre.** A torre do Siege Tank não tem
   **um** `playfram`: som mais clarão sobreposto. Nós já fazemos isso em
   `R.canhaoDeVeiculo`.
-- **Apodrecimento desenhado quadro a quadro.** O Age of Kings desenhava; a
-  Definitive Edition trocou por unidade de cadáver e o nosso sumiço por
-  transparência já cobre. Se um dia incomodar, é um escurecimento no `ctx`, não
-  arte.
+- **Apodrecimento desenhado quadro a quadro.** O Age of Kings fazia com **5
+  quadros a 6 segundos cada** — e se um dia valer, esse é o número a copiar, não
+  os 30 da Definitive Edition. Por ora o nosso sumiço por transparência em 26 s
+  já cobre, e um escurecimento no `ctx` sai mais barato que qualquer peça.
 - **Trinta quadros de qualquer coisa.** 30 × 16 = 480 imagens por animação por
   unidade é orçamento de estúdio, não nosso.
 
@@ -509,7 +635,14 @@ Documentação de formato e de motor:
 [openage — SLP](https://github.com/SFTtech/openage/blob/master/doc/media/slp-files.md),
 [openage — SMX](https://github.com/SFTtech/openage/blob/master/doc/media/smx-files.md),
 [openage — `graphic.py`](https://github.com/SFTtech/openage/blob/master/openage/convert/value_object/read/media/datfile/graphic.py),
-[genieutils — `Graphic.h`](https://github.com/sandsmark/genieutils/blob/master/include/genie/dat/Graphic.h),
+[genieutils — `Graphic.h`](https://github.com/Tapsa/genieutils/blob/master/include/genie/dat/Graphic.h),
+[genieutils — `Graphic.cpp`](https://github.com/Tapsa/genieutils/blob/master/src/dat/Graphic.cpp),
+[genieutils — `Unit.h`](https://github.com/Tapsa/genieutils/blob/master/include/genie/dat/Unit.h),
+[genie-rs — `sprite.rs`](https://github.com/SiegeEngineers/genie-rs/blob/master/crates/genie-dat/src/sprite.rs),
+[Advanced Genie Editor — `Graphics.cpp`](https://github.com/Tapsa/AGE/blob/master/AGE_Frame/Graphics.cpp),
+[openage — `lookup_dicts.py`](https://github.com/SFTtech/openage/blob/master/openage/convert/value_object/read/media/datfile/lookup_dicts.py),
+[openage — lista de SLP do AoC](https://github.com/SFTtech/openage/blob/master/doc/media/aoc-slp-list.md),
+[HSZemi/aoe2dat](https://github.com/HSZemi/aoe2dat),
 [OpenBW — `bwgame.h`](https://github.com/OpenBW/openbw/blob/master/bwgame.h),
 [OpenBW — `data_types.h`](https://github.com/OpenBW/openbw/blob/master/data_types.h),
 [StarEdit — GRP Image Format](https://wiki.staredit.net/wiki/GRP_Image_Format),
@@ -526,9 +659,19 @@ Blizzard:
 [Remastering StarCraft's Art](https://news.blizzard.com/en-us/article/20695698/remastering-starcrafts-art),
 [StarCraft's Wild Youth](https://news.blizzard.com/en-us/article/20719767/starcrafts-wild-youth-a-look-back-at-development).
 
+Fórum oficial do Age of Empires, como corroboração externa das medições:
+[Cavalier 60 quadros por ângulo](https://forums.ageofempires.com/t/replacing-cavalier-skin/258979/2),
+[Camelo Imperial com mais de 23 000 quadros](https://forums.ageofempires.com/t/creating-giant-units-mods-with-slx-studio-and-age/207070/5),
+[960 quadros = 60 × 16 ângulos](https://forums.ageofempires.com/t/tariq-ibn-ziyad-death-animation-is-missing-frames/249285/1),
+[o cadáver fica 5 minutos](https://forums.ageofempires.com/t/mod-visible-corpses/66831/90).
+
 Não encontrado, e fica registrado para ninguém procurar de novo: contagem de
-quadros por unidade publicada pela Blizzard ou pela Microsoft; entrevista técnica
-do Remastered com número de quadros; os binários `.grp` do StarCraft (os totais
-da seção 2 são limites inferiores derivados do script); e uma cópia pública do
-`.dat` do Age of Kings de 1999, que permitiria medir o clássico do mesmo jeito
-que medimos a Definitive Edition.
+quadros por unidade publicada pela Blizzard ou pela Microsoft — nem no material
+da Definitive Edition, nem no do Remastered; entrevista técnica do Remastered com
+número de quadros; documentação de que o motor Genie reescale a taxa de quadros
+da caminhada em função da velocidade efetiva da unidade (o que existe é o
+caminho inverso, o `speed_adjust`); os binários `.grp` do StarCraft (os totais da
+seção 2 são limites inferiores derivados do script); e uma cópia pública do
+`.dat` do Age of Kings de 1999 — o que temos do clássico são as **238 entradas
+de nomenclatura antiga que sobreviveram dentro do `.dat` da Definitive Edition**,
+medidas aqui, mais a documentação de formato da openage.

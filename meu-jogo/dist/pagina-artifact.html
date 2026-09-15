@@ -6355,7 +6355,21 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var sul = this.paraTela(x + w, y + h);
     var larg = leste.x - oeste.x;
     var alt = img.height * (larg / img.width);
-    ctx.drawImage(img, (leste.x + oeste.x) / 2 - larg / 2, sul.y - alt, larg, alt);
+    /* CONTORNO E SOMBRA, os mesmos da unidade. Medido nas 110 peças: a
+       estrutura tem contraste de 1,30:1 contra o chão, com 18 das 21 abaixo de
+       1,5:1, num piso verificável de 3:1 — o prédio se dissolve no terreno. O
+       contorno `#0c0f14` sozinho dá 4,24:1, e é o passo que o Age of Empires II
+       nunca dispensou: os dois remasters recusaram mexer na silhueta.
+
+       Aqui o prédio é grande demais para o contorno de oito lados ficar bonito
+       acima de certo tamanho — `imagemComSilhueta` já decide isso sozinha e cai
+       no desenho cru quando a figura passa de 150 px. */
+    var px = (leste.x + oeste.x) / 2 - larg / 2, py = sul.y - alt;
+    ctx.save();
+    ctx.translate(px + larg / 2, sul.y);
+    this.sombraDeSprite(ctx, img, larg, alt, 0);
+    ctx.restore();
+    this.imagemComSilhueta(ctx, img, px, py, larg, alt);
     /* Altura do corpo acima do centro da célula, para os avisos flutuantes
        ficarem sobre o prédio e não dentro dele. Desconta a metade sul do
        losango, que é chão, não construção. */
@@ -6689,18 +6703,22 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var espalha = 1 + Math.min(0.6, altura / 60);
     ctx.globalAlpha = 0.46 / espalha;
     ctx.translate(0, altura);
-    /* A mancha DEITA no chão para a frente e para a direita — a luz do nosso
-       desenho vem de cima e da esquerda. A primeira tentativa deitou a sombra
-       para trás e para cima, e ela sumiu inteira atrás da própria figura: no
-       isométrico, "para baixo na tela" é para a frente, na direção de quem
-       olha, e é ali que a sombra tem de ficar para ser vista.
-       O `y` do desenho começa em zero e cresce, então a figura é deitada a
-       partir do PÉ, e não em cima dele. */
+    /* A mancha DEITA no chão, para a frente e para a ESQUERDA.
+       Eu tinha escrito "para a direita, porque a luz vem da esquerda" — e a
+       premissa estava errada. Medido nas 110 peças: 45 dos 56 prompts pedem luz
+       de cima e da esquerda, mas 69 das peças têm o brilho à DIREITA, e o
+       código de iluminação do terreno e das estruturas também trabalha pela
+       direita. Com a luz à direita, a sombra cai à esquerda. Era a única peça
+       do desenho discordando de todas as outras.
+
+       "Para baixo na tela" é para a frente, na direção de quem olha, e é ali
+       que a sombra tem de ficar para ser vista — isso continua valendo. O `y`
+       começa em zero e cresce, então a figura é deitada a partir do PÉ. */
     /* Inclinação CURTA. Com 0,62 a mancha virava um rastro comprido atravessando
        duas células — lia-se como borrão, não como sombra. O que os clássicos
        põem no chão é compacto: a figura deitada até pouco mais da metade,
        encostada no pé. */
-    ctx.transform(1, 0, 0.34, 0.26, 0, 0);
+    ctx.transform(1, 0, -0.34, 0.26, 0, 0);
     ctx.drawImage(s.cv, -larg / 2 * espalha, 0, larg * espalha, alt * espalha);
     ctx.restore();
   };
