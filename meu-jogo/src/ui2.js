@@ -150,7 +150,7 @@
   var ICONE_RAMO = { comando: '★', economia: '◆', fortificacao: '⛨', armamento: '⚔' };
   var ICONE_UNIDADE = {
     operario: '👷', fuzileiro: '🔫', lanceiro: '➹', incendiario: '🔥',
-    medico: '✚', tanque: '⛟', drone: '✈'
+    medico: '✚', tanque: '⛟', drone: '✈', cao: '🐕', trator: '🚜'
   };
 
   function botao(rotulo, icone, sub, aoClicar, opcoes) {
@@ -218,7 +218,9 @@
       }
     }
     var faixa = $('filaBarra');
-    if (faixa && !faixa.hidden && faixa.firstChild) {
+    if (faixa && !faixa.hidden && faixa.dataset.modo === 'membros') {
+      this.vidaDosMembros(this.unidadesSelecionadas());
+    } else if (faixa && !faixa.hidden && faixa.dataset.modo === 'fila' && faixa.firstChild) {
       var b = this.selecionado ? sim.estruturas[this.selecionado] : null;
       var item = b && b.fila && b.fila[0];
       var traco = faixa.firstChild.querySelector('i');
@@ -297,6 +299,7 @@
 
     if (this.jazidaSelecionada) {
       var jz = this.jazidaSelecionada;
+      this.membrosNaBarra(null);
       $('selNome').textContent = jz.tipo === 'petroleo' ? 'Afloramento de petróleo' : 'Depósito de minério';
       $('selDetalhe').textContent = U.num(jz.estoque) + ' restantes · ' + jz.ocupadas + '/' + jz.vagas + ' operários';
       cx.appendChild(botao('Minerar aqui', '⛏', 'operário livre', function () {
@@ -318,10 +321,12 @@
         ' · ' + tropas.length;
       $('selDetalhe').textContent = 'Toque no terreno para dar a ordem.';
       this.acoesDeTropa(cx, tropas);
+      this.membrosNaBarra(tropas);
       return;
     }
 
     if (!sel) {
+      this.membrosNaBarra(null);
       $('selNome').textContent = 'Nada selecionado';
       $('selDetalhe').textContent = 'Toque em uma estrutura, unidade, jazida ou no terreno.';
       this.acoesGlobais(cx);
@@ -330,6 +335,7 @@
 
     if (sel.w) this.acoesDeEstrutura(cx, sel);
     else if (sel.lado === 'inimigo') {
+      this.membrosNaBarra(null);
       $('selNome').textContent = sel.def.nome;
       $('selDetalhe').textContent = Math.ceil(sel.hp) + '/' + sel.hpMax + ' · blindagem ' + (sel.def.blind || 0) + ' · ' + sel.def.desc;
       cx.appendChild(botao(sim.alvoPrioritario === sel.id ? 'Fogo marcado' : 'Concentrar fogo', '⌖', 'torres e tropas',
@@ -639,6 +645,7 @@
       }, { tecla: 'r' });
     }
     montarCasas(cx, casas);
+    this.membrosNaBarra(null);
   };
 
   UI.acoesDeEstrutura = function (cx, b) {
@@ -744,6 +751,8 @@
     var fila = b && b.fila && b.fila.length ? b.fila : null;
     faixa.hidden = !fila;
     faixa.innerHTML = '';
+    faixa.dataset.assinatura = '';
+    faixa.dataset.modo = fila ? 'fila' : '';
     if (!fila) return;
     var self = this, sim = this.sim;
     for (var i = 0; i < fila.length; i++) {
@@ -757,6 +766,72 @@
         el.onclick = function () { sim.cancelarEncomenda(b.id, indice); self.atualizarAcoes(); };
         faixa.appendChild(el);
       }(i, fila[i]));
+    }
+  };
+
+  /* A TIRA DE MEMBROS, item 10 do capítulo 11.
+     No StarCraft a seleção múltipla mostra um retrato por unidade: clicar num
+     deles seleciona SÓ aquele, e Shift+clique tira aquele do grupo. Nós
+     escrevíamos "Operário · 7" e parava aí — o jogador via o número e não tinha
+     como mexer em quem estava dentro dele.
+
+     No celular não há Shift. O toque longo faz o papel dele, e o `title` diz
+     isso em quem tem ponteiro. Não há conflito de gesto: aqui é um botão do
+     HUD, e o toque longo do CANVAS (caixa de seleção) não chega até ele.
+
+     A tira mora na mesma faixa da fila de produção, que nunca aparece junto:
+     fila é de prédio selecionado, tira é de várias unidades. Por isso a faixa
+     ganhou um modo — sem ele, o laço que anima a barrinha da fila remontava a
+     tira a cada quadro e nenhum toque chegava a terminar. */
+  UI.membrosNaBarra = function (tropas) {
+    var faixa = $('filaBarra');
+    if (!faixa) return;
+    faixa.hidden = !tropas || tropas.length < 2;
+    if (faixa.hidden) { faixa.innerHTML = ''; faixa.dataset.modo = ''; faixa.dataset.assinatura = ''; return; }
+    faixa.dataset.modo = 'membros';
+    var assinatura = tropas.map(function (u) { return u.id; }).join(',');
+    if (faixa.dataset.assinatura === assinatura) { this.vidaDosMembros(tropas); return; }
+    faixa.dataset.assinatura = assinatura;
+    faixa.innerHTML = '';
+    var self = this;
+    for (var i = 0; i < tropas.length; i++) {
+      (function (u) {
+        var el = doc.createElement('button');
+        el.className = 'fila-item membro';
+        el.dataset.id = u.id;
+        el.title = u.def.nome + ' — tocar seleciona só ele, segurar tira do grupo';
+        el.innerHTML = '<b>' + (ICONE_UNIDADE[u.tipo] || u.def.nome.slice(0, 2).toUpperCase()) + '</b>' +
+          (u.posto ? '<em>' + u.posto + '</em>' : '') +
+          '<i style="width:' + Math.round(100 * u.hp / u.hpMax) + '%"></i>';
+        var segurou = false, relogio = 0;
+        function tirar() {
+          segurou = true;
+          self.tirarDaSelecao(u.id);
+          UF.audio.evento('clique');
+        }
+        el.onpointerdown = function () { segurou = false; relogio = setTimeout(tirar, 500); };
+        el.onpointerup = el.onpointerleave = el.onpointercancel = function () { clearTimeout(relogio); };
+        el.onclick = function (e) {
+          clearTimeout(relogio);
+          if (segurou) { segurou = false; return; }
+          /* Shift ou Ctrl também tiram, para quem está no teclado: é o gesto
+             do StarCraft, e esperar meio segundo com o mouse na mão é lento. */
+          if (e.shiftKey || e.ctrlKey || e.metaKey) { self.tirarDaSelecao(u.id); return; }
+          self.selecionar(u);
+        };
+        faixa.appendChild(el);
+      }(tropas[i]));
+    }
+  };
+
+  /* Só as barrinhas, por quadro. Remontar a tira inteira a cada quadro
+     cancelaria o toque longo antes de ele completar. */
+  UI.vidaDosMembros = function (tropas) {
+    var faixa = $('filaBarra');
+    if (!faixa) return;
+    for (var i = 0; i < faixa.children.length && i < tropas.length; i++) {
+      var barra = faixa.children[i].querySelector('i');
+      if (barra) barra.style.width = Math.round(100 * tropas[i].hp / tropas[i].hpMax) + '%';
     }
   };
 

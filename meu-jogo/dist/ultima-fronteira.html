@@ -293,6 +293,19 @@ button { cursor: pointer; border: 0; background: none; }
 .fila-item.fazendo { border-color: var(--acento); }
 .fila-item i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--acento); }
 
+/* TIRA DE MEMBROS: um chip por unidade da seleção múltipla. Mesma caixa da
+   fila de produção — as duas nunca aparecem juntas, porque fila é de prédio
+   selecionado e tira é de várias unidades. */
+.fila-barra { max-width: 46vw; overflow-x: auto; scrollbar-width: none; }
+.fila-barra::-webkit-scrollbar { display: none; }
+.fila-item.membro { flex: 0 0 auto; cursor: pointer; }
+.fila-item.membro b { font-size: 14px; line-height: 1; }
+.fila-item.membro i { background: var(--bom); }
+.fila-item.membro em {
+  position: absolute; top: 1px; right: 3px; font-style: normal;
+  font-family: var(--hud); font-size: 8px; font-weight: 700; color: var(--atencao);
+}
+
 /* abas e gaveta */
 #abas { display: flex; background: var(--painel); border-top: 1px solid var(--borda); position: relative; z-index: 21; }
 #abas button { flex: 1; font-family: var(--hud); font-size: 12px; font-weight: 600; letter-spacing: .6px; color: var(--suave); border-top: 2px solid transparent; }
@@ -9304,6 +9317,30 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     return saida;
   };
 
+  /* TIRA UM MEMBRO da seleção. É a metade do comando do StarCraft que faltava:
+     lá o retrato serve para escolher só aquele (clique) e para removê-lo do
+     grupo (Shift+clique). Sem a segunda metade, "tirar o operário de uma
+     seleção mista" é impossível — e é o caso que acontece toda hora, porque a
+     caixa de seleção pega quem estiver no caminho.
+
+     Ao sobrar UM, a seleção vira seleção simples de verdade, com a carta de
+     comando daquela unidade: uma seleção "múltipla" de um só membro esconderia
+     os botões que a unidade tem. */
+  UI.prototype.tirarDaSelecao = function (id) {
+    var i = this.render.selecao.indexOf(id);
+    if (i < 0) return;
+    this.render.selecao.splice(i, 1);
+    /* O grupo deixa de ser "todos os soldados" no instante em que um sai. */
+    this.grupoSelecionado = null;
+    this.rotuloSelecao = null;
+    if (this.render.selecao.length === 1) {
+      var u = this.sim.unidadePorId(this.render.selecao[0]);
+      if (u) { this.selecionar(u); return; }
+    }
+    if (!this.render.selecao.length) this.selecionado = 0;
+    this.atualizarTudo();
+  };
+
   UI.prototype.temTropasSelecionadas = function () {
     return this.unidadesSelecionadas().length > 0;
   };
@@ -9808,7 +9845,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   var ICONE_RAMO = { comando: '★', economia: '◆', fortificacao: '⛨', armamento: '⚔' };
   var ICONE_UNIDADE = {
     operario: '👷', fuzileiro: '🔫', lanceiro: '➹', incendiario: '🔥',
-    medico: '✚', tanque: '⛟', drone: '✈'
+    medico: '✚', tanque: '⛟', drone: '✈', cao: '🐕', trator: '🚜'
   };
 
   function botao(rotulo, icone, sub, aoClicar, opcoes) {
@@ -9876,7 +9913,9 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       }
     }
     var faixa = $('filaBarra');
-    if (faixa && !faixa.hidden && faixa.firstChild) {
+    if (faixa && !faixa.hidden && faixa.dataset.modo === 'membros') {
+      this.vidaDosMembros(this.unidadesSelecionadas());
+    } else if (faixa && !faixa.hidden && faixa.dataset.modo === 'fila' && faixa.firstChild) {
       var b = this.selecionado ? sim.estruturas[this.selecionado] : null;
       var item = b && b.fila && b.fila[0];
       var traco = faixa.firstChild.querySelector('i');
@@ -9955,6 +9994,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
     if (this.jazidaSelecionada) {
       var jz = this.jazidaSelecionada;
+      this.membrosNaBarra(null);
       $('selNome').textContent = jz.tipo === 'petroleo' ? 'Afloramento de petróleo' : 'Depósito de minério';
       $('selDetalhe').textContent = U.num(jz.estoque) + ' restantes · ' + jz.ocupadas + '/' + jz.vagas + ' operários';
       cx.appendChild(botao('Minerar aqui', '⛏', 'operário livre', function () {
@@ -9976,10 +10016,12 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         ' · ' + tropas.length;
       $('selDetalhe').textContent = 'Toque no terreno para dar a ordem.';
       this.acoesDeTropa(cx, tropas);
+      this.membrosNaBarra(tropas);
       return;
     }
 
     if (!sel) {
+      this.membrosNaBarra(null);
       $('selNome').textContent = 'Nada selecionado';
       $('selDetalhe').textContent = 'Toque em uma estrutura, unidade, jazida ou no terreno.';
       this.acoesGlobais(cx);
@@ -9988,6 +10030,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
 
     if (sel.w) this.acoesDeEstrutura(cx, sel);
     else if (sel.lado === 'inimigo') {
+      this.membrosNaBarra(null);
       $('selNome').textContent = sel.def.nome;
       $('selDetalhe').textContent = Math.ceil(sel.hp) + '/' + sel.hpMax + ' · blindagem ' + (sel.def.blind || 0) + ' · ' + sel.def.desc;
       cx.appendChild(botao(sim.alvoPrioritario === sel.id ? 'Fogo marcado' : 'Concentrar fogo', '⌖', 'torres e tropas',
@@ -10297,6 +10340,7 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
       }, { tecla: 'r' });
     }
     montarCasas(cx, casas);
+    this.membrosNaBarra(null);
   };
 
   UI.acoesDeEstrutura = function (cx, b) {
@@ -10402,6 +10446,8 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     var fila = b && b.fila && b.fila.length ? b.fila : null;
     faixa.hidden = !fila;
     faixa.innerHTML = '';
+    faixa.dataset.assinatura = '';
+    faixa.dataset.modo = fila ? 'fila' : '';
     if (!fila) return;
     var self = this, sim = this.sim;
     for (var i = 0; i < fila.length; i++) {
@@ -10415,6 +10461,72 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
         el.onclick = function () { sim.cancelarEncomenda(b.id, indice); self.atualizarAcoes(); };
         faixa.appendChild(el);
       }(i, fila[i]));
+    }
+  };
+
+  /* A TIRA DE MEMBROS, item 10 do capítulo 11.
+     No StarCraft a seleção múltipla mostra um retrato por unidade: clicar num
+     deles seleciona SÓ aquele, e Shift+clique tira aquele do grupo. Nós
+     escrevíamos "Operário · 7" e parava aí — o jogador via o número e não tinha
+     como mexer em quem estava dentro dele.
+
+     No celular não há Shift. O toque longo faz o papel dele, e o `title` diz
+     isso em quem tem ponteiro. Não há conflito de gesto: aqui é um botão do
+     HUD, e o toque longo do CANVAS (caixa de seleção) não chega até ele.
+
+     A tira mora na mesma faixa da fila de produção, que nunca aparece junto:
+     fila é de prédio selecionado, tira é de várias unidades. Por isso a faixa
+     ganhou um modo — sem ele, o laço que anima a barrinha da fila remontava a
+     tira a cada quadro e nenhum toque chegava a terminar. */
+  UI.membrosNaBarra = function (tropas) {
+    var faixa = $('filaBarra');
+    if (!faixa) return;
+    faixa.hidden = !tropas || tropas.length < 2;
+    if (faixa.hidden) { faixa.innerHTML = ''; faixa.dataset.modo = ''; faixa.dataset.assinatura = ''; return; }
+    faixa.dataset.modo = 'membros';
+    var assinatura = tropas.map(function (u) { return u.id; }).join(',');
+    if (faixa.dataset.assinatura === assinatura) { this.vidaDosMembros(tropas); return; }
+    faixa.dataset.assinatura = assinatura;
+    faixa.innerHTML = '';
+    var self = this;
+    for (var i = 0; i < tropas.length; i++) {
+      (function (u) {
+        var el = doc.createElement('button');
+        el.className = 'fila-item membro';
+        el.dataset.id = u.id;
+        el.title = u.def.nome + ' — tocar seleciona só ele, segurar tira do grupo';
+        el.innerHTML = '<b>' + (ICONE_UNIDADE[u.tipo] || u.def.nome.slice(0, 2).toUpperCase()) + '</b>' +
+          (u.posto ? '<em>' + u.posto + '</em>' : '') +
+          '<i style="width:' + Math.round(100 * u.hp / u.hpMax) + '%"></i>';
+        var segurou = false, relogio = 0;
+        function tirar() {
+          segurou = true;
+          self.tirarDaSelecao(u.id);
+          UF.audio.evento('clique');
+        }
+        el.onpointerdown = function () { segurou = false; relogio = setTimeout(tirar, 500); };
+        el.onpointerup = el.onpointerleave = el.onpointercancel = function () { clearTimeout(relogio); };
+        el.onclick = function (e) {
+          clearTimeout(relogio);
+          if (segurou) { segurou = false; return; }
+          /* Shift ou Ctrl também tiram, para quem está no teclado: é o gesto
+             do StarCraft, e esperar meio segundo com o mouse na mão é lento. */
+          if (e.shiftKey || e.ctrlKey || e.metaKey) { self.tirarDaSelecao(u.id); return; }
+          self.selecionar(u);
+        };
+        faixa.appendChild(el);
+      }(tropas[i]));
+    }
+  };
+
+  /* Só as barrinhas, por quadro. Remontar a tira inteira a cada quadro
+     cancelaria o toque longo antes de ele completar. */
+  UI.vidaDosMembros = function (tropas) {
+    var faixa = $('filaBarra');
+    if (!faixa) return;
+    for (var i = 0; i < faixa.children.length && i < tropas.length; i++) {
+      var barra = faixa.children[i].querySelector('i');
+      if (barra) barra.style.width = Math.round(100 * tropas[i].hp / tropas[i].hpMax) + '%';
     }
   };
 

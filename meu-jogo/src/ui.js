@@ -674,6 +674,30 @@
     return saida;
   };
 
+  /* TIRA UM MEMBRO da seleção. É a metade do comando do StarCraft que faltava:
+     lá o retrato serve para escolher só aquele (clique) e para removê-lo do
+     grupo (Shift+clique). Sem a segunda metade, "tirar o operário de uma
+     seleção mista" é impossível — e é o caso que acontece toda hora, porque a
+     caixa de seleção pega quem estiver no caminho.
+
+     Ao sobrar UM, a seleção vira seleção simples de verdade, com a carta de
+     comando daquela unidade: uma seleção "múltipla" de um só membro esconderia
+     os botões que a unidade tem. */
+  UI.prototype.tirarDaSelecao = function (id) {
+    var i = this.render.selecao.indexOf(id);
+    if (i < 0) return;
+    this.render.selecao.splice(i, 1);
+    /* O grupo deixa de ser "todos os soldados" no instante em que um sai. */
+    this.grupoSelecionado = null;
+    this.rotuloSelecao = null;
+    if (this.render.selecao.length === 1) {
+      var u = this.sim.unidadePorId(this.render.selecao[0]);
+      if (u) { this.selecionar(u); return; }
+    }
+    if (!this.render.selecao.length) this.selecionado = 0;
+    this.atualizarTudo();
+  };
+
   UI.prototype.temTropasSelecionadas = function () {
     return this.unidadesSelecionadas().length > 0;
   };

@@ -281,6 +281,19 @@ button { cursor: pointer; border: 0; background: none; }
 .fila-item.fazendo { border-color: var(--acento); }
 .fila-item i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--acento); }
 
+/* TIRA DE MEMBROS: um chip por unidade da seleção múltipla. Mesma caixa da
+   fila de produção — as duas nunca aparecem juntas, porque fila é de prédio
+   selecionado e tira é de várias unidades. */
+.fila-barra { max-width: 46vw; overflow-x: auto; scrollbar-width: none; }
+.fila-barra::-webkit-scrollbar { display: none; }
+.fila-item.membro { flex: 0 0 auto; cursor: pointer; }
+.fila-item.membro b { font-size: 14px; line-height: 1; }
+.fila-item.membro i { background: var(--bom); }
+.fila-item.membro em {
+  position: absolute; top: 1px; right: 3px; font-style: normal;
+  font-family: var(--hud); font-size: 8px; font-weight: 700; color: var(--atencao);
+}
+
 /* abas e gaveta */
 #abas { display: flex; background: var(--painel); border-top: 1px solid var(--borda); position: relative; z-index: 21; }
 #abas button { flex: 1; font-family: var(--hud); font-size: 12px; font-weight: 600; letter-spacing: .6px; color: var(--suave); border-top: 2px solid transparent; }
