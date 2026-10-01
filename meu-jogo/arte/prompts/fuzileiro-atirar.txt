@@ -1,0 +1,21 @@
+Crie uma FOLHA DE POSES de um soldado para um jogo de estrategia isometrico, em RENDERIZACAO 3D LIMPA e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050.
+
+NAO E DESENHO ANIMADO. Sem contorno preto em volta da figura, sem traco de caneta, sem cel shading, sem estilo anime ou de revista em quadrinhos. E uma figura com VOLUME, material pintado e sombra suave, como uma miniatura renderizada em tres dimensoes.
+
+O PERSONAGEM: o FUZILEIRO, soldado de infantaria. Uniforme de combate AZUL ACO ESCURO, colete tatico por cima com bolsos, faixas LARANJA nos ombros e no peito, capacete azul escuro com VISOR CIANO brilhante cobrindo os olhos, joelheiras cinza, botas escuras, mochila pequena nas costas. Fuzil de assalto escuro nas maos. Exatamente o mesmo soldado da imagem de referencia: mesma cor, mesmo equipamento.
+
+A ACAO, igual nas cinco: ele esta ATIRANDO. Fuzil erguido e encostado no ombro, os dois bracos firmes, o cano apontado para a frente na direcao em que ele olha, um pequeno clarao amarelo na boca do cano, o corpo levemente agachado absorvendo o coice.
+
+Desenhe ele CINCO vezes numa linha horizontal, bem espacados, sem encostar um no outro. O QUE MUDA ENTRE OS CINCO E SO A DIRECAO PARA ONDE ELE APONTA:
+
+1. apontando para a DIREITA da tela, corpo de perfil.
+2. apontando para a DIREITA E PARA CIMA, na diagonal, mostrando as costas de tres quartos.
+3. apontando para CIMA, de costas para quem olha, mostrando as costas e a nuca.
+4. apontando para a DIREITA E PARA BAIXO, na diagonal, mostrando o rosto de tres quartos.
+5. apontando para BAIXO, de frente para quem olha, mostrando o rosto inteiro.
+
+NENHUM dos cinco pode apontar para a esquerda: as direcoes que faltam eu faco espelhando.
+
+Todos do MESMO TAMANHO, todos apoiados na MESMA LINHA DE CHAO, todos com a mesma iluminacao. A figura e PEQUENA no jogo, entao a SILHUETA e o que identifica: formas simples, contraste forte, nada de detalhe miudo.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao. Sem moldura, sem texto, sem numero.

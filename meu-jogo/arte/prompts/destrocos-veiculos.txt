@@ -1,0 +1,18 @@
+ATENCAO AO FUNDO: fundo MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem sombra projetada no chao. Repito: o fundo e MAGENTA.
+
+Crie uma FOLHA DE PECAS para o MESMO jogo de estrategia isometrico das pecas anteriores. MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos, mesma iluminacao vinda de cima e da esquerda. CONTEXTO: Terra, ano de 2050, cidade abandonada.
+
+Gere SEIS pecas SEPARADAS, bem espacadas, organizadas em duas linhas de tres, cada uma isolada no fundo magenta, sem encostar uma na outra:
+
+1. CARRO DE PASSEIO abandonado e queimado, portas abertas, vidros quebrados, pintura descascada, ferrugem.
+2. VAN DE CARGA velha, capotada de lado, rodas para cima.
+3. ONIBUS URBANO abandonado, comprido, janelas quebradas, pneus murchos, ainda de pe na posicao normal.
+4. CAMINHAO BAU destruido, a cabine amassada, o bau aberto e vazio, carga espalhada.
+5. CAMINHAO TANQUE de combustivel, tombado, com o tanque cilindrico amassado e uma mancha escura de oleo embaixo.
+6. VIATURA DE POLICIA velha, queimada, com a barra de luzes quebrada em cima.
+
+TODAS as pecas: ferrugem, poeira, vidro quebrado, mato nascendo em volta da base, nada de gente dentro, nada de sangue. Veiculos genericos, sem marca e sem texto legivel.
+
+ESCALA: todas as pecas na MESMA escala relativa, como se estivessem no mesmo mapa — o onibus e o caminhao bem maiores que o carro.
+
+Sem colagem de fotos, sem texto, sem numeros, sem moldura, sem grade desenhada. Apenas as seis pecas soltas no fundo magenta.

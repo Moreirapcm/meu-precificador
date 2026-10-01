@@ -1,0 +1,1 @@
+Código da versão 2. As novas mecânicas de mapa, muros, soldados e operários estão especificadas no PDF e ainda precisam ser implementadas. Este pacote é portátil e não contém credenciais ou configuração da hospedagem original.

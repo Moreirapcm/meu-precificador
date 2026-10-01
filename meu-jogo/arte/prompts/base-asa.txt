@@ -1,0 +1,7 @@
+Crie UMA criatura alienigena para um jogo de estrategia isometrico, em RENDERIZACAO 3D LIMPA e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050, uma colmeia alienigena invadiu o planeta. Carapaca quitinosa segmentada como casco de inseto, pele umida e nervurada entre as placas, garras e mandibulas de osso claro, juntas internas brilhando como brasa por baixo da casca.
+
+NAO E DESENHO ANIMADO. Sem contorno preto em volta da figura, sem traco de caneta, sem cel shading. Figura com VOLUME e sombra suave, como uma miniatura renderizada em tres dimensoes.
+
+A CRIATURA: a ASA CORROSIVA, a voadora da colmeia — corpo esguio com duas asas membranosas largas e nervuradas, patas finas recolhidas, cabeca pontuda. Carapaca ROXA ESCURA com as asas translucidas em tom violeta. Exatamente o mesmo bicho da imagem de referencia. Exatamente o mesmo bicho da imagem de referencia: mesma cor, mesma forma.
+
+A figura e PEQUENA no jogo: silhueta forte, nada de detalhe miudo.

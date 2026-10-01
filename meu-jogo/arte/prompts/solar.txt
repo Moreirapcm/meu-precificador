@@ -1,0 +1,11 @@
+ATENCAO AO FUNDO: esta peca vai sobre FUNDO MAGENTA, nao verde. O fundo e MAGENTA puro chapado.
+
+Crie uma construcao para o MESMO jogo de estrategia isometrico, no MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos (o mesmo do Age of Empires 2), e mesma iluminacao vinda de cima e da esquerda da Central de Comando. CONTEXTO: Terra, ano de 2050, uma colonia humana reconstruindo a cidade depois da invasao alienigena. A tecnologia e evolucao crivel do que existe hoje.
+
+PECA: uma USINA SOLAR. Ocupa 2 por 2 celulas, entao e pequena. E a fonte de energia basica da base: barata, silenciosa, e depende do sol.
+
+APARENCIA: um campo compacto de paineis fotovoltaicos montados sobre uma laje de concreto. Tres ou quatro fileiras de paineis retangulares escuros, inclinados no mesmo angulo, apoiados em estruturas metalicas leves, com o reflexo do ceu escorregando pela superficie do vidro. Entre as fileiras, passarelas estreitas de manutencao. Numa das quinas, um inversor: uma caixa cinza fechada com aletas de refrigeracao, mostradores acesos e cabos grossos saindo para o chao. Cerca baixa de tela em volta. Um pouco de poeira assentada num dos paineis.
+
+CORES: azul escuro quase preto no vidro dos paineis, com um brilho azul claro do reflexo; cinza claro nas estruturas de aluminio; faixa laranja fina de sinalizacao no inversor; luz VERDE acesa nos mostradores, indicando que esta gerando.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao. Repito: o fundo e MAGENTA, nao verde. A figura e PEQUENA no jogo: formas simples, silhueta forte, nada de detalhe miudo. Gere UMA unica imagem quadrada com UMA unica construcao, centralizada. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

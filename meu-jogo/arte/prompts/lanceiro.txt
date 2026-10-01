@@ -1,0 +1,17 @@
+ATENCAO AO FUNDO: esta peca vai sobre FUNDO MAGENTA, nao verde. As ultimas que voce gerou tinham fundo verde; esta NAO tem. O fundo e MAGENTA puro chapado.
+
+Crie um soldado humano para o MESMO jogo de estrategia isometrico, no MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos, e mesma iluminacao vinda de cima e da esquerda do FUZILEIRO que voce gerou antes. CONTEXTO: Terra, ano de 2050. A tecnologia e evolucao crivel do equipamento militar de hoje, nada de ficcao cientifica distante: sem armadura de robo, sem energia magica, sem nave.
+
+BASE COMUM COM O FUZILEIRO, que precisa ser respeitada para os soldados parecerem do mesmo exercito: farda azul aco escuro, colete balistico modular de placas, capacete com visor tatico fino aceso em azul claro, joelheiras, coturnos, mochila de combate compacta nas costas, e uma faixa laranja fina de identificacao no ombro. Corpo humano em pe, visto de cima em tres quartos, virado para a frente e para a direita.
+
+PECA: o LANCEIRO PESADO. Ele fura blindagem: um tiro forte e lento contra alvos grandes e couracados.
+
+O QUE MUDA EM RELACAO AO FUZILEIRO: ele e visivelmente MAIOR e mais pesado que os outros soldados, com ombros largos e um exoesqueleto de reforco por cima da farda — barras e pistoes acompanhando as pernas e os bracos, para ele aguentar o peso da arma. A arma e um CANHAO DE OMBRO longo e grosso, apoiado no ombro direito e segurado com as duas maos, com um bipe dobrado embaixo do cano e uma mira optica em bloco em cima. Na cintura, um cinto com lancas ou dardos perfurantes de ponta clara guardados. Placas de blindagem extra no peito e nas coxas. Postura firme e plantada, com uma perna a frente, absorvendo o coice.
+
+CORES: a mesma farda azul aco escuro, com o exoesqueleto e as placas extras em cinza aco escuro, e VERDE-AGUA claro luminoso como cor de destaque no visor, na mira optica e nas pontas dos dardos.
+
+IMPORTANTE: a figura e PEQUENA no jogo. Formas simples, silhueta forte, nada de detalhe miudo, nada de rosto detalhado. Ele precisa se distinguir do fuzileiro comum a distancia, e o que faz isso e o EQUIPAMENTO, nao a cara.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao. Repito: o fundo e MAGENTA, nao verde.
+
+Gere UMA unica imagem quadrada com UMA unica figura, centralizada, ocupando boa parte do quadro. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

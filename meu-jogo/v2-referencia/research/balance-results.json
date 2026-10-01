@@ -1,0 +1,447 @@
+[
+  {
+    "policy": "passive",
+    "seed": 71,
+    "mode": "lost",
+    "wave": 1,
+    "hp": 0,
+    "credits": 386,
+    "time": 46,
+    "coreDamage": 600,
+    "towerDamage": 260,
+    "lost": 1,
+    "pulses": 0,
+    "shields": 0,
+    "repairs": 0,
+    "waves": [
+      {
+        "wave": 1,
+        "hp": 0,
+        "credits": 385,
+        "lost": 1,
+        "result": "lost"
+      }
+    ]
+  },
+  {
+    "policy": "spam",
+    "seed": 71,
+    "mode": "lost",
+    "wave": 4,
+    "hp": 0,
+    "credits": 60,
+    "time": 409,
+    "coreDamage": 600,
+    "towerDamage": 4498,
+    "lost": 17,
+    "pulses": 0,
+    "shields": 0,
+    "repairs": 0,
+    "waves": [
+      {
+        "wave": 1,
+        "hp": 600,
+        "credits": 216,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 2,
+        "hp": 600,
+        "credits": 183,
+        "lost": 4,
+        "result": "cleared"
+      },
+      {
+        "wave": 3,
+        "hp": 600,
+        "credits": 217,
+        "lost": 6,
+        "result": "cleared"
+      },
+      {
+        "wave": 4,
+        "hp": 0,
+        "credits": 60,
+        "lost": 17,
+        "result": "lost"
+      }
+    ]
+  },
+  {
+    "policy": "mixed",
+    "seed": 71,
+    "mode": "lost",
+    "wave": 8,
+    "hp": 0,
+    "credits": 24,
+    "time": 626,
+    "coreDamage": 600,
+    "towerDamage": 8071,
+    "lost": 31,
+    "pulses": 0,
+    "shields": 0,
+    "repairs": 0,
+    "waves": [
+      {
+        "wave": 1,
+        "hp": 600,
+        "credits": 216,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 2,
+        "hp": 600,
+        "credits": 256,
+        "lost": 5,
+        "result": "cleared"
+      },
+      {
+        "wave": 3,
+        "hp": 600,
+        "credits": 317,
+        "lost": 5,
+        "result": "cleared"
+      },
+      {
+        "wave": 4,
+        "hp": 600,
+        "credits": 351,
+        "lost": 13,
+        "result": "cleared"
+      },
+      {
+        "wave": 5,
+        "hp": 572,
+        "credits": 324,
+        "lost": 13,
+        "result": "cleared"
+      },
+      {
+        "wave": 6,
+        "hp": 572,
+        "credits": 349,
+        "lost": 19,
+        "result": "cleared"
+      },
+      {
+        "wave": 7,
+        "hp": 526,
+        "credits": 364,
+        "lost": 22,
+        "result": "cleared"
+      },
+      {
+        "wave": 8,
+        "hp": 0,
+        "credits": 24,
+        "lost": 31,
+        "result": "lost"
+      }
+    ]
+  },
+  {
+    "policy": "active",
+    "seed": 71,
+    "mode": "won",
+    "wave": 12,
+    "hp": 509,
+    "credits": 404,
+    "time": 1119,
+    "coreDamage": 91,
+    "towerDamage": 20945,
+    "lost": 22,
+    "pulses": 12,
+    "shields": 8,
+    "repairs": 127,
+    "waves": [
+      {
+        "wave": 1,
+        "hp": 600,
+        "credits": 216,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 2,
+        "hp": 600,
+        "credits": 238,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 3,
+        "hp": 600,
+        "credits": 243,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 4,
+        "hp": 600,
+        "credits": 268,
+        "lost": 1,
+        "result": "cleared"
+      },
+      {
+        "wave": 5,
+        "hp": 600,
+        "credits": 276,
+        "lost": 2,
+        "result": "cleared"
+      },
+      {
+        "wave": 6,
+        "hp": 600,
+        "credits": 382,
+        "lost": 2,
+        "result": "cleared"
+      },
+      {
+        "wave": 7,
+        "hp": 600,
+        "credits": 412,
+        "lost": 2,
+        "result": "cleared"
+      },
+      {
+        "wave": 8,
+        "hp": 600,
+        "credits": 505,
+        "lost": 7,
+        "result": "cleared"
+      },
+      {
+        "wave": 9,
+        "hp": 600,
+        "credits": 423,
+        "lost": 7,
+        "result": "cleared"
+      },
+      {
+        "wave": 10,
+        "hp": 600,
+        "credits": 446,
+        "lost": 11,
+        "result": "cleared"
+      },
+      {
+        "wave": 11,
+        "hp": 527,
+        "credits": 479,
+        "lost": 15,
+        "result": "cleared"
+      },
+      {
+        "wave": 12,
+        "hp": 509,
+        "credits": 404,
+        "lost": 22,
+        "result": "won"
+      }
+    ]
+  },
+  {
+    "policy": "active",
+    "seed": 7319,
+    "mode": "won",
+    "wave": 12,
+    "hp": 600,
+    "credits": 523,
+    "time": 1035,
+    "coreDamage": 0,
+    "towerDamage": 19046,
+    "lost": 14,
+    "pulses": 12,
+    "shields": 6,
+    "repairs": 124,
+    "waves": [
+      {
+        "wave": 1,
+        "hp": 600,
+        "credits": 216,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 2,
+        "hp": 600,
+        "credits": 239,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 3,
+        "hp": 600,
+        "credits": 328,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 4,
+        "hp": 600,
+        "credits": 339,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 5,
+        "hp": 600,
+        "credits": 294,
+        "lost": 1,
+        "result": "cleared"
+      },
+      {
+        "wave": 6,
+        "hp": 600,
+        "credits": 305,
+        "lost": 1,
+        "result": "cleared"
+      },
+      {
+        "wave": 7,
+        "hp": 600,
+        "credits": 283,
+        "lost": 2,
+        "result": "cleared"
+      },
+      {
+        "wave": 8,
+        "hp": 600,
+        "credits": 417,
+        "lost": 6,
+        "result": "cleared"
+      },
+      {
+        "wave": 9,
+        "hp": 600,
+        "credits": 376,
+        "lost": 7,
+        "result": "cleared"
+      },
+      {
+        "wave": 10,
+        "hp": 600,
+        "credits": 437,
+        "lost": 9,
+        "result": "cleared"
+      },
+      {
+        "wave": 11,
+        "hp": 600,
+        "credits": 453,
+        "lost": 10,
+        "result": "cleared"
+      },
+      {
+        "wave": 12,
+        "hp": 600,
+        "credits": 523,
+        "lost": 14,
+        "result": "won"
+      }
+    ]
+  },
+  {
+    "policy": "active",
+    "seed": 42,
+    "mode": "won",
+    "wave": 12,
+    "hp": 583,
+    "credits": 646,
+    "time": 977,
+    "coreDamage": 17,
+    "towerDamage": 18643,
+    "lost": 11,
+    "pulses": 10,
+    "shields": 7,
+    "repairs": 120,
+    "waves": [
+      {
+        "wave": 1,
+        "hp": 600,
+        "credits": 216,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 2,
+        "hp": 600,
+        "credits": 238,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 3,
+        "hp": 600,
+        "credits": 240,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 4,
+        "hp": 600,
+        "credits": 320,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 5,
+        "hp": 600,
+        "credits": 321,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 6,
+        "hp": 600,
+        "credits": 315,
+        "lost": 0,
+        "result": "cleared"
+      },
+      {
+        "wave": 7,
+        "hp": 600,
+        "credits": 478,
+        "lost": 1,
+        "result": "cleared"
+      },
+      {
+        "wave": 8,
+        "hp": 600,
+        "credits": 399,
+        "lost": 5,
+        "result": "cleared"
+      },
+      {
+        "wave": 9,
+        "hp": 600,
+        "credits": 356,
+        "lost": 6,
+        "result": "cleared"
+      },
+      {
+        "wave": 10,
+        "hp": 600,
+        "credits": 506,
+        "lost": 7,
+        "result": "cleared"
+      },
+      {
+        "wave": 11,
+        "hp": 583,
+        "credits": 551,
+        "lost": 8,
+        "result": "cleared"
+      },
+      {
+        "wave": 12,
+        "hp": 583,
+        "credits": 646,
+        "lost": 11,
+        "result": "won"
+      }
+    ]
+  }
+]
