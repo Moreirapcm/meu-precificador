@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Arduino</title>
+<style>
+  :root {
+    --bg: #0f172a; --painel: #1e293b; --borda: #334155; --texto: #e2e8f0; --suave: #94a3b8;
+    --placa: #0e7490; --placa-esc: #155e75; --sim: #22c55e; --nao: #64748b; --acento: #f59e0b; --erro: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--texto); }
+  header { padding: 14px 16px; border-bottom: 1px solid var(--borda); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; }
+  header small { color: var(--suave); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 16px; max-width: 1300px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--painel); border: 1px solid var(--borda); border-radius: 12px; padding: 14px; min-width: 0; }
+  .card h2 { font-size: 14px; margin: 0 0 10px; color: var(--suave); text-transform: uppercase; letter-spacing: .05em; }
+  .barra { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+  button, select { font: inherit; border-radius: 8px; border: 1px solid var(--borda); background: #0b1222; color: var(--texto); padding: 8px 12px; cursor: pointer; }
+  button.rodar { background: var(--sim); color: #052e16; border-color: var(--sim); font-weight: 700; }
+  button.parar { background: var(--erro); color: #fff; border-color: var(--erro); font-weight: 700; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  textarea { width: 100%; min-height: 380px; resize: vertical; background: #020617; color: #a5f3fc; border: 1px solid var(--borda); border-radius: 8px; padding: 10px; font: 13px/1.5 ui-monospace, Consolas, monospace; tab-size: 2; }
+  .status { font-size: 13px; color: var(--suave); }
+  .status.ok { color: var(--sim); } .status.erro { color: var(--erro); }
+
+  /* Placa */
+  .placa { background: linear-gradient(160deg, var(--placa), var(--placa-esc)); border-radius: 12px; padding: 12px; position: relative; }
+  .placa-titulo { font-weight: 800; letter-spacing: .1em; color: #ecfeff; font-size: 13px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .led-on { width: 10px; height: 10px; border-radius: 50%; background: #334155; display: inline-block; margin-left: 6px; }
+  .led-on.ativo { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+  .pinos { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+  .pino { background: rgba(2, 6, 23, .55); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .pino-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+  .pino-nome { font-weight: 700; }
+  .estado { font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 6px; background: var(--nao); color: #fff; }
+  .estado.sim { background: var(--sim); color: #052e16; }
+  .pino select { padding: 4px 6px; font-size: 12px; width: 100%; }
+  .comp { display: flex; align-items: center; justify-content: center; min-height: 40px; }
+  .lampada { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); background: #1f2937; transition: background .05s, box-shadow .05s; }
+  .botao { width: 100%; padding: 8px 4px; border-radius: 8px; background: #475569; border: 2px solid #94a3b8; font-weight: 700; user-select: none; touch-action: none; }
+  .botao.pressionado { background: var(--acento); color: #111; border-color: #fde68a; }
+  .chave { width: 100%; padding: 8px 4px; font-weight: 700; }
+  .chave.sim { background: var(--sim); color: #052e16; }
+  .buzzer { font-size: 22px; opacity: .35; }
+  .buzzer.ativo { opacity: 1; animation: vibra .1s infinite; }
+  @keyframes vibra { 50% { transform: translateX(2px); } }
+  .analog { margin-top: 10px; background: rgba(2, 6, 23, .55); border-radius: 10px; padding: 10px; }
+  .analog label { font-size: 12px; display: flex; justify-content: space-between; }
+  .analog input { width: 100%; }
+
+  .serial { background: #020617; border: 1px solid var(--borda); border-radius: 8px; height: 180px; overflow-y: auto; padding: 8px; font: 12px/1.4 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; color: #d1fae5; }
+  .ajuda { font-size: 13px; color: var(--suave); line-height: 1.6; }
+  .ajuda code { color: #a5f3fc; background: #020617; padding: 1px 5px; border-radius: 4px; }
+  .lado { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ Simulador Arduino</h1>
+  <small>Lógica do sim ou não: cada pino digital é <b>SIM (HIGH / 1)</b> ou <b>NÃO (LOW / 0)</b>.</small>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Código (sketch)</h2>
+    <div class="barra">
+      <select id="exemplos" aria-label="Exemplos">
+        <option value="">📂 Exemplos…</option>
+        <option value="blink">Pisca LED (Blink)</option>
+        <option value="botao">Botão acende LED</option>
+        <option value="semaforo">Semáforo</option>
+        <option value="pot">Potenciômetro controla brilho</option>
+        <option value="decisao">Sim ou Não (árvore de decisão)</option>
+      </select>
+      <button class="rodar" id="btnRodar">▶ Rodar</button>
+      <button class="parar" id="btnParar" disabled>■ Parar</button>
+      <span class="status" id="status">Parado</span>
+    </div>
+    <textarea id="codigo" spellcheck="false"></textarea>
+  </section>
+
+  <div class="lado">
+    <section class="card">
+      <h2>Placa e componentes</h2>
+      <div class="placa">
+        <div class="placa-titulo">ARDUINO UNO (simulado) <span>ON<span class="led-on" id="ledOn"></span> L<span class="led-on" id="ledL"></span></span></div>
+        <div class="pinos" id="pinos"></div>
+        <div class="analog">
+          <label><span>🎛 Potenciômetro em A0</span><span id="a0val">512</span></label>
+          <input type="range" id="a0" min="0" max="1023" value="512">
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Monitor Serial</h2>
+      <div class="barra"><button id="btnLimpar">Limpar</button></div>
+      <div class="serial" id="serial"></div>
+    </section>
+
+    <section class="card ajuda">
+      <h2>Como usar</h2>
+      Escolha o componente de cada pino (LED, botão, chave ou buzzer), escreva o código como no Arduino e clique em <b>Rodar</b>.<br>
+      Funções suportadas: <code>pinMode</code> <code>digitalWrite</code> <code>digitalRead</code> <code>analogWrite</code> <code>analogRead</code>
+      <code>delay</code> <code>millis</code> <code>Serial.begin/print/println</code> <code>random</code> <code>map</code> <code>constrain</code>
+      <code>tone</code> <code>noTone</code>, variáveis (<code>int</code>, <code>float</code>, <code>bool</code>, <code>String</code>…), <code>#define</code>, vetores e funções próprias.
+    </section>
+  </div>
+</main>
+
+<script>
+// ---------- Estado da placa ----------
+const PINOS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+const PWM = new Set([3, 5, 6, 9, 10, 11]);
+const COMPONENTES = {
+  nada: 'Nada', led_verm: 'LED vermelho', led_amar: 'LED amarelo', led_verde: 'LED verde',
+  led_azul: 'LED azul', botao: 'Botão', chave: 'Chave (sim/não)', buzzer: 'Buzzer'
+};
+const CORES = { led_verm: '#ef4444', led_amar: '#facc15', led_verde: '#22c55e', led_azul: '#3b82f6' };
+
+const placa = {};
+PINOS.forEach(p => placa[p] = { modo: 'INPUT', saida: 0, pwm: null, comp: 'nada', entrada: 0, tom: false });
+const PADRAO = { 2: 'botao', 3: 'chave', 9: 'led_azul', 11: 'led_verm', 12: 'led_amar', 13: 'led_verde', 8: 'buzzer' };
+Object.entries(PADRAO).forEach(([p, c]) => placa[p].comp = c);
+
+const $ = id => document.getElementById(id);
+
+function montarPinos() {
+  const el = $('pinos');
+  el.innerHTML = '';
+  PINOS.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'pino';
+    div.innerHTML = `
+      <div class="pino-top"><span class="pino-nome">D${p}${PWM.has(p) ? ' ~' : ''}</span><span class="estado" id="est${p}">NÃO</span></div>
+      <select data-pino="${p}">${Object.entries(COMPONENTES).map(([k, v]) =>
+        `<option value="${k}" ${placa[p].comp === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+      <div class="comp" id="comp${p}"></div>`;
+    el.appendChild(div);
+  });
+  el.querySelectorAll('select').forEach(s => s.addEventListener('change', e => {
+    const p = +e.target.dataset.pino;
+    placa[p].comp = e.target.value;
+    placa[p].entrada = 0;
+    montarComponente(p);
+    desenhar();
+  }));
+  PINOS.forEach(montarComponente);
+}
+
+function montarComponente(p) {
+  const c = placa[p].comp, box = $('comp' + p);
+  box.innerHTML = '';
+  if (c.startsWith('led_')) box.innerHTML = `<div class="lampada" id="lamp${p}"></div>`;
+  else if (c === 'buzzer') box.innerHTML = `<span class="buzzer" id="buz${p}">🔊</span>`;
+  else if (c === 'botao') {
+    const b = document.createElement('div');
+    b.className = 'botao'; b.textContent = 'Apertar';
+    const set = v => { placa[p].entrada = v; b.classList.toggle('pressionado', !!v); desenhar(); };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture(e.pointerId); set(1); });
+    b.addEventListener('pointerup', () => set(0));
+    b.addEventListener('pointercancel', () => set(0));
+    box.appendChild(b);
+  } else if (c === 'chave') {
+    const b = document.createElement('button');
+    b.className = 'chave';
+    const atualizar = () => { b.textContent = placa[p].entrada ? 'SIM' : 'NÃO'; b.classList.toggle('sim', !!placa[p].entrada); };
+    b.addEventListener('click', () => { placa[p].entrada ^= 1; atualizar(); desenhar(); });
+    atualizar();
+    box.appendChild(b);
+  }
+}
+
+// Nível lógico visto no pino (saída se OUTPUT, entrada do componente se INPUT)
+function nivel(p) {
+  const s = placa[p];
+  if (s.modo === 'OUTPUT') return s.pwm !== null ? (s.pwm > 127 ? 1 : 0) : s.saida;
+  if (s.comp === 'botao' || s.comp === 'chave') {
+    // Com INPUT_PULLUP o botão liga o pino ao GND: apertado = LOW
+    return s.modo === 'INPUT_PULLUP' ? (s.entrada ? 0 : 1) : s.entrada;
+  }
+  return s.modo === 'INPUT_PULLUP' ? 1 : 0;
+}
+
+function desenhar() {
+  PINOS.forEach(p => {
+    const s = placa[p], n = nivel(p), est = $('est' + p);
+    est.textContent = n ? 'SIM' : 'NÃO';
+    est.classList.toggle('sim', !!n);
+    const lamp = $('lamp' + p);
+    if (lamp) {
+      const brilho = s.modo !== 'OUTPUT' ? 0 : (s.pwm !== null ? s.pwm / 255 : s.saida);
+      const cor = CORES[s.comp];
+      lamp.style.background = brilho > 0 ? cor : '#1f2937';
+      lamp.style.opacity = brilho > 0 ? 0.25 + 0.75 * brilho : 1;
+      lamp.style.boxShadow = brilho > 0 ? `0 0 ${6 + 18 * brilho}px ${cor}` : 'none';
+    }
+    const buz = $('buz' + p);
+    if (buz) buz.classList.toggle('ativo', s.modo === 'OUTPUT' && (s.tom || s.saida === 1));
+  });
+  $('ledL').classList.toggle('ativo', placa[13].modo === 'OUTPUT' && nivel(13) === 1);
+}
+
+// ---------- Áudio do buzzer ----------
+let audio = null, osc = null;
+function tocar(freq) {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    pararSom();
+    osc = audio.createOscillator();
+    const g = audio.createGain();
+    g.gain.value = 0.05;
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    osc.connect(g).connect(audio.destination);
+    osc.start();
+  } catch (e) { /* sem áudio disponível */ }
+}
+function pararSom() { if (osc) { try { osc.stop(); } catch (e) {} osc = null; } }
+
+// ---------- Monitor serial ----------
+let serialBuffer = '';
+function serialEscrever(txt) {
+  serialBuffer += txt;
+  if (serialBuffer.length > 20000) serialBuffer = serialBuffer.slice(-15000);
+  const el = $('serial');
+  el.textContent = serialBuffer;
+  el.scrollTop = el.scrollHeight;
+}
+
+// ---------- Tradutor Arduino (C++) -> JavaScript ----------
+const TIPOS = '(?:const\\s+)?(?:unsigned\\s+|signed\\s+)?(?:long\\s+long|long|int|short|byte|char|float|double|bool|boolean|String|word|uint8_t|uint16_t|uint32_t|int8_t|int16_t|int32_t|size_t)';
+
+function traduzir(src) {
+  let c = src;
+  // Remove comentários preservando strings simples
+  c = c.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:"'])\/\/.*$/gm, '$1');
+  c = c.replace(/^\s*#include.*$/gm, '');
+  c = c.replace(/^\s*#define\s+(\w+)\s+(.+)$/gm, 'const $1 = $2;');
+
+  // Funções: "tipo nome(params) {" -> "async function nome(params) {"
+  const funcoes = [];
+  c = c.replace(new RegExp(`(?:^|\\n)\\s*(?:void|${TIPOS})\\s+(\\w+)\\s*\\(([^)]*)\\)\\s*\\{`, 'g'), (m, nome, params) => {
+    funcoes.push(nome);
+    const ps = params.trim() === 'void' ? '' : params.split(',').map(x => x.trim().split(/\s+/).pop().replace(/[&*]/g, '').replace(/\[\]$/, '')).filter(Boolean).join(', ');
+    return `\nasync function ${nome}(${ps}) {`;
+  });
+
+  // Vetores: "int v[] = {1,2,3};" / "int v[3];"
+  c = c.replace(new RegExp(`\\b${TIPOS}\\s+(\\w+)\\s*\\[\\s*\\w*\\s*\\]\\s*=\\s*\\{([^}]*)\\}`, 'g'), 'let $1 = [$2]');
+  c = c.replace(new RegExp(`\\b${TIPOS}\\s+(\\w+)\\s*\\[\\s*(\\w+)\\s*\\]\\s*;`, 'g'), 'let $1 = new Array($2).fill(0);');
+  // Declarações de variáveis (inclusive dentro do for)
+  c = c.replace(new RegExp(`\\bconst\\s+(?:unsigned\\s+)?(?:long|int|byte|char|float|double|bool|boolean|String)\\s+`, 'g'), 'const ');
+  c = c.replace(new RegExp(`\\b${TIPOS}\\s+(?=[A-Za-z_]\\w*\\s*(?:=|;|,|\\)))`, 'g'), 'let ');
+  // Casts em estilo C: (int)x -> Math.trunc
+  c = c.replace(/\((?:int|long|byte)\)\s*/g, 'Math.trunc');
+  c = c.replace(/\((?:float|double)\)\s*/g, '');
+  c = c.replace(/\bString\s*\(/g, 'String(');
+
+  // Chamadas assíncronas: delay e funções do usuário viram "await"
+  const assinc = ['delay', 'delayMicroseconds', ...funcoes];
+  c = c.replace(new RegExp(`(^|[^\\w.])(${assinc.join('|')})\\s*\\(`, 'g'), (m, antes, nome, off, str) => {
+    // Não mexe na própria declaração "async function nome("
+    if (/function\s*$/.test(str.slice(Math.max(0, off - 12), off + antes.length))) return m;
+    return `${antes}await ${nome}(`;
+  });
+
+  // Dá uma "respirada" ao navegador dentro de while/for (evita travar com loops infinitos)
+  c = injetarRespiro(c);
+  return { js: c, funcoes };
+}
+
+function injetarRespiro(c) {
+  let out = '', i = 0;
+  const re = /\b(while|for)\s*\(/g;
+  let m;
+  while ((m = re.exec(c))) {
+    let j = m.index + m[0].length, nivelP = 1;
+    while (j < c.length && nivelP > 0) { if (c[j] === '(') nivelP++; else if (c[j] === ')') nivelP--; j++; }
+    let k = j;
+    while (k < c.length && /\s/.test(c[k])) k++;
+    if (c[k] === '{') {
+      out += c.slice(i, k + 1) + ' await __respiro();';
+      i = k + 1;
+    } else if (c[k] === ';') {
+      // while (cond);  -> while (cond) { await __respiro(); }
+      out += c.slice(i, k) + '{ await __respiro(); }';
+      i = k + 1;
+    }
+    re.lastIndex = Math.max(j, re.lastIndex);
+  }
+  return out + c.slice(i);
+}
+
+// ---------- Execução ----------
+const PARADO = Symbol('parado');
+let execucao = null;
+
+function criarAPI(ctx) {
+  const checar = () => { if (ctx.parar) throw PARADO; };
+  const pinoValido = p => { if (!placa[p]) throw new Error(`Pino ${p} não existe neste simulador (use 2 a 13 ou A0).`); return placa[p]; };
+  let ultimoRespiro = performance.now();
+  const api = {
+    HIGH: 1, LOW: 0, INPUT: 'INPUT', OUTPUT: 'OUTPUT', INPUT_PULLUP: 'INPUT_PULLUP',
+    LED_BUILTIN: 13, A0: 'A0', PI: Math.PI,
+    pinMode(p, m) { checar(); const s = pinoValido(p); s.modo = m; s.pwm = null; s.saida = 0; desenhar(); },
+    digitalWrite(p, v) {
+      checar(); const s = pinoValido(p);
+      if (s.modo !== 'OUTPUT') { if (v) s.modo = 'INPUT_PULLUP'; else s.modo = 'INPUT'; desenhar(); return; }
+      s.pwm = null; s.saida = v ? 1 : 0; desenhar();
+    },
+    digitalRead(p) { checar(); pinoValido(p); return nivel(p); },
+    analogWrite(p, v) {
+      checar(); const s = pinoValido(p);
+      if (!PWM.has(p)) serialAviso(`⚠ D${p} não tem PWM (~). Só funciona como SIM/NÃO.`);
+      s.modo = 'OUTPUT';
+      v = Math.max(0, Math.min(255, Math.round(v)));
+      if (PWM.has(p)) { s.pwm = v; } else { s.pwm = null; s.saida = v > 127 ? 1 : 0; }
+      desenhar();
+    },
+    analogRead(p) { checar(); if (p === 'A0' || p === 0 || p === 14) return +$('a0').value; return 0; },
+    async delay(ms) {
+      const fim = performance.now() + ms;
+      while (true) {
+        checar();
+        const falta = fim - performance.now();
+        if (falta <= 0) break;
+        await new Promise(r => setTimeout(r, Math.min(falta, 50)));
+      }
+      ultimoRespiro = performance.now();
+    },
+    async delayMicroseconds(us) { await api.delay(us / 1000); },
+    millis() { return Math.floor(performance.now() - ctx.inicio); },
+    micros() { return Math.floor((performance.now() - ctx.inicio) * 1000); },
+    random(a, b) { if (b === undefined) { b = a; a = 0; } return Math.floor(a + Math.random() * (b - a)); },
+    randomSeed() {},
+    map(x, a, b, c, d) { return Math.trunc((x - a) * (d - c) / (b - a) + c); },
+    constrain(x, a, b) { return Math.min(Math.max(x, a), b); },
+    min: Math.min, max: Math.max, abs: Math.abs, sqrt: Math.sqrt, pow: Math.pow, sin: Math.sin, cos: Math.cos,
+    tone(p, f, dur) {
+      checar(); const s = pinoValido(p); s.modo = 'OUTPUT'; s.tom = true; tocar(f); desenhar();
+      if (dur) setTimeout(() => { s.tom = false; pararSom(); desenhar(); }, dur);
+    },
+    noTone(p) { const s = pinoValido(p); s.tom = false; pararSom(); desenhar(); },
+    Serial: {
+      begin() {},
+      print(v, base) { serialEscrever(formatar(v, base)); },
+      println(v = '', base) { serialEscrever(formatar(v, base) + '\n'); },
+      available() { return 0; }, read() { return -1; }
+    },
+    async __respiro() {
+      checar();
+      if (performance.now() - ultimoRespiro > 16) { await new Promise(r => setTimeout(r, 0)); ultimoRespiro = performance.now(); }
+    }
+  };
+  return api;
+}
+function formatar(v, base) {
+  if (typeof v === 'number' && base === 2) return v.toString(2);
+  if (typeof v === 'number' && base === 16) return v.toString(16).toUpperCase();
+  if (typeof v === 'number' && Number.isInteger(base) && base < 10 && !Number.isInteger(v)) return v.toFixed(base);
+  if (typeof v === 'number' && !Number.isInteger(v)) return v.toFixed(2);
+  if (typeof v === 'boolean') return v ? '1' : '0';
+  return String(v);
+}
+function serialAviso(t) { serialEscrever(t + '\n'); }
+
+async function rodar() {
+  await parar();
+  PINOS.forEach(p => Object.assign(placa[p], { modo: 'INPUT', saida: 0, pwm: null, tom: false }));
+  desenhar();
+  let traduzido;
+  try {
+    traduzido = traduzir($('codigo').value);
+    if (!traduzido.funcoes.includes('setup') || !traduzido.funcoes.includes('loop'))
+      throw new Error('O sketch precisa ter as funções setup() e loop().');
+  } catch (e) { return mostrarErro(e); }
+
+  const ctx = { parar: false, inicio: performance.now() };
+  const api = criarAPI(ctx);
+  const nomes = Object.keys(api);
+  let programa;
+  try {
+    const corpo = `${traduzido.js}\nreturn { setup, loop };`;
+    programa = new Function(...nomes, corpo)(...nomes.map(n => api[n]));
+  } catch (e) { return mostrarErro(new Error('Erro de sintaxe: ' + e.message)); }
+
+  setRodando(true);
+  $('ledOn').classList.add('ativo');
+  execucao = (async () => {
+    try {
+      await programa.setup();
+      while (!ctx.parar) { await programa.loop(); await api.__respiro(); }
+    } catch (e) {
+      if (e !== PARADO) mostrarErro(e);
+    } finally {
+      pararSom();
+      setRodando(false);
+    }
+  })();
+  execucao.ctx = ctx;
+}
+
+async function parar() {
+  if (!execucao) return;
+  execucao.ctx.parar = true;
+  await execucao;
+  execucao = null;
+  $('ledOn').classList.remove('ativo');
+}
+
+function setRodando(sim) {
+  $('btnRodar').disabled = sim;
+  $('btnParar').disabled = !sim;
+  const st = $('status');
+  if (sim) { st.textContent = 'Rodando…'; st.className = 'status ok'; }
+  else if (!st.classList.contains('erro')) { st.textContent = 'Parado'; st.className = 'status'; }
+}
+function mostrarErro(e) {
+  const st = $('status');
+  st.textContent = '✖ ' + (e && e.message ? e.message : e);
+  st.className = 'status erro';
+  serialAviso('ERRO: ' + (e && e.message ? e.message : e));
+  setRodando(false);
+}
+
+// ---------- Exemplos ----------
+const EXEMPLOS = {
+  blink: `// Pisca o LED do pino 13: SIM, NÃO, SIM, NÃO...
+void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  digitalWrite(LED_BUILTIN, HIGH);  // SIM
+  Serial.println("LED: SIM");
+  delay(500);
+  digitalWrite(LED_BUILTIN, LOW);   // NÃO
+  Serial.println("LED: NAO");
+  delay(500);
+}`,
+  botao: `// Segure o botão do pino 2: o LED do pino 13 acende
+const int BOTAO = 2;
+const int LED = 13;
+
+void setup() {
+  pinMode(BOTAO, INPUT);
+  pinMode(LED, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int apertado = digitalRead(BOTAO);
+  if (apertado == HIGH) {
+    digitalWrite(LED, HIGH);
+  } else {
+    digitalWrite(LED, LOW);
+  }
+  delay(20);
+}`,
+  semaforo: `// Semáforo: verde (13), amarelo (12), vermelho (11)
+#define VERDE 13
+#define AMARELO 12
+#define VERMELHO 11
+
+void acender(int pino, int tempo) {
+  digitalWrite(VERDE, LOW);
+  digitalWrite(AMARELO, LOW);
+  digitalWrite(VERMELHO, LOW);
+  digitalWrite(pino, HIGH);
+  delay(tempo);
+}
+
+void setup() {
+  pinMode(VERDE, OUTPUT);
+  pinMode(AMARELO, OUTPUT);
+  pinMode(VERMELHO, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  Serial.println("Siga");
+  acender(VERDE, 3000);
+  Serial.println("Atencao");
+  acender(AMARELO, 1000);
+  Serial.println("Pare");
+  acender(VERMELHO, 3000);
+}`,
+  pot: `// Mexa no potenciômetro (A0): muda o brilho do LED azul (pino 9, PWM)
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  int leitura = analogRead(A0);          // 0 a 1023
+  int brilho = map(leitura, 0, 1023, 0, 255);
+  analogWrite(9, brilho);
+  Serial.print("A0 = ");
+  Serial.print(leitura);
+  Serial.print("  brilho = ");
+  Serial.println(brilho);
+  delay(200);
+}`,
+  decisao: `// Árvore de decisão sim/não com duas entradas:
+// chave no pino 3 ("é dia?") e botão no pino 2 ("tem gente?")
+// Resultado: LED verde (13) = SIM liga a luz, LED vermelho (11) = NÃO.
+// Buzzer (8) toca quando é noite E tem gente.
+
+void setup() {
+  pinMode(3, INPUT);
+  pinMode(2, INPUT);
+  pinMode(13, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(8, OUTPUT);
+  Serial.begin(9600);
+}
+
+bool ligarLuz(bool dia, bool gente) {
+  if (dia) {
+    return false;            // é dia? SIM -> não precisa de luz
+  }
+  if (gente) {
+    return true;             // noite e tem gente? SIM -> liga
+  }
+  return false;              // noite sem ninguém -> NÃO
+}
+
+int ultimo = -1;
+
+void loop() {
+  bool dia = digitalRead(3) == HIGH;
+  bool gente = digitalRead(2) == HIGH;
+  bool luz = ligarLuz(dia, gente);
+
+  digitalWrite(13, luz ? HIGH : LOW);
+  digitalWrite(11, luz ? LOW : HIGH);
+  if (luz) { tone(8, 880); } else { noTone(8); }
+
+  int estado = (dia ? 2 : 0) + (gente ? 1 : 0);
+  if (estado != ultimo) {
+    Serial.print("Dia? ");   Serial.print(dia ? "SIM" : "NAO");
+    Serial.print(" | Gente? "); Serial.print(gente ? "SIM" : "NAO");
+    Serial.print(" => Luz: "); Serial.println(luz ? "SIM" : "NAO");
+    ultimo = estado;
+  }
+  delay(30);
+}`
+};
+
+// ---------- Inicialização ----------
+$('exemplos').addEventListener('change', e => {
+  if (!e.target.value) return;
+  $('codigo').value = EXEMPLOS[e.target.value];
+  e.target.value = '';
+  try { localStorage.setItem('arduino-sim-codigo', $('codigo').value); } catch (err) {}
+});
+$('codigo').addEventListener('input', () => { try { localStorage.setItem('arduino-sim-codigo', $('codigo').value); } catch (err) {} });
+$('codigo').addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const t = e.target, i = t.selectionStart;
+    t.value = t.value.slice(0, i) + '  ' + t.value.slice(t.selectionEnd);
+    t.selectionStart = t.selectionEnd = i + 2;
+  }
+});
+$('btnRodar').addEventListener('click', rodar);
+$('btnParar').addEventListener('click', async () => { await parar(); desenhar(); });
+$('btnLimpar').addEventListener('click', () => { serialBuffer = ''; $('serial').textContent = ''; });
+$('a0').addEventListener('input', e => $('a0val').textContent = e.target.value);
+
+let salvo = null;
+try { salvo = localStorage.getItem('arduino-sim-codigo'); } catch (err) {}
+$('codigo').value = salvo || EXEMPLOS.decisao;
+montarPinos();
+desenhar();
+</script>
+</body>
+</html>
