@@ -20,6 +20,8 @@ padrão esperado é o diagnóstico do documento — empilhar torre não sustenta
 campanha; economia + tropas + pesquisa + reparo sustentam.
 
 Depois de mexer em `src/`, rode `node build.cjs` para `dist/` não ficar velho.
+`dist/` NÃO vai para o git (30/09/2026): cada commit guardava ~6 MB de cópia do jogo pronto e
+o envio ficou lento. Quem clonar roda `node build.cjs` (só precisa do node, sem dependências).
 
 ## Pesquisar antes de implementar
 
