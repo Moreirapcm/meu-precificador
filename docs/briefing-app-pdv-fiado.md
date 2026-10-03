@@ -19,21 +19,69 @@ Criar um app Android **offline-first** (funciona sem internet) que faça:
 
 Ele deve ser instalado e testado direto no celular via ADB.
 
-## 3. Etapa 0: Preparar o ambiente
+## 3. Ferramentas necessárias
 
-Verifique antes de tudo e instale o que faltar, **pedindo confirmação antes de usar `sudo`**:
+### Equipamentos
+| Item | Para quê |
+|---|---|
+| Notebook com Linux Mint, 8 GB de RAM ou mais e ~15 GB livres | Rodar o Claude Code e compilar o app (o build Android é pesado) |
+| Celular Android 8.0 ou mais novo | Testar o app de verdade |
+| **Cabo USB de dados** (não só de carga) | Ligar o celular ao notebook. Se o `adb devices` não achar o celular, troque o cabo primeiro |
+
+### Programas no notebook
+| Ferramenta | Obrigatória? | Para quê | Como instalar |
+|---|---|---|---|
+| **Claude Code** | Sim | Quem constrói o app | Já instalado |
+| **Git** | Sim | Guardar versões do projeto | `sudo apt install git` |
+| **ADB** (Platform Tools) | Sim | Instalar e testar o app no celular pelo cabo | `sudo apt install adb android-sdk-platform-tools-common` |
+| **JDK 17** (Java) | Sim | Compilar apps Android | `sudo apt install openjdk-17-jdk` |
+| **Android SDK** (command-line tools) | Sim | Bibliotecas e ferramentas de build do Android | Baixar o zip "Command line tools only" em developer.android.com/studio, extrair em `~/Android/Sdk/cmdline-tools/latest`, depois rodar `sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"` e aceitar as licenças com `sdkmanager --licenses` |
+| **Gradle** | Sim | Montar o APK/AAB | Vem junto com o projeto (`./gradlew`); não precisa instalar |
+| **Node.js LTS** + npm | Só se usar Capacitor (PDV em HTML/JS) | Rodar o Capacitor | `sudo apt install nodejs npm` ou via `nvm` para versão LTS atual |
+| **scrcpy** | Recomendado | Espelhar e controlar a tela do celular no notebook | `sudo apt install scrcpy` |
+| **Android Studio** | Opcional | Editor visual e emulador; o Claude Code não precisa dele | Só se o usuário quiser |
+
+Variáveis de ambiente, adicionar no `~/.bashrc`:
+```bash
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+```
+
+### No celular
+- **Opções do desenvolvedor** ativadas (tocar 7 vezes em "Número da versão").
+- **Depuração USB** ativada e o computador autorizado.
+- **WhatsApp** instalado, para testar a cobrança.
+- Desativar a otimização de bateria do app durante os testes, se ele fechar sozinho.
+
+### Contas
+| Conta | Custo | Quando |
+|---|---|---|
+| Conta Google | Grátis | Já tem |
+| **GitHub** | Grátis | Guardar o código e publicar a política de privacidade (GitHub Pages) |
+| **Google Play Console** | US$ 25, pagamento único | Só na hora de publicar. Exige documento de identidade e verificação |
+| Pelo menos **12 testadores** com conta Google | Grátis | Teste fechado obrigatório de 14 dias para contas pessoais novas |
+
+### Para a página da loja
+- Ícone 512x512 PNG, imagem de destaque 1024x500 e prints do app. O Claude Code gera o ícone e os prints pelo `adb`.
+- Política de privacidade publicada num link público.
+
+## 4. Etapa 0: Preparar o ambiente
+
+Confira cada ferramenta da seção 3 e instale o que faltar, **pedindo confirmação antes de usar `sudo`**:
 
 ```bash
-adb version || sudo apt install adb android-sdk-platform-tools-common
-adb devices        # precisa listar o celular como "device"
-java -version      # JDK 17 é necessário para build Android
+git --version
+adb version
+java -version        # precisa ser 17
+sdkmanager --version
+adb devices          # precisa listar o celular como "device"
 ```
 
 - Se o `adb devices` mostrar `unauthorized`, peça ao usuário para desbloquear o celular e aceitar o aviso.
 - Se mostrar `no permissions`, rode `sudo usermod -aG plugdev $USER` e peça para ele sair e entrar de novo na conta.
-- Instale o JDK 17 (`openjdk-17-jdk`) e o Android SDK command-line tools se necessário (`sdkmanager "platforms;android-35" "build-tools;35.0.0"`).
+- Mostre ao usuário uma lista final do que está instalado (✅) e do que falta (❌) antes de seguir.
 
-## 4. Etapa 1: Analisar o PDV existente
+## 5. Etapa 1: Analisar o PDV existente
 
 1. Pergunte ao usuário **onde está a pasta do PDV atual** e leia o código.
 2. Faça um resumo para o usuário com:
@@ -46,7 +94,7 @@ java -version      # JDK 17 é necessário para build Android
    - Se for outra coisa: use **Kotlin + Jetpack Compose + Room (SQLite)**.
    - Explique a escolha ao usuário em linguagem simples e **espere o OK** antes de começar.
 
-## 5. Funcionalidades do MVP (primeira versão)
+## 6. Funcionalidades do MVP (primeira versão)
 
 ### PDV
 - Cadastro de produtos: nome, preço, código de barras (opcional), categoria, estoque (opcional).
@@ -72,7 +120,7 @@ java -version      # JDK 17 é necessário para build Android
 ### Fora do MVP (fazer depois)
 - Versão Pro (assinatura), vários aparelhos sincronizados, relatórios avançados, leitor de código de barras pela câmera, impressão de cupom Bluetooth.
 
-## 6. Modelo de dados sugerido
+## 7. Modelo de dados sugerido
 
 ```
 Produto(id, nome, preco_centavos, codigo_barras?, categoria?, estoque?, ativo)
@@ -84,7 +132,7 @@ MovimentoFiado(id, cliente_id, tipo[DEBITO|PAGAMENTO], valor_centavos, venda_id?
 
 O saldo do cliente é igual à soma dos DEBITOs menos a soma dos PAGAMENTOs. **Não guardar o saldo como campo**: calcular sempre.
 
-## 7. Como testar no celular (fazer a cada etapa)
+## 8. Como testar no celular (fazer a cada etapa)
 
 ```bash
 ./gradlew assembleDebug                                   # ou o build equivalente do Capacitor
@@ -105,7 +153,7 @@ adb exec-out screencap -p > /tmp/tela.png                 # print para conferir 
   7. Fazer backup e restaurar.
 - Escreva testes automatizados para o cálculo de saldo, troco e totais.
 
-## 8. Publicação na Google Play (etapa final)
+## 9. Publicação na Google Play (etapa final)
 
 - Gerar um **AAB assinado** (`bundleRelease`).
 - **A keystore de assinatura NUNCA vai para o git.** Guarde fora do projeto e avise o usuário para fazer backup dela, porque perder a keystore impede atualizar o app.
@@ -119,7 +167,7 @@ adb exec-out screencap -p > /tmp/tela.png                 # print para conferir 
 - Conta de desenvolvedor Google: taxa única de US$ 25.
 - **Contas pessoais novas** precisam de **teste fechado com pelo menos 12 testadores por 14 dias** antes de publicar em produção. Avise o usuário cedo para ele já ir juntando os testadores.
 
-## 9. Regras de trabalho
+## 10. Regras de trabalho
 
 - Explique cada decisão em português simples. O usuário não é programador.
 - Trabalhe em etapas pequenas: termine, instale no celular, mostre e só então siga.
@@ -129,7 +177,7 @@ adb exec-out screencap -p > /tmp/tela.png                 # print para conferir 
   - mexer no PDV original. **Trabalhe numa pasta nova** e não altere o PDV atual.
 - Use git no projeto novo, com commits frequentes.
 
-## 10. Ideias futuras (registrar, não fazer agora)
+## 11. Ideias futuras (registrar, não fazer agora)
 
 1. **Montador de vídeos para e-commerce:** filmar o produto, e a IA gera roteiro, narração, legenda e exporta para ML, Shopee ou Reels. Fica como segundo app, por assinatura, porque tem custo de IA por vídeo.
 2. **Avaliações do Mercado Livre pela foto:** a IA identifica o produto, o app busca no ML e resume elogios e reclamações. Pode virar uma função dentro do app de vídeo.
