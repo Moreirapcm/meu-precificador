@@ -1,0 +1,17 @@
+ATENCAO AO FUNDO: fundo MAGENTA puro chapado, nao verde.
+
+Crie uma peca para o MESMO jogo de estrategia isometrico, MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos, mesma iluminacao vinda de cima e da esquerda das pecas anteriores. CONTEXTO: Terra, ano de 2050.
+
+PECA: um AFLORAMENTO DE MINERIO DE FERRO. E a irma do afloramento de petroleo que voce ja gerou (poca preta com reflexos laranja dentro da rocha rachada), so que esta da METAL em vez de oleo. E o recurso comum do jogo. Nao e predio, nao e maquina: e formacao natural da Terra.
+
+APARENCIA: rocha bruta partida saindo do chao, em placas e blocos angulosos, baixa e larga, espalhada. Entre as placas aparece o minerio: veios de METAL OXIDADO cor de ferrugem e bronze, faixas laranja-amarronzadas atravessando a pedra cinza, e alguns pedacos de minerio bruto soltos no chao em volta, com brilho metalico fosco. Pode ter um pouco de cascalho e poeira avermelhada na base.
+
+O QUE NAO PODE, E ISSO E O MAIS IMPORTANTE: NADA de cristais. Sem pontas, sem espetos, sem facetas de gema, sem pedras preciosas, sem nada apontando para o ceu. Isto NAO e um aglomerado de cristais alienigenas: e pedra comum de mina a ceu aberto, na Terra. Se a peca tiver qualquer ponta de cristal, esta errada. Tambem nao pode parecer ouro puro nem tesouro: e ferro, minerio sujo, de trabalho.
+
+CORES: pedra cinza escura, veios cor de FERRUGEM e bronze, poeira avermelhada. Nada de ciano, nada de roxo, nada de dourado brilhante de joia.
+
+FORMA, E ISSO IMPORTA MUITO: a formacao e ERGUIDA, um morro de pedra quebrada saindo do chao, MAIS ALTA DO QUE LARGA. Pense num penhasco pequeno, num monte de rocha rompida com uns tres ou quatro metros de altura, nao numa laje deitada. NAO desenhe uma plataforma plana de terreno em volta: a peca e so a rocha, cortada rente na base, sem piso, sem laje, sem chao quadrado embaixo. Vista de cima em tres quartos ela deve ocupar um quadrado, mas o volume sobe.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem sombra projetada no chao. Repito: o fundo e MAGENTA.
+
+Gere UMA unica imagem quadrada com UM unico afloramento, centralizado. Sem colagem, sem grade, sem texto.

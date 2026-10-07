@@ -1,0 +1,10 @@
+Crie uma criatura alienigena para um jogo de estrategia isometrico, em renderizacao 3D limpa e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050, uma colmeia alienigena invadiu o planeta. Todas as criaturas desta colmeia sao da MESMA familia: carapaca quitinosa segmentada como casco de inseto, pele umida e nervurada entre as placas, garras e mandibulas de osso claro, e as juntas internas brilhando como brasa por baixo da casca. Esta precisa parecer irma das outras, nao um bicho de outro jogo.
+
+PECA: o CUSPIDOR. Ele nao chega perto: fica parado longe e CUSPE acido nas construcoes.
+
+APARENCIA: criatura pesada na frente e lenta. Corpo baixo e encorpado, apoiado em quatro patas curtas e grossas, bem plantadas no chao. O que manda na silhueta e a CABECA: enorme em relacao ao corpo, com um bulbo glandular translucido no alto do cranio, cheio de liquido acido que se enxerga por dentro. A boca e um tubo curto e grosso apontado para a FRENTE E PARA CIMA, em angulo de tiro, com respingos escorrendo pelo queixo. Sem garras grandes: os membros dianteiros sao de apoio, nao de ataque. Nas costas, aberturas por onde sai vapor.
+
+CORES: verde musgo escuro na carapaca; o bulbo, a garganta e o acido em VERDE-LIMA brilhante e luminoso, como se tivesse luz por dentro.
+
+FUNDO: magenta puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao.
+Criatura ORGANICA: nada de metal, nada de maquina, nada de armadura fabricada. A figura e PEQUENA no jogo, entao a SILHUETA e o que identifica: formas simples, contraste forte, nada de detalhe miudo. Gere UMA unica imagem quadrada com UMA unica criatura, centralizada, ocupando boa parte do quadro. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

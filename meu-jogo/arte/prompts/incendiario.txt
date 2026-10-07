@@ -1,0 +1,17 @@
+ATENCAO AO FUNDO: esta peca vai sobre FUNDO MAGENTA, nao verde. As ultimas que voce gerou tinham fundo verde; esta NAO tem. O fundo e MAGENTA puro chapado.
+
+Crie um soldado humano para o MESMO jogo de estrategia isometrico, no MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos, e mesma iluminacao vinda de cima e da esquerda do FUZILEIRO que voce gerou antes. CONTEXTO: Terra, ano de 2050. A tecnologia e evolucao crivel do equipamento militar de hoje, nada de ficcao cientifica distante: sem armadura de robo, sem energia magica, sem nave.
+
+BASE COMUM COM O FUZILEIRO, que precisa ser respeitada para os soldados parecerem do mesmo exercito: farda azul aco escuro, colete balistico modular de placas, capacete com visor tatico fino aceso em azul claro, joelheiras, coturnos, mochila de combate compacta nas costas, e uma faixa laranja fina de identificacao no ombro. Corpo humano em pe, visto de cima em tres quartos, virado para a frente e para a direita.
+
+PECA: o INCENDIARIO. Ele queima enxames de perto, num cone curto de fogo.
+
+O QUE MUDA EM RELACAO AO FUZILEIRO: em vez de fuzil, ele carrega um LANCA-CHAMAS pesado, segurado com as duas maos, com o bico grosso apontado para a frente e para baixo e uma chama piloto acesa na ponta. Nas costas, dois CILINDROS DE COMBUSTIVEL grandes e cilindricos, ligados ao lanca-chamas por uma mangueira grossa e trancada que passa por baixo do braco — e essa mochila de tanques que identifica ele de relance. O colete dele e mais pesado e o capacete tem uma viseira integral fechada, de protecao termica, em vez do visor fino. Luvas grossas ate o cotovelo. Marcas de fuligem na farda e nas botas.
+
+CORES: a mesma farda azul aco escuro dos outros, mas com LARANJA-FOGO forte como cor de destaque: os cilindros de combustivel, as faixas de advertencia neles, a chama piloto e o brilho no visor. E o unico soldado com luz laranja no capacete.
+
+IMPORTANTE: a figura e PEQUENA no jogo. Formas simples, silhueta forte, nada de detalhe miudo, nada de rosto detalhado. Ele precisa se distinguir do fuzileiro comum a distancia, e o que faz isso e o EQUIPAMENTO, nao a cara.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao. Repito: o fundo e MAGENTA, nao verde.
+
+Gere UMA unica imagem quadrada com UMA unica figura, centralizada, ocupando boa parte do quadro. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

@@ -1,0 +1,15 @@
+ATENCAO AO FUNDO: fundo MAGENTA puro chapado, nao verde.
+
+Crie uma peca para o MESMO jogo de estrategia isometrico, MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos, mesma iluminacao vinda de cima e da esquerda das pecas anteriores. CONTEXTO: Terra, ano de 2050.
+
+PECA: um AFLORAMENTO DE PETROLEO. E a irma da jazida de minerio que voce ja gerou (rocha cinza escura com veios dourados), so que esta da PETROLEO em vez de metal. E o recurso raro do jogo. Nao e predio, nao e maquina: e formacao natural.
+
+APARENCIA: uma poca de petroleo bruto aflorando do chao rachado, com a rocha escura ao redor partida e erguida em placas. No centro, o oleo PRETO e espesso, superficie lisa de espelho. O espelho reflete um ceu de POR DO SOL: faixas LARANJA e AMBAR quentes atravessando a poca, ocupando boa parte da superficie, com o preto aparecendo entre elas. Bolhas grossas subindo. Nas bordas, o oleo escorrido e seco em crostas pretas brilhantes, com fios AMBAR luminosos correndo pelas rachaduras da pedra em volta.
+
+O QUE NAO PODE: nada de AZUL na poca — sem reflexo de ceu azul, sem ciano. E tambem nao pode parecer OURO DERRETIDO nem LAVA: o liquido continua sendo oleo PRETO, o laranja e so o reflexo na superficie e o brilho nas rachaduras. Se a poca inteira ficar dourada e opaca, esta errado.
+
+CORES: preto de piche no liquido, reflexos LARANJA e AMBAR quentes por cima, rocha cinza escura em volta igual a da jazida de minerio, fios ambar nas rachaduras.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem sombra projetada no chao. Repito: o fundo e MAGENTA.
+
+Gere UMA unica imagem quadrada com UM unico afloramento, centralizado. Sem colagem, sem grade, sem texto.

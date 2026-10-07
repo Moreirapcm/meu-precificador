@@ -1,0 +1,11 @@
+ATENCAO AO FUNDO: a imagem deve ocupar TODA a area, sem fundo nenhum, sem magenta. E uma TEXTURA, nao um objeto.
+
+Crie uma TEXTURA QUADRADA E CONTINUA (tileable, que se repete sem emenda nos quatro lados) de TOPO DE LAJE DE PREDIO ABANDONADO, vista DE CIMA, para um jogo de estrategia isometrico. CONTEXTO: Terra, ano de 2050.
+
+CONTEUDO: laje de concreto vista de cima, com entulho espalhado, pedaços de parede caida, caixa d'agua pequena, casa de maquinas, ferragem exposta, poças escuras, mato nascendo nas rachaduras. Algum ar condicionado velho.
+
+ESTILO: renderizacao limpa, vista ORTOGONAL DE CIMA (de cima para baixo, reta), iluminacao neutra e chapada, sem sombra longa projetada. Nada de ceu, nada de horizonte.
+
+CORES: concreto cinza claro sujo, entulho cinza, toques de ferrugem e de verde do mato.
+
+Gere UMA unica imagem quadrada, preenchida de ponta a ponta pela textura. Sem moldura, sem texto.

@@ -1,0 +1,13 @@
+ATENCAO AO FUNDO: esta peca vai sobre FUNDO MAGENTA, nao verde. O fundo e MAGENTA puro chapado.
+
+Crie uma construcao para o MESMO jogo de estrategia isometrico, no MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos (o mesmo do Age of Empires 2), e mesma iluminacao vinda de cima e da esquerda da Central de Comando. CONTEXTO: Terra, ano de 2050, uma colonia humana reconstruindo a cidade depois da invasao alienigena. A tecnologia e evolucao crivel do que existe hoje.
+
+PECA: uma USINA NUCLEAR compacta. Ocupa 3 por 3 celulas, entao e maior que a solar e a eolica. Da MUITA energia, custa caro, e e perigosa.
+
+APARENCIA: um reator modular pequeno, do tipo que cabe numa cidade. O volume principal e uma CUPULA de contencao de concreto grosso, baixa e arredondada, com nervuras de reforco subindo pelas laterais. Ao lado da cupula, duas torres de resfriamento curtas, largas na base e estreitas em cima, com vapor branco saindo devagar do topo. Ligando tudo, tubulacoes grossas e isoladas, valvulas e uma casa de maquinas retangular com janelas altas. Ao redor, barreira de concreto com faixas de advertencia e portao de acesso controlado. Mostradores acesos no painel de controle.
+
+CORES: cinza concreto claro na cupula e nas torres, azul aco escuro na casa de maquinas, e faixas de ADVERTENCIA amarelas e pretas na barreira e nos tubos. Luz VERDE calma nos mostradores — o reator esta estavel. Vapor branco.
+
+IMPORTANTE: nada de simbolo de radioatividade desenhado, nada de texto, nada de logotipo. O perigo se le pelas faixas de advertencia e pelo tamanho da contencao.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao. Repito: o fundo e MAGENTA, nao verde. A figura e PEQUENA no jogo: formas simples, silhueta forte, nada de detalhe miudo. Gere UMA unica imagem quadrada com UMA unica construcao, centralizada. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

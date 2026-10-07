@@ -1,0 +1,12 @@
+Crie uma criatura alienigena para um jogo de estrategia isometrico, em renderizacao 3D limpa e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050, uma colmeia alienigena invadiu o planeta. Todas as criaturas desta colmeia sao da MESMA familia: carapaca quitinosa segmentada como casco de inseto, pele umida e nervurada entre as placas, garras e mandibulas de osso claro, e as juntas internas brilhando como brasa por baixo da casca. Esta precisa parecer irma das outras, nao um bicho de outro jogo.
+
+PECA: a ASA CORROSIVA. Ela VOA por cima da muralha e vai atras dos operarios.
+
+APARENCIA: criatura VOADORA, em pleno voo, sem nenhuma pata tocando o chao. Corpo esguio e leve. Duas asas GRANDES e membranosas abertas, translucidas, com nervuras grossas atravessando a membrana, como asa de libelula, e a luz passando por elas. As asas dominam a silhueta e sao o que identifica ela de relance. Corpo pendurado entre as asas, quatro patas curtas recolhidas por baixo, prontas para agarrar. Cauda fina com um ferrao na ponta, de onde pinga acido. Cabeca pequena e alongada.
+
+ANGULO: vista DE CIMA em tres quartos, como as outras pecas. As costas, o dorso e as duas asas abertas sao o que mais aparece.
+
+CORES: carapaca roxo-violeta escuro, com as nervuras das asas e o acido do ferrao em VIOLETA claro luminoso. As membranas das asas sao translucidas e mais claras que o corpo.
+
+FUNDO: VERDE puro e saturado, chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao. O fundo e verde justamente porque esta criatura e rosa ou roxa: o verde e a cor mais distante dela e e o que permite recortar a figura sem comer o brilho dela. Nada de verde na propria criatura.
+Criatura ORGANICA: nada de metal, nada de maquina, nada de armadura fabricada. A figura e PEQUENA no jogo, entao a SILHUETA e o que identifica: formas simples, contraste forte, nada de detalhe miudo. Gere UMA unica imagem quadrada com UMA unica criatura, centralizada, ocupando boa parte do quadro. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

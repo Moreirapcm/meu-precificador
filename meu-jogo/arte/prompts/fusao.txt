@@ -1,0 +1,13 @@
+ATENCAO AO FUNDO: esta peca vai sobre FUNDO MAGENTA, nao verde. O fundo e MAGENTA puro chapado.
+
+Crie uma construcao para o MESMO jogo de estrategia isometrico, no MESMO estilo de renderizacao 3D limpa, MESMO angulo isometrico visto de cima em tres quartos (o mesmo do Age of Empires 2), e mesma iluminacao vinda de cima e da esquerda da Central de Comando. CONTEXTO: Terra, ano de 2050, uma colonia humana reconstruindo a cidade depois da invasao alienigena. A tecnologia e evolucao crivel do que existe hoje.
+
+PECA: um REATOR DE FUSAO. Ocupa 3 por 3 celulas. E a fonte de energia mais avancada do jogo, liberada so no fim da pesquisa: gera muito mais que todas as outras juntas.
+
+APARENCIA: um tokamak — o reator de fusao em forma de rosca. O volume central e um anel TOROIDAL grosso, deitado horizontalmente, envolto por bobinas magneticas em forma de D, espacadas ao redor como as costelas de uma gaiola. Entre as bobinas, da para ver a fenda do plasma brilhando por dentro do anel. Do toro saem tubos criogenicos grossos e cabos blindados que descem ate bancos de capacitores nas quinas da plataforma. Plataforma de concreto elevada, com escada e corrimao. Arcos de energia saltando entre as bobinas.
+
+CORES: cinza aco escuro e branco tecnico nas bobinas e na estrutura, e AZUL-BRANCO incandescente no plasma de dentro do anel — a cor mais intensa e mais quente de todo o jogo, como se houvesse uma estrela pequena ali. O brilho do plasma ilumina as bobinas em volta por baixo.
+
+IMPORTANTE: e diferente da nuclear. A nuclear e concreto pesado e vapor; esta e uma maquina limpa, tecnica, e a luz vem de dentro dela.
+
+FUNDO: MAGENTA puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao. Repito: o fundo e MAGENTA, nao verde. A figura e PEQUENA no jogo: formas simples, silhueta forte, nada de detalhe miudo. Gere UMA unica imagem quadrada com UMA unica construcao, centralizada. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

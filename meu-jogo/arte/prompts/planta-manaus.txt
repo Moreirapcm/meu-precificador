@@ -1,0 +1,26 @@
+ATENCAO: esta imagem NAO e uma ilustracao. E um MAPA TECNICO que um programa vai ler pixel a pixel. Nada de sombra, textura, degrade, brilho, perspectiva ou detalhe fino.
+
+Desenhe a PLANTA BAIXA de MANAUS destruida, vista EXATAMENTE DE CIMA, ortogonal. Imagem QUADRADA.
+
+USE SOMENTE ESTAS CINCO CORES, chapadas e puras:
+- AZUL PURO (0,0,255): o rio Negro, encostado em UM canto, ocupando cerca de um sexto da imagem.
+- BRANCO PURO (255,255,255): ruas e avenidas.
+- PRETO PURO (0,0,0): quarteiroes com predios de pe.
+- CINZA MEDIO (128,128,128): quarteiroes que viraram entulho.
+- VERDE PURO (0,255,0): pracas, parques e terreno aberto.
+
+O MAIS IMPORTANTE — ESCALA E LARGURA. Imagine a imagem dividida em 70 por 70 quadradinhos; cada quadradinho e uma casa do jogo. Entao:
+- Cada RUA tem que ter pelo menos DOIS quadradinhos de largura, e cada AVENIDA pelo menos TRES. Rua fina demais some.
+- Cada QUARTEIRAO e um bloco de no minimo QUATRO por QUATRO quadradinhos, CHEIO E MACICO de uma cor so. NADA de pontinhos, listras, furos ou desenho dentro do quarteirao.
+- As pracas verdes sao GRANDES: no minimo SEIS por SEIS quadradinhos.
+- Nada de linha diagonal fina. Se houver avenida diagonal, ela e larga.
+
+PROPORCAO PEDIDA, e ela importa: cerca de UM TERCO da imagem em BRANCO (rua), UM TERCO em PRETO e CINZA juntos (quarteirao), e o restante dividido entre VERDE (praca) e o AZUL do rio. NAO encha a imagem de preto: tem que sobrar espaco aberto para construir.
+
+OUTRAS REGRAS:
+- Cada cor e um valor exato, sem anti-serrilhado, sem borda desbotada.
+- As ruas brancas formam uma grade conectada: de qualquer ponto da borda se chega ao centro andando so por branco.
+- No centro da imagem, uma praca VERDE grande e livre, de pelo menos DEZ por DEZ quadradinhos.
+- A agua fica encostada em UM canto, nunca cortando o mapa em dois.
+
+Sem texto, sem legenda, sem numeros, sem moldura.

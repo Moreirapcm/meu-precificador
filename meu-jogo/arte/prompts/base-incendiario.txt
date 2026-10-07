@@ -1,0 +1,7 @@
+Crie UM soldado para um jogo de estrategia isometrico, em RENDERIZACAO 3D LIMPA e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050.
+
+NAO E DESENHO ANIMADO. Sem contorno preto em volta da figura, sem traco de caneta, sem cel shading. Figura com VOLUME e sombra suave, como uma miniatura renderizada em tres dimensoes.
+
+O PERSONAGEM: o INCENDIARIO, soldado do mesmo esquadrao. Uniforme de combate AZUL ACO ESCURO, colete tatico, faixas LARANJA, capacete azul escuro com VISOR CIANO, joelheiras cinza, botas escuras. Exatamente o mesmo personagem da imagem de referencia. Exatamente o mesmo soldado da imagem de referencia: mesma cor, mesmo equipamento.
+
+A figura e PEQUENA no jogo: silhueta forte, nada de detalhe miudo.

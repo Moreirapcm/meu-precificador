@@ -1,0 +1,22 @@
+Crie uma FOLHA DE POSES de uma unidade para um jogo de estrategia isometrico, em RENDERIZACAO 3D LIMPA e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050.
+
+NAO E DESENHO ANIMADO. Sem contorno preto em volta da figura, sem traco de caneta, sem cel shading, sem estilo anime. E uma figura com VOLUME, material pintado e sombra suave, como uma miniatura renderizada em tres dimensoes.
+
+A UNIDADE: o LANCEIRO PESADO, soldado antiblindagem, o mesmo da imagem de referencia — mesmo uniforme azul aco escuro, faixas laranja, capacete com visor ciano. Ele carrega um LANCA-FOGUETES apoiado no ombro.
+
+A ACAO, igual nas cinco: ele esta DISPARANDO o lanca-foguetes. Tubo no ombro, corpo firme, os dois bracos segurando, um jato curto de fogo saindo pela traseira do tubo. O tubo e do tamanho do braco, nao maior que o corpo.
+
+Desenhe a unidade CINCO vezes numa LINHA HORIZONTAL UNICA, lado a lado, bem espacadas, sem encostar uma na outra. Nao empilhe, nao faca duas fileiras: e UMA LINHA SO, da esquerda para a direita.
+
+O QUE MUDA ENTRE AS CINCO E SO A DIRECAO PARA ONDE ELA APONTA:
+1. apontando para a DIREITA da tela, de perfil.
+2. apontando para a DIREITA E PARA CIMA, na diagonal, mostrando as costas de tres quartos.
+3. apontando para CIMA, de costas para quem olha.
+4. apontando para a DIREITA E PARA BAIXO, na diagonal, mostrando a frente de tres quartos.
+5. apontando para BAIXO, de frente para quem olha.
+
+NENHUMA das cinco pode apontar para a esquerda: as direcoes que faltam eu faco espelhando.
+
+Todas do MESMO TAMANHO, todas apoiadas na MESMA LINHA DE CHAO, mesma iluminacao. A figura e PEQUENA no jogo: silhueta forte, nada de detalhe miudo.
+
+FUNDO: MAGENTA PURO E CHAPADO (255,0,255) em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem sombra projetada no chao. Sem moldura, sem texto, sem numero.

@@ -1,0 +1,12 @@
+Crie uma criatura alienigena para um jogo de estrategia isometrico, em renderizacao 3D limpa e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050, uma colmeia alienigena invadiu o planeta. Todas as criaturas desta colmeia sao da MESMA familia: carapaca quitinosa segmentada como casco de inseto, pele umida e nervurada entre as placas, garras e mandibulas de osso claro, e as juntas internas brilhando como brasa por baixo da casca. Esta precisa parecer irma das outras, nao um bicho de outro jogo.
+
+PECA: o TITA. E a criatura de cerco: um monstro enorme que abre brechas na muralha na base da porrada.
+
+APARENCIA: criatura GIGANTE e vertical. Anda apoiada nas duas pernas traseiras, macicas como colunas, curvada para a frente, com os dois bracos dianteiros ENORMES e desproporcionais, terminando em garras grossas e rombudas, feitas para quebrar concreto e nao para cortar carne. Ombros altos e couracados, cobertos de placas espessas e espinhos grandes e tortos. Cabeca pequena afundada entre os ombros, mandibulas abertas. Peito blindado por placas sobrepostas. Pose de ataque, com um dos bracos levantado para o golpe. Cicatrizes e placas lascadas.
+
+ESCALA: mesmo sozinha no quadro, ela precisa PARECER gigante: corpo pesado, membros grossos, postura curvada pelo proprio peso.
+
+CORES: carapaca vermelho-alaranjada intensa, com juntas, peito e nervuras internas brilhando em laranja-fogo quente, como brasa viva. Garras e espinhos em osso escuro.
+
+FUNDO: magenta puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao.
+Criatura ORGANICA: nada de metal, nada de maquina, nada de armadura fabricada. A figura e PEQUENA no jogo, entao a SILHUETA e o que identifica: formas simples, contraste forte, nada de detalhe miudo. Gere UMA unica imagem quadrada com UMA unica criatura, centralizada, ocupando boa parte do quadro. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

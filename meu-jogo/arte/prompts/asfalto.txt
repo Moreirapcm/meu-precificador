@@ -1,0 +1,11 @@
+ATENCAO AO FUNDO: a imagem deve ocupar TODA a area, sem fundo nenhum, sem magenta. E uma TEXTURA, nao um objeto.
+
+Crie uma TEXTURA QUADRADA E CONTINUA (tileable, que se repete sem emenda nos quatro lados) de ASFALTO DE RUA ABANDONADA, vista DE CIMA, para um jogo de estrategia isometrico. CONTEXTO: Terra, ano de 2050, cidade tropical abandonada.
+
+CONTEUDO: asfalto cinza escuro gasto, com rachaduras finas e remendos de asfalto mais escuro, manchas de oleo, poeira clara nas beiradas, algumas ervas daninhas nascendo nas rachaduras, um bueiro de ferro redondo, algumas pedras soltas. SEM faixas pintadas, SEM linha branca no meio, SEM faixa de pedestre: a pintura da rua o jogo desenha por cima.
+
+ESTILO: renderizacao limpa, vista ORTOGONAL DE CIMA (de cima para baixo, reta), iluminacao neutra e chapada, sem sombra longa projetada. Nada de carro, nada de calcada, nada de predio, nada de horizonte: so o piso.
+
+CORES: cinza asfalto medio escuro, remendos mais escuros, poeira clara, verde das ervas.
+
+Gere UMA unica imagem quadrada, preenchida de ponta a ponta pela textura. Sem moldura, sem texto.

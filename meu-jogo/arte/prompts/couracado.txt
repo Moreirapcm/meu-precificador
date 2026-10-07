@@ -1,0 +1,10 @@
+Crie uma criatura alienigena para um jogo de estrategia isometrico, em renderizacao 3D limpa e um pouco estilizada, vista DE CIMA em tres quartos no angulo isometrico classico de videogame (o mesmo do Age of Empires 2), com a luz principal vindo de cima e da esquerda e sombras suaves nas faces da direita. CONTEXTO: Terra, ano de 2050, uma colmeia alienigena invadiu o planeta. Todas as criaturas desta colmeia sao da MESMA familia: carapaca quitinosa segmentada como casco de inseto, pele umida e nervurada entre as placas, garras e mandibulas de osso claro, e as juntas internas brilhando como brasa por baixo da casca. Esta precisa parecer irma das outras, nao um bicho de outro jogo.
+
+PECA: o COURACADO. E o escudo da colmeia: absorve os tiros de frente e protege as criaturas que vem atras.
+
+APARENCIA: criatura BAIXA, LARGA e macica, construida como um ariete. A frente e uma unica placa de carapaca ENORME, grossa e curva, como o escudo frontal de um besouro rinoceronte ou a testa blindada de um tatu, cobrindo a cabeca inteira e descendo ate quase o chao. As placas das costas sao espessas, sobrepostas como telhas, com a borda gasta e lascada de tanto apanhar. Quatro pernas curtissimas e grossas, mal aparecendo sob o volume do corpo. Cabeca praticamente invisivel atras do escudo. Pose parada e firme, de quem esta esperando o tiro. Marcas de queimadura e rachaduras na placa da frente.
+
+CORES: cinza-azulado frio e opaco na carapaca, quase sem brilho, com as poucas juntas expostas em vermelho escuro. E o unico da colmeia que NAO tem cor quente: ele parece pedra.
+
+FUNDO: magenta puro chapado em toda a area, mesmo tom nos quatro cantos, sem gradiente, sem textura, sem sombra projetada no chao.
+Criatura ORGANICA: nada de metal, nada de maquina, nada de armadura fabricada. A figura e PEQUENA no jogo, entao a SILHUETA e o que identifica: formas simples, contraste forte, nada de detalhe miudo. Gere UMA unica imagem quadrada com UMA unica criatura, centralizada, ocupando boa parte do quadro. Sem colagem, sem grade, sem mosaico, sem miniaturas, sem texto, sem legenda.

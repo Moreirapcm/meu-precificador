@@ -1,0 +1,11 @@
+ATENCAO AO FUNDO: a imagem deve ocupar TODA a area, sem fundo nenhum, sem magenta. E uma TEXTURA, nao um objeto.
+
+Crie uma TEXTURA QUADRADA E CONTINUA (tileable, que se repete sem emenda nos quatro lados) de FACHADA DE PREDIO ABANDONADO, para um jogo de estrategia isometrico. CONTEXTO: Terra, ano de 2050, cidade arruinada mas ainda de pe.
+
+CONTEUDO: concreto cinza envelhecido, com fileiras regulares de JANELAS retangulares escuras, algumas quebradas, algumas tapadas com tabua ou chapa metalica. Manchas de umidade escorrendo, rachaduras finas, marcas de fuligem. Uma ou outra janela com luz ambar fraca. Pode ter um cano ou uma escada de incendio discreta.
+
+ESTILO: renderizacao limpa, iluminacao neutra e chapada (sem sombra forte projetada, porque a sombra quem faz e o jogo), como um material de textura de jogo visto de frente, PLANO, sem perspectiva, sem angulo, sem canto de predio. Nada de ceu, nada de chao, nada de rua: so a parede.
+
+CORES: cinza concreto medio escuro, janelas quase pretas, detalhes em ferrugem e ambar.
+
+Gere UMA unica imagem quadrada, preenchida de ponta a ponta pela textura. Sem moldura, sem texto, sem fundo de cor solida.
