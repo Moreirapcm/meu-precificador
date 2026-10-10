@@ -15,10 +15,13 @@ export const COR = {
 };
 
 export const FONTE_TITULO = '"Permanent Marker", cursive';
+// Fator de velocidade: todos os tempos (em frames) são multiplicados por ele.
+export const VEL = 1.5;
+
 export const FONTE_MAO = '"Caveat", cursive';
 
 const progresso = (frame: number, inicio: number, duracao: number) =>
-  interpolate(frame, [inicio, inicio + duracao], [0, 1], {
+  interpolate(frame, [inicio * VEL, (inicio + duracao) * VEL], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
     easing: Easing.inOut(Easing.quad),
@@ -64,7 +67,7 @@ export const Escrever: React.FC<EscreverProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const p = progresso(frame, inicio, duracao);
-  if (frame < inicio) return null;
+  if (frame < inicio * VEL) return null;
   const escrevendo = p > 0 && p < 1;
   return (
     <div style={{position: 'relative', display: 'inline-block', ...style}}>
@@ -75,6 +78,8 @@ export const Escrever: React.FC<EscreverProps> = ({
           color: cor,
           lineHeight: 1.1,
           whiteSpace: 'nowrap',
+          // folga para letras inclinadas não serem cortadas no fim
+          padding: '0 0.2em',
           clipPath: `inset(-20% ${(1 - p) * 100}% -20% -5%)`,
         }}
       >
@@ -110,7 +115,7 @@ export const Desenhar: React.FC<DesenharProps> = ({
   const frame = useCurrentFrame();
   const total = useMemo(() => getLength(d), [d]);
   const p = progresso(frame, inicio, duracao);
-  if (frame < inicio) return null;
+  if (frame < inicio * VEL) return null;
   const ponta = getPointAtLength(d, Math.max(0.01, total * p));
   return (
     <>
@@ -146,9 +151,9 @@ export const circulo = (cx: number, cy: number, rx: number, ry: number) =>
 // Entrada com "pop" para cartões/prints.
 export const usePop = (inicio: number) => {
   const frame = useCurrentFrame();
-  const s = interpolate(frame, [inicio, inicio + 6, inicio + 10], [0.6, 1.06, 1], {
+  const s = interpolate(frame, [inicio * VEL, (inicio + 6) * VEL, (inicio + 10) * VEL], [0.6, 1.06, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
-  return {visivel: frame >= inicio, escala: s};
+  return {visivel: frame >= inicio * VEL, escala: s};
 };

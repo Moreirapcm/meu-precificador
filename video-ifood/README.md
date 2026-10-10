@@ -1,6 +1,6 @@
 # Vídeo "Você vende no iFood e acha que tá lucrando?"
 
-Animação estilo quadro branco feita com [Remotion](https://remotion.dev) (1080x1920, 30fps, 35s).
+Animação estilo quadro branco feita com [Remotion](https://remotion.dev) (1080x1920, 30fps, ~57s). A velocidade geral é controlada por `VEL` em `src/Quadro.tsx`.
 
 - Taxas: Plano Entrega do iFood — comissão 23% + pagamento online 3,2%
   (fonte: blog oficial iFood para Parceiros, 2026). Confira no Portal do Parceiro antes de publicar.
